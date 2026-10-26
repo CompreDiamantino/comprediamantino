@@ -99,18 +99,18 @@
             
             <label class="block border-2 border-gray-200 rounded-xl p-4 cursor-pointer hover:border-primary has-[:checked]:border-primary has-[:checked]:bg-blue-50">
                 <input type="radio" name="plano" value="basico" class="mr-2" checked>
-                <span class="font-bold">Básico — R$ 10/mês</span>
-                <span class="block text-sm text-gray-500 ml-6">Até <strong>3 fotos</strong> · perfil, mapa e WhatsApp</span>
+                <span class="font-bold">Básico — R$ 80/mês</span>
+                <span class="block text-sm text-gray-500 ml-6"><strong>3 fotos por dia</strong> · perfil, mapa e WhatsApp</span>
             </label>
             <label class="block border-2 border-gray-200 rounded-xl p-4 cursor-pointer hover:border-primary has-[:checked]:border-primary has-[:checked]:bg-blue-50">
                 <input type="radio" name="plano" value="plus" class="mr-2">
-                <span class="font-bold">Plus — R$ 29/mês</span>
-                <span class="block text-sm text-gray-500 ml-6">Até <strong>5 fotos</strong> · destaque e prioridade no mapa</span>
+                <span class="font-bold">Plus — R$ 120/mês</span>
+                <span class="block text-sm text-gray-500 ml-6"><strong>5 fotos por dia</strong> · destaque e prioridade no mapa</span>
             </label>
 
             <div class="bg-amber-50 border border-amber-100 rounded-xl p-4 text-sm text-amber-950">
                 <p class="font-bold mb-1"><i class="fas fa-star text-yellow-500"></i> Pode ficar gratuito</p>
-                <p>Quanto mais clientes avaliarem (1 a 5★) e quanto melhor a nota, maior o desconto na <strong>próxima mensalidade</strong>. Com <strong>15.000 estrelas</strong> acumuladas, a gestão pode aplicar <strong>100% de desconto</strong> (mensalidade zerada naquele ciclo). O % é definido só pelo gestor.</p>
+                <p>Quanto mais clientes avaliarem (1 a 5★) e quanto melhor a nota, maior o desconto na <strong>próxima mensalidade</strong>. Quanto mais clientes avaliarem e quanto melhores as notas, <strong>maior o desconto na mensalidade</strong>. O percentual é aplicado pela gestão.</p>
             </div>
 
             <div class="flex gap-2">
@@ -131,7 +131,7 @@
 
             <label class="flex items-start gap-2 text-sm text-gray-600">
                 <input type="checkbox" id="aceite" class="mt-1">
-                <span>Li e concordo: o site é para divulgação em Diamantino-MT; após o período grátis há taxa de manutenção (R$ 10 ou R$ 29 conforme o plano); descontos por estrelas são aplicados pela gestão.</span>
+                <span>Li e concordo: o site é para divulgação em Diamantino-MT; após o período grátis há taxa de manutenção (R$ 80 ou R$ 120 conforme o plano); descontos por estrelas são aplicados pela gestão.</span>
             </label>
 
             <div id="msgErro" class="hidden text-red-600 text-sm font-medium"></div>
@@ -180,7 +180,7 @@
             }
             if (n === 4) {
                 const plano = document.querySelector('input[name="plano"]:checked').value;
-                const planoTxt = plano === 'plus' ? 'Plus — R$ 29/mês (5 fotos)' : 'Básico — R$ 10/mês (3 fotos)';
+                const planoTxt = plano === 'plus' ? 'Plus — R$ 120/mês (5 fotos)' : 'Básico — R$ 80/mês (3 fotos)';
                 document.getElementById('resumo').innerHTML =
                     '<p><strong>Loja:</strong> ' + document.getElementById('nomeLoja').value + '</p>' +
                     '<p><strong>Responsável:</strong> ' + document.getElementById('nomeResp').value + '</p>' +
@@ -228,6 +228,9 @@
             try { lista = JSON.parse(localStorage.getItem('cd_lojistas_admin') || '[]'); } catch (e) {}
             lista.push(reg);
             localStorage.setItem('cd_lojistas_admin', JSON.stringify(lista));
+            if (window.NotifGestor) {
+                NotifGestor.add('novo_membro', 'Novo membro: ' + reg.nome, (reg.categoria || '') + ' · ' + (reg.whatsapp || ''), { lojistaId: reg.id });
+            }
 
             // Também no mapa como pendente (não aparece até ativo)
             if (window.EmpresasDados) {
@@ -247,5 +250,6 @@
         });
     </script>
     <script src="empresas-dados.js"></script>
+    <script src="notificacoes-gestor.js"></script>
 </body>
 </html>

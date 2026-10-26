@@ -116,9 +116,12 @@
                     <a href="#contato" class="hover:text-secondary transition">Contato</a>
                 </nav>
                 
-                <div class="flex items-center gap-3">
+                <div class="flex items-center gap-2 sm:gap-3">
                     <a href="lojista-login.html" class="hidden sm:inline-flex items-center gap-1 text-sm font-medium hover:text-secondary transition">
                         <i class="fas fa-sign-in-alt"></i> Entrar
+                    </a>
+                    <a href="cadastro-lojista.html" class="inline-flex items-center gap-1.5 bg-secondary text-primary text-sm font-bold px-3 py-2 rounded-xl hover:bg-yellow-400 transition">
+                        <i class="fas fa-bullhorn"></i> <span class="hidden xs:inline sm:inline">Anuncie aqui</span>
                     </a>
                     <button id="btnMenuMobile" class="md:hidden text-2xl" aria-label="Menu">
                         <i class="fas fa-bars"></i>
@@ -135,6 +138,7 @@
                 <a href="mapa.html" class="py-2 px-3 rounded hover:bg-primary">Mapa</a>
                 <a href="#contato" class="py-2 px-3 rounded hover:bg-primary">Contato</a>
                 <a href="lojista-login.html" class="py-2 px-3 rounded hover:bg-primary">Entrar</a>
+                <a href="cadastro-lojista.html" class="py-2 px-3 rounded hover:bg-primary font-bold text-secondary">Anuncie aqui</a>
             </nav>
         </div>
     </header>
@@ -267,121 +271,14 @@
             
             <!-- Grid de cards (exemplo estático - depois vem do Firebase) -->
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" id="empresasDestaque">
-                
-                <!-- Card Exemplo 1 -->
-                <div class="card-hover bg-white rounded-2xl overflow-hidden shadow-md border border-gray-100">
-                    <div class="relative h-40 bg-gradient-to-br from-blue-100 to-blue-50 flex items-center justify-center">
-                        <div class="w-20 h-20 bg-white rounded-full shadow flex items-center justify-center text-3xl text-primary font-bold">
-                            P
-                        </div>
-                        <span class="absolute top-3 right-3 selo-premium text-xs font-bold px-2.5 py-1 rounded-full">Premium</span>
-                    </div>
-                    <div class="p-5">
-                        <h3 class="font-bold text-lg text-gray-900 mb-1">Padaria do Centro</h3>
-                        <p class="text-sm text-gray-500 mb-3">
-                            <i class="fas fa-utensils text-orange-400 mr-1"></i> Alimentação
-                        </p>
-                        <p class="text-sm text-gray-600 line-clamp-2 mb-4">
-                            Pães frescos todos os dias, doces caseiros e café da manhã completo.
-                        </p>
-                        <div class="flex gap-2">
-                            <a href="empresa.html?id=1" class="flex-1 bg-primary text-white text-center py-2.5 rounded-xl font-semibold text-sm hover:bg-accent transition">
-                                Ver perfil
-                            </a>
-                            <a href="https://wa.me/5565999999999" target="_blank" class="btn-whatsapp text-white w-11 h-11 rounded-xl flex items-center justify-center">
-                                <i class="fab fa-whatsapp text-xl"></i>
-                            </a>
-                        </div>
-                    </div>
+                <div class="col-span-full text-center py-12 bg-white rounded-2xl border border-dashed border-gray-200">
+                    <i class="fas fa-store text-4xl text-gray-300 mb-3"></i>
+                    <p class="text-gray-500 font-medium mb-1">Nenhuma empresa em destaque ainda</p>
+                    <p class="text-sm text-gray-400 mb-4">Quando lojistas cadastrarem e a gestão aprovar, os perfis e promoções aparecem aqui.</p>
+                    <a href="cadastro-lojista.html" class="inline-flex items-center gap-2 bg-secondary text-primary font-bold px-5 py-2.5 rounded-xl hover:bg-yellow-400 transition">
+                        <i class="fas fa-bullhorn"></i> Seja o primeiro a anunciar
+                    </a>
                 </div>
-                
-                <!-- Card Exemplo 2 -->
-                <div class="card-hover bg-white rounded-2xl overflow-hidden shadow-md border border-gray-100">
-                    <div class="relative h-40 bg-gradient-to-br from-green-100 to-green-50 flex items-center justify-center">
-                        <div class="w-20 h-20 bg-white rounded-full shadow flex items-center justify-center text-3xl text-green-600 font-bold">
-                            A
-                        </div>
-                        <span class="absolute top-3 right-3 selo-destaque text-white text-xs font-bold px-2.5 py-1 rounded-full">Destaque</span>
-                    </div>
-                    <div class="p-5">
-                        <h3 class="font-bold text-lg text-gray-900 mb-1">Auto Peças Diamantino</h3>
-                        <p class="text-sm text-gray-500 mb-3">
-                            <i class="fas fa-car text-blue-500 mr-1"></i> Automotivo
-                        </p>
-                        <p class="text-sm text-gray-600 line-clamp-2 mb-4">
-                            Peças originais e paralelas para carros e motos. Entrega rápida.
-                        </p>
-                        <div class="flex gap-2">
-                            <a href="empresa.html?id=2" class="flex-1 bg-primary text-white text-center py-2.5 rounded-xl font-semibold text-sm hover:bg-accent transition">
-                                Ver perfil
-                            </a>
-                            <a href="https://wa.me/5565988888888" target="_blank" class="btn-whatsapp text-white w-11 h-11 rounded-xl flex items-center justify-center">
-                                <i class="fab fa-whatsapp text-xl"></i>
-                            </a>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Card Exemplo 3 -->
-                <div class="card-hover bg-white rounded-2xl overflow-hidden shadow-md border border-gray-100">
-                    <div class="relative h-40 bg-gradient-to-br from-pink-100 to-pink-50 flex items-center justify-center">
-                        <div class="w-20 h-20 bg-white rounded-full shadow flex items-center justify-center text-3xl text-pink-500 font-bold">
-                            B
-                        </div>
-                        <span class="absolute top-3 right-3 selo-basico text-white text-xs font-bold px-2.5 py-1 rounded-full">Básico</span>
-                    </div>
-                    <div class="p-5">
-                        <h3 class="font-bold text-lg text-gray-900 mb-1">Beleza & Estilo</h3>
-                        <p class="text-sm text-gray-500 mb-3">
-                            <i class="fas fa-heart-pulse text-rose-400 mr-1"></i> Saúde e Beleza
-                        </p>
-                        <p class="text-sm text-gray-600 line-clamp-2 mb-4">
-                            Salão completo: corte, coloração, manicure e maquiagem profissional.
-                        </p>
-                        <div class="flex gap-2">
-                            <a href="empresa.html?id=3" class="flex-1 bg-primary text-white text-center py-2.5 rounded-xl font-semibold text-sm hover:bg-accent transition">
-                                Ver perfil
-                            </a>
-                            <a href="https://wa.me/5565977777777" target="_blank" class="btn-whatsapp text-white w-11 h-11 rounded-xl flex items-center justify-center">
-                                <i class="fab fa-whatsapp text-xl"></i>
-                            </a>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Card Exemplo 4 -->
-                <div class="card-hover bg-white rounded-2xl overflow-hidden shadow-md border border-gray-100">
-                    <div class="relative h-40 bg-gradient-to-br from-amber-100 to-amber-50 flex items-center justify-center">
-                        <div class="w-20 h-20 bg-white rounded-full shadow flex items-center justify-center text-3xl text-amber-600 font-bold">
-                            C
-                        </div>
-                        <span class="absolute top-3 right-3 selo-destaque text-white text-xs font-bold px-2.5 py-1 rounded-full">Destaque</span>
-                    </div>
-                    <div class="p-5">
-                        <h3 class="font-bold text-lg text-gray-900 mb-1">Casa Construir</h3>
-                        <p class="text-sm text-gray-500 mb-3">
-                            <i class="fas fa-home text-amber-500 mr-1"></i> Casa e Construção
-                        </p>
-                        <p class="text-sm text-gray-600 line-clamp-2 mb-4">
-                            Materiais de construção, ferramentas e tudo para sua obra.
-                        </p>
-                        <div class="flex gap-2">
-                            <a href="empresa.html?id=4" class="flex-1 bg-primary text-white text-center py-2.5 rounded-xl font-semibold text-sm hover:bg-accent transition">
-                                Ver perfil
-                            </a>
-                            <a href="https://wa.me/5565966666666" target="_blank" class="btn-whatsapp text-white w-11 h-11 rounded-xl flex items-center justify-center">
-                                <i class="fab fa-whatsapp text-xl"></i>
-                            </a>
-                        </div>
-                    </div>
-                </div>
-                
-            </div>
-            
-            <div class="text-center mt-8 sm:hidden">
-                <a href="categoria.html" class="inline-flex items-center gap-2 text-primary font-semibold">
-                    Ver todas as empresas <i class="fas fa-arrow-right"></i>
-                </a>
             </div>
         </div>
     </section>
@@ -431,16 +328,16 @@
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-10 max-w-2xl mx-auto text-left">
                 <div class="bg-white/10 rounded-xl p-4 border border-white/20">
                     <p class="text-secondary font-bold text-sm mb-1">Básico</p>
-                    <p class="text-2xl font-bold">R$ 10<span class="text-sm font-normal text-blue-200">/mês</span></p>
-                    <p class="text-blue-200 text-xs mt-1">Até 3 fotos · 7 dias grátis</p>
+                    <p class="text-2xl font-bold">R$ 80<span class="text-sm font-normal text-blue-200">/mês</span></p>
+                    <p class="text-blue-200 text-xs mt-1">3 fotos/dia · 7 dias grátis</p>
                 </div>
                 <div class="bg-white/10 rounded-xl p-4 border-2 border-secondary">
                     <p class="text-secondary font-bold text-sm mb-1">Plus</p>
-                    <p class="text-2xl font-bold">R$ 29<span class="text-sm font-normal text-blue-200">/mês</span></p>
-                    <p class="text-blue-200 text-xs mt-1">Até 5 fotos · 7 dias grátis</p>
+                    <p class="text-2xl font-bold">R$ 120<span class="text-sm font-normal text-blue-200">/mês</span></p>
+                    <p class="text-blue-200 text-xs mt-1">5 fotos/dia · 7 dias grátis</p>
                 </div>
             </div>
-            <p class="text-blue-200 text-sm mt-4">15.000 estrelas = até 100% off na próxima mensalidade (gestão)</p>
+            <p class="text-blue-200 text-sm mt-4">Quanto mais estrelas, maior o desconto na mensalidade</p>
         </div>
     </section>
 

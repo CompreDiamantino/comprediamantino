@@ -225,5 +225,22 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
     <script src="firebase-config.js"></script>
     <script src="firebase-init.js"></script>
+
+    <script src="notificacoes-gestor.js"></script>
+    <script src="posts-nuvem.js"></script>
+    <script>
+      document.addEventListener('DOMContentLoaded', function () {
+        if (window.NotifGestor) {
+          NotifGestor.syncDeCadastros();
+          NotifGestor.renderLista('listaNotifGestor');
+          NotifGestor.atualizarBadge();
+        }
+        var btn = document.getElementById('btnMarcarLidas');
+        if (btn) btn.addEventListener('click', function () {
+          NotifGestor.marcarTodasLidas();
+          NotifGestor.renderLista('listaNotifGestor');
+        });
+      });
+    </script>
 </body>
 </html>

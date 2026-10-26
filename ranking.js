@@ -33,12 +33,7 @@
                 }
             });
         } catch (e) {}
-        // demo: se zero, gera ranking estável a partir do id
-        if (total === 0 && empresaId) {
-            let h = 0;
-            for (let i = 0; i < empresaId.length; i++) h = (h + empresaId.charCodeAt(i) * (i + 1)) % 200;
-            total = 20 + h; // só para demo visual até haver votos reais
-        }
+        // sem votos = 0 (não inventa ranking)
         return { total: total, qtd: qtd };
     }
 

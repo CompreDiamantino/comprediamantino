@@ -732,5 +732,13 @@
     <script src="firebase-config.js"></script>
     <script src="firebase-init.js"></script>
 
+
+    <script src="notificacoes-gestor.js"></script>
+    <script src="posts-nuvem.js"></script>
+    <script>
+      document.addEventListener('DOMContentLoaded', function(){
+        if(window.NotifGestor){ NotifGestor.syncDeCadastros(); NotifGestor.atualizarBadge(); }
+      });
+    </script>
 </body>
 </html>

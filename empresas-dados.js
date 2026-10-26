@@ -5,7 +5,7 @@
 (function (global) {
     const STORAGE_KEY = 'cd_empresas_mapa';
     const COORDS_KEY = 'cd_empresas_coords';
-    const SEED_VER = 'cd_seed_v3'; // sobe versão = recria seeds com coords certas
+    const SEED_VER = 'cd_seed_v4'; // sobe versão = recria seeds com coords certas
 
     // Centro urbano Diamantino-MT (referência IBN / área da cidade)
     const CENTER = { lat: -14.4089, lng: -56.4458 };
@@ -179,19 +179,19 @@
         let lista = lerEmpresas();
 
         // Nova versão de coords: reconstrói seeds públicos + demo (mantém lojistas reais)
-        if (ver !== 'v3') {
+        if (ver !== 'v4') {
             const reais = lista.filter(e => !e.publico && e.id && !String(e.id).startsWith('lj00') && !String(e.id).startsWith('pub-'));
-            lista = seedPublicos().concat(seedComercioDemo()).concat(reais);
+            lista = seedPublicos().concat(reais);
             salvarEmpresas(lista);
-            localStorage.setItem(SEED_VER, 'v3');
+            localStorage.setItem(SEED_VER, 'v4');
             localStorage.removeItem(COORDS_KEY); // limpa coords antigas no mato
             return lista;
         }
 
         if (!lista.length) {
-            lista = seedPublicos().concat(seedComercioDemo());
+            lista = seedPublicos();
             salvarEmpresas(lista);
-            localStorage.setItem(SEED_VER, 'v3');
+            localStorage.setItem(SEED_VER, 'v4');
         }
         return lista;
     }
