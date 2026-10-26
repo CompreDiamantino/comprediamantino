@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- PWA -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0A2A6B">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Compre Diamantino">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <link rel="icon" type="image/png" href="icon-192.png">
+    
+    <meta name="description" content="Compre Diamantino — Portal do comércio local. Encontre lojas, produtos, endereço, mapa e WhatsApp de empresas de Diamantino-MT.">
+    <meta name="keywords" content="Diamantino, comércio, lojas, comprar, serviços, MT, Mato Grosso">
+    <title>Compre Diamantino — Portal do Comércio Local</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#0A2A6B',
+                        secondary: '#F5C518',
+                        accent: '#0D3B8C',
+                        light: '#F8FAFC',
+                        dark: '#0F172A'
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        html { scroll-behavior: smooth; }
+        
+        .hero-gradient {
+            background: linear-gradient(135deg, #0A2A6B 0%, #0D3B8C 50%, #1E40AF 100%);
+        }
+        
+        .card-hover {
+            transition: all 0.3s ease;
+        }
+        .card-hover:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 12px 30px rgba(10, 42, 107, 0.15);
+        }
+        
+        .category-card {
+            transition: all 0.25s ease;
+        }
+        .category-card:hover {
+            transform: scale(1.05);
+            background: #0A2A6B;
+            color: white;
+        }
+        .category-card:hover i {
+            color: #F5C518;
+        }
+        
+        .btn-whatsapp {
+            background: #25D366;
+        }
+        .btn-whatsapp:hover {
+            background: #1DA851;
+        }
+        
+        .selo-basico { background: #64748B; }
+        .selo-destaque { background: #0A2A6B; }
+        .selo-premium { background: linear-gradient(135deg, #F5C518, #E6A800); color: #0A2A6B; }
+        
+        /* Fixed WhatsApp button */
+        .whatsapp-float {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            z-index: 50;
+            animation: pulse-green 2s infinite;
+        }
+        @keyframes pulse-green {
+            0% { box-shadow: 0 0 0 0 rgba(37, 211, 102, 0.5); }
+            70% { box-shadow: 0 0 0 12px rgba(37, 211, 102, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(37, 211, 102, 0); }
+        }
+        
+        /* Search focus */
+        .search-input:focus {
+            box-shadow: 0 0 0 3px rgba(245, 197, 24, 0.4);
+        }
+    </style>
+</head>
+<body class="bg-light text-gray-800 font-sans antialiased">
+
+    <!-- ==================== HEADER ==================== -->
+    <header class="bg-primary text-white sticky top-0 z-40 shadow-lg">
+        <div class="container mx-auto px-4">
+            <div class="flex items-center justify-between h-16">
+                <a href="index.html" class="flex items-center gap-2">
+                    <img src="icon-192.png" alt="Compre Diamantino" class="w-10 h-10 rounded-full">
+                    <div class="hidden sm:block">
+                        <span class="font-bold text-lg leading-tight">Compre</span>
+                        <span class="block text-secondary text-sm font-semibold -mt-1">Diamantino</span>
+                    </div>
+                </a>
+                
+                <nav class="hidden md:flex items-center gap-6 text-sm font-medium">
+                    <a href="#categorias" class="hover:text-secondary transition">Categorias</a>
+                    <a href="#destaques" class="hover:text-secondary transition">Destaques</a>
+                    <a href="#ofertas" class="hover:text-secondary transition">Ofertas</a>
+                    <a href="mapa.html" class="hover:text-secondary transition">Mapa</a>
+                    <a href="#contato" class="hover:text-secondary transition">Contato</a>
+                </nav>
+                
+                <div class="flex items-center gap-3">
+                    <a href="lojista-login.html" class="hidden sm:inline-flex items-center gap-1 text-sm font-medium hover:text-secondary transition">
+                        <i class="fas fa-sign-in-alt"></i> Entrar
+                    </a>
+                    <button id="btnMenuMobile" class="md:hidden text-2xl" aria-label="Menu">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <div id="menuMobile" class="hidden md:hidden bg-accent border-t border-blue-800">
+            <nav class="flex flex-col px-4 py-3 gap-1">
+                <a href="#categorias" class="py-2 px-3 rounded hover:bg-primary">Categorias</a>
+                <a href="#destaques" class="py-2 px-3 rounded hover:bg-primary">Destaques</a>
+                <a href="#ofertas" class="py-2 px-3 rounded hover:bg-primary">Ofertas</a>
+                <a href="mapa.html" class="py-2 px-3 rounded hover:bg-primary">Mapa</a>
+                <a href="#contato" class="py-2 px-3 rounded hover:bg-primary">Contato</a>
+                <a href="lojista-login.html" class="py-2 px-3 rounded hover:bg-primary">Entrar</a>
+            </nav>
+        </div>
+    </header>
+
+    <!-- ==================== HERO ==================== -->
+    <section class="hero-gradient text-white py-12 md:py-20">
+        <div class="container mx-auto px-4 text-center">
+            <h1 class="text-3xl md:text-5xl font-bold mb-4 leading-tight">
+                O comércio de <span class="text-secondary">Diamantino</span><br class="hidden md:block"> na palma da sua mão
+            </h1>
+            <p class="text-blue-100 text-lg md:text-xl mb-8 max-w-2xl mx-auto">
+                Encontre lojas, produtos, endereço, mapa e WhatsApp dos melhores estabelecimentos da cidade.
+            </p>
+            
+            <!-- Busca -->
+            <div class="max-w-xl mx-auto relative">
+                <input 
+                    type="text" 
+                    id="buscaPrincipal"
+                    placeholder="O que você procura em Diamantino?"
+                    class="search-input w-full py-4 px-6 pr-14 rounded-2xl text-gray-800 text-lg shadow-xl focus:outline-none"
+                >
+                <button class="absolute right-3 top-1/2 -translate-y-1/2 bg-primary text-white w-10 h-10 rounded-xl flex items-center justify-center hover:bg-accent transition">
+                    <i class="fas fa-search"></i>
+                </button>
+            </div>
+            
+            <p class="mt-4 text-blue-200 text-sm">
+                Ex: padaria, oficina, farmácia, roupas, pet shop...
+            </p>
+        </div>
+    </section>
+
+    <!-- ==================== CATEGORIAS ==================== -->
+    <section id="categorias" class="py-12 md:py-16 bg-white">
+        <div class="container mx-auto px-4">
+            <div class="text-center mb-10">
+                <h2 class="text-2xl md:text-3xl font-bold text-primary mb-2">Categorias</h2>
+                <p class="text-gray-500">Navegue pelo comércio de Diamantino</p>
+            </div>
+            
+            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-6">
+                <!-- Alimentação -->
+                <a href="categoria.html?cat=alimentacao" class="category-card bg-gray-50 rounded-2xl p-5 text-center shadow-sm border border-gray-100">
+                    <div class="w-14 h-14 mx-auto mb-3 bg-orange-100 rounded-full flex items-center justify-center">
+                        <i class="fas fa-utensils text-2xl text-orange-500"></i>
+                    </div>
+                    <h3 class="font-semibold text-sm md:text-base">Alimentação</h3>
+                    <p class="text-xs text-gray-400 mt-1">Padarias, restaurantes...</p>
+                </a>
+                
+                <!-- Moda -->
+                <a href="categoria.html?cat=moda" class="category-card bg-gray-50 rounded-2xl p-5 text-center shadow-sm border border-gray-100">
+                    <div class="w-14 h-14 mx-auto mb-3 bg-pink-100 rounded-full flex items-center justify-center">
+                        <i class="fas fa-shirt text-2xl text-pink-500"></i>
+                    </div>
+                    <h3 class="font-semibold text-sm md:text-base">Moda e Vestuário</h3>
+                    <p class="text-xs text-gray-400 mt-1">Roupas, calçados...</p>
+                </a>
+                
+                <!-- Casa e Construção -->
+                <a href="categoria.html?cat=casa" class="category-card bg-gray-50 rounded-2xl p-5 text-center shadow-sm border border-gray-100">
+                    <div class="w-14 h-14 mx-auto mb-3 bg-amber-100 rounded-full flex items-center justify-center">
+                        <i class="fas fa-home text-2xl text-amber-600"></i>
+                    </div>
+                    <h3 class="font-semibold text-sm md:text-base">Casa e Construção</h3>
+                    <p class="text-xs text-gray-400 mt-1">Materiais, móveis...</p>
+                </a>
+                
+                <!-- Automotivo -->
+                <a href="categoria.html?cat=automotivo" class="category-card bg-gray-50 rounded-2xl p-5 text-center shadow-sm border border-gray-100">
+                    <div class="w-14 h-14 mx-auto mb-3 bg-blue-100 rounded-full flex items-center justify-center">
+                        <i class="fas fa-car text-2xl text-blue-600"></i>
+                    </div>
+                    <h3 class="font-semibold text-sm md:text-base">Automotivo</h3>
+                    <p class="text-xs text-gray-400 mt-1">Oficinas, peças...</p>
+                </a>
+                
+                <!-- Saúde e Beleza -->
+                <a href="categoria.html?cat=saude" class="category-card bg-gray-50 rounded-2xl p-5 text-center shadow-sm border border-gray-100">
+                    <div class="w-14 h-14 mx-auto mb-3 bg-rose-100 rounded-full flex items-center justify-center">
+                        <i class="fas fa-heart-pulse text-2xl text-rose-500"></i>
+                    </div>
+                    <h3 class="font-semibold text-sm md:text-base">Saúde e Beleza</h3>
+                    <p class="text-xs text-gray-400 mt-1">Farmácias, clínicas...</p>
+                </a>
+                
+                <!-- Serviços -->
+                <a href="categoria.html?cat=servicos" class="category-card bg-gray-50 rounded-2xl p-5 text-center shadow-sm border border-gray-100">
+                    <div class="w-14 h-14 mx-auto mb-3 bg-indigo-100 rounded-full flex items-center justify-center">
+                        <i class="fas fa-screwdriver-wrench text-2xl text-indigo-500"></i>
+                    </div>
+                    <h3 class="font-semibold text-sm md:text-base">Serviços</h3>
+                    <p class="text-xs text-gray-400 mt-1">Eletricista, chaveiro...</p>
+                </a>
+                
+                <!-- Agro e Pet -->
+                <a href="categoria.html?cat=agro" class="category-card bg-gray-50 rounded-2xl p-5 text-center shadow-sm border border-gray-100">
+                    <div class="w-14 h-14 mx-auto mb-3 bg-green-100 rounded-full flex items-center justify-center">
+                        <i class="fas fa-paw text-2xl text-green-600"></i>
+                    </div>
+                    <h3 class="font-semibold text-sm md:text-base">Agro e Pet</h3>
+                    <p class="text-xs text-gray-400 mt-1">Pet shops, agropecuária...</p>
+                </a>
+                
+                <!-- Outros -->
+                <a href="categoria.html?cat=outros" class="category-card bg-gray-50 rounded-2xl p-5 text-center shadow-sm border border-gray-100">
+                    <div class="w-14 h-14 mx-auto mb-3 bg-gray-200 rounded-full flex items-center justify-center">
+                        <i class="fas fa-store text-2xl text-gray-600"></i>
+                    </div>
+                    <h3 class="font-semibold text-sm md:text-base">Outros</h3>
+                    <p class="text-xs text-gray-400 mt-1">Diversos...</p>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================== EMPRESAS EM DESTAQUE ==================== -->
+    <section id="destaques" class="py-12 md:py-16 bg-gray-50">
+        <div class="container mx-auto px-4">
+            <div class="flex items-center justify-between mb-8">
+                <div>
+                    <h2 class="text-2xl md:text-3xl font-bold text-primary">Empresas em Destaque</h2>
+                    <p class="text-gray-500 text-sm mt-1">Negócios recomendados em Diamantino</p>
+                </div>
+                <a href="categoria.html" class="text-primary font-semibold text-sm hover:underline hidden sm:block">
+                    Ver todas <i class="fas fa-arrow-right ml-1"></i>
+                </a>
+            </div>
+            
+            <!-- Grid de cards (exemplo estático - depois vem do Firebase) -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" id="empresasDestaque">
+                
+                <!-- Card Exemplo 1 -->
+                <div class="card-hover bg-white rounded-2xl overflow-hidden shadow-md border border-gray-100">
+                    <div class="relative h-40 bg-gradient-to-br from-blue-100 to-blue-50 flex items-center justify-center">
+                        <div class="w-20 h-20 bg-white rounded-full shadow flex items-center justify-center text-3xl text-primary font-bold">
+                            P
+                        </div>
+                        <span class="absolute top-3 right-3 selo-premium text-xs font-bold px-2.5 py-1 rounded-full">Premium</span>
+                    </div>
+                    <div class="p-5">
+                        <h3 class="font-bold text-lg text-gray-900 mb-1">Padaria do Centro</h3>
+                        <p class="text-sm text-gray-500 mb-3">
+                            <i class="fas fa-utensils text-orange-400 mr-1"></i> Alimentação
+                        </p>
+                        <p class="text-sm text-gray-600 line-clamp-2 mb-4">
+                            Pães frescos todos os dias, doces caseiros e café da manhã completo.
+                        </p>
+                        <div class="flex gap-2">
+                            <a href="empresa.html?id=1" class="flex-1 bg-primary text-white text-center py-2.5 rounded-xl font-semibold text-sm hover:bg-accent transition">
+                                Ver perfil
+                            </a>
+                            <a href="https://wa.me/5565999999999" target="_blank" class="btn-whatsapp text-white w-11 h-11 rounded-xl flex items-center justify-center">
+                                <i class="fab fa-whatsapp text-xl"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Card Exemplo 2 -->
+                <div class="card-hover bg-white rounded-2xl overflow-hidden shadow-md border border-gray-100">
+                    <div class="relative h-40 bg-gradient-to-br from-green-100 to-green-50 flex items-center justify-center">
+                        <div class="w-20 h-20 bg-white rounded-full shadow flex items-center justify-center text-3xl text-green-600 font-bold">
+                            A
+                        </div>
+                        <span class="absolute top-3 right-3 selo-destaque text-white text-xs font-bold px-2.5 py-1 rounded-full">Destaque</span>
+                    </div>
+                    <div class="p-5">
+                        <h3 class="font-bold text-lg text-gray-900 mb-1">Auto Peças Diamantino</h3>
+                        <p class="text-sm text-gray-500 mb-3">
+                            <i class="fas fa-car text-blue-500 mr-1"></i> Automotivo
+                        </p>
+                        <p class="text-sm text-gray-600 line-clamp-2 mb-4">
+                            Peças originais e paralelas para carros e motos. Entrega rápida.
+                        </p>
+                        <div class="flex gap-2">
+                            <a href="empresa.html?id=2" class="flex-1 bg-primary text-white text-center py-2.5 rounded-xl font-semibold text-sm hover:bg-accent transition">
+                                Ver perfil
+                            </a>
+                            <a href="https://wa.me/5565988888888" target="_blank" class="btn-whatsapp text-white w-11 h-11 rounded-xl flex items-center justify-center">
+                                <i class="fab fa-whatsapp text-xl"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Card Exemplo 3 -->
+                <div class="card-hover bg-white rounded-2xl overflow-hidden shadow-md border border-gray-100">
+                    <div class="relative h-40 bg-gradient-to-br from-pink-100 to-pink-50 flex items-center justify-center">
+                        <div class="w-20 h-20 bg-white rounded-full shadow flex items-center justify-center text-3xl text-pink-500 font-bold">
+                            B
+                        </div>
+                        <span class="absolute top-3 right-3 selo-basico text-white text-xs font-bold px-2.5 py-1 rounded-full">Básico</span>
+                    </div>
+                    <div class="p-5">
+                        <h3 class="font-bold text-lg text-gray-900 mb-1">Beleza & Estilo</h3>
+                        <p class="text-sm text-gray-500 mb-3">
+                            <i class="fas fa-heart-pulse text-rose-400 mr-1"></i> Saúde e Beleza
+                        </p>
+                        <p class="text-sm text-gray-600 line-clamp-2 mb-4">
+                            Salão completo: corte, coloração, manicure e maquiagem profissional.
+                        </p>
+                        <div class="flex gap-2">
+                            <a href="empresa.html?id=3" class="flex-1 bg-primary text-white text-center py-2.5 rounded-xl font-semibold text-sm hover:bg-accent transition">
+                                Ver perfil
+                            </a>
+                            <a href="https://wa.me/5565977777777" target="_blank" class="btn-whatsapp text-white w-11 h-11 rounded-xl flex items-center justify-center">
+                                <i class="fab fa-whatsapp text-xl"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Card Exemplo 4 -->
+                <div class="card-hover bg-white rounded-2xl overflow-hidden shadow-md border border-gray-100">
+                    <div class="relative h-40 bg-gradient-to-br from-amber-100 to-amber-50 flex items-center justify-center">
+                        <div class="w-20 h-20 bg-white rounded-full shadow flex items-center justify-center text-3xl text-amber-600 font-bold">
+                            C
+                        </div>
+                        <span class="absolute top-3 right-3 selo-destaque text-white text-xs font-bold px-2.5 py-1 rounded-full">Destaque</span>
+                    </div>
+                    <div class="p-5">
+                        <h3 class="font-bold text-lg text-gray-900 mb-1">Casa Construir</h3>
+                        <p class="text-sm text-gray-500 mb-3">
+                            <i class="fas fa-home text-amber-500 mr-1"></i> Casa e Construção
+                        </p>
+                        <p class="text-sm text-gray-600 line-clamp-2 mb-4">
+                            Materiais de construção, ferramentas e tudo para sua obra.
+                        </p>
+                        <div class="flex gap-2">
+                            <a href="empresa.html?id=4" class="flex-1 bg-primary text-white text-center py-2.5 rounded-xl font-semibold text-sm hover:bg-accent transition">
+                                Ver perfil
+                            </a>
+                            <a href="https://wa.me/5565966666666" target="_blank" class="btn-whatsapp text-white w-11 h-11 rounded-xl flex items-center justify-center">
+                                <i class="fab fa-whatsapp text-xl"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                
+            </div>
+            
+            <div class="text-center mt-8 sm:hidden">
+                <a href="categoria.html" class="inline-flex items-center gap-2 text-primary font-semibold">
+                    Ver todas as empresas <i class="fas fa-arrow-right"></i>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================== OFERTAS DA SEMANA ==================== -->
+    <section id="ofertas" class="py-12 md:py-16 bg-white">
+        <div class="container mx-auto px-4">
+            <div class="text-center mb-10">
+                <h2 class="text-2xl md:text-3xl font-bold text-primary mb-2">
+                    <i class="fas fa-tags text-secondary mr-2"></i> Ofertas da Semana
+                </h2>
+                <p class="text-gray-500">Por setor · Top empresas por estrelas + promoções da semana</p>
+            </div>
+            
+            
+            <p class="text-center text-sm text-gray-400 mb-8">Por setor · empresas com mais estrelas no Top 10 de cada categoria</p>
+            <div id="ofertasPorSetor" class="max-w-6xl mx-auto">
+                <p class="text-center text-gray-400 text-sm">Carregando ranking…</p>
+            </div>
+            
+            <div class="text-center mt-8">
+                <a href="ofertas.html" class="inline-flex items-center gap-2 bg-primary text-white px-6 py-3 rounded-xl font-semibold hover:bg-accent transition">
+                    Ver todas as ofertas <i class="fas fa-arrow-right"></i>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================== CTA ANUNCIE ==================== -->
+    <section class="py-14 md:py-20 hero-gradient text-white">
+        <div class="container mx-auto px-4 text-center">
+            <h2 class="text-2xl md:text-4xl font-bold mb-4">
+                Seu negócio merece ser encontrado
+            </h2>
+            <p class="text-blue-100 text-lg mb-8 max-w-2xl mx-auto">
+                Tenha uma vitrine profissional com fotos, mapa, WhatsApp e destaque no portal do comércio de Diamantino.
+            </p>
+            
+            <div class="flex flex-col sm:flex-row gap-4 justify-center items-center">
+                <a href="cadastro-lojista.html" class="bg-secondary text-primary px-8 py-4 rounded-2xl font-bold text-lg hover:bg-yellow-400 transition shadow-lg inline-flex items-center gap-2">
+                    <i class="fas fa-bullhorn"></i> Quero anunciar meu negócio
+                </a>
+            </div>
+            <p class="text-blue-200 text-sm mt-4">Formulário de cadastro · aprovação da gestão · 7 dias grátis</p>
+            
+            <!-- Mini planos -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-10 max-w-2xl mx-auto text-left">
+                <div class="bg-white/10 rounded-xl p-4 border border-white/20">
+                    <p class="text-secondary font-bold text-sm mb-1">Básico</p>
+                    <p class="text-2xl font-bold">R$ 10<span class="text-sm font-normal text-blue-200">/mês</span></p>
+                    <p class="text-blue-200 text-xs mt-1">Até 3 fotos · 7 dias grátis</p>
+                </div>
+                <div class="bg-white/10 rounded-xl p-4 border-2 border-secondary">
+                    <p class="text-secondary font-bold text-sm mb-1">Plus</p>
+                    <p class="text-2xl font-bold">R$ 29<span class="text-sm font-normal text-blue-200">/mês</span></p>
+                    <p class="text-blue-200 text-xs mt-1">Até 5 fotos · 7 dias grátis</p>
+                </div>
+            </div>
+            <p class="text-blue-200 text-sm mt-4">15.000 estrelas = até 100% off na próxima mensalidade (gestão)</p>
+        </div>
+    </section>
+
+    <!-- ==================== RODAPÉ ==================== -->
+    <footer class="bg-dark text-gray-300 py-12">
+        <div class="container mx-auto px-4">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
+                <!-- Logo + descrição -->
+                <div class="md:col-span-1">
+                    <div class="flex items-center gap-2 mb-4">
+                        <img src="icon-192.png" alt="Compre Diamantino" class="w-10 h-10 rounded-full">
+                        <span class="font-bold text-white text-lg">Compre Diamantino</span>
+                    </div>
+                    <p class="text-sm text-gray-400 leading-relaxed">
+                        O portal do comércio local de Diamantino-MT. Conectando lojistas e consumidores da cidade.
+                    </p>
+                </div>
+                
+                <!-- Links rápidos -->
+                <div>
+                    <h4 class="font-bold text-white mb-4">Navegação</h4>
+                    <ul class="space-y-2 text-sm">
+                        <li><a href="index.html" class="hover:text-secondary transition">Home</a></li>
+                        <li><a href="#categorias" class="hover:text-secondary transition">Categorias</a></li>
+                        <li><a href="ofertas.html" class="hover:text-secondary transition">Ofertas</a></li>
+                        <li></li>
+                        <li><a href="sobre.html" class="hover:text-secondary transition">Sobre</a></li>
+                        <li><a href="instalar.html" class="hover:text-secondary transition">Instalar app</a></li>
+                    </ul>
+                </div>
+                
+                <!-- Contato -->
+                <div>
+                    <h4 class="font-bold text-white mb-4">Contato</h4>
+                    <ul class="space-y-3 text-sm">
+                        <li class="flex items-center gap-2">
+                            <i class="fab fa-whatsapp text-green-400"></i>
+                            <a href="https://wa.me/5565999999999" class="hover:text-secondary">(65) 99999-9999</a>
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <i class="fas fa-envelope text-blue-400"></i>
+                            <a href="mailto:contato@comprediamantino.com.br" class="hover:text-secondary">contato@comprediamantino.com.br</a>
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <i class="fas fa-map-marker-alt text-red-400"></i>
+                            <span>Diamantino - MT</span>
+                        </li>
+                    </ul>
+                </div>
+                
+                <!-- Redes -->
+                <div>
+                    <h4 class="font-bold text-white mb-4">Redes Sociais</h4>
+                    <div class="flex gap-3">
+                        <a href="#" class="w-10 h-10 bg-gray-700 rounded-full flex items-center justify-center hover:bg-secondary hover:text-primary transition">
+                            <i class="fab fa-instagram"></i>
+                        </a>
+                        <a href="#" class="w-10 h-10 bg-gray-700 rounded-full flex items-center justify-center hover:bg-secondary hover:text-primary transition">
+                            <i class="fab fa-facebook-f"></i>
+                        </a>
+                        <a href="https://wa.me/5565999999999" class="w-10 h-10 bg-gray-700 rounded-full flex items-center justify-center hover:bg-green-500 transition">
+                            <i class="fab fa-whatsapp"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="border-t border-gray-700 pt-6 flex flex-col sm:flex-row justify-between items-center gap-4 text-sm text-gray-500">
+                <p>© 2026 Compre Diamantino. Todos os direitos reservados.</p>
+                <div class="flex gap-4">
+                    <a href="privacidade.html" class="hover:text-secondary">Privacidade</a>
+                    <a href="termos.html" class="hover:text-secondary">Termos</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Botão WhatsApp flutuante -->
+    <a href="https://wa.me/5565999999999?text=Olá! Vim pelo site Compre Diamantino" target="_blank" class="whatsapp-float bg-green-500 text-white w-14 h-14 rounded-full flex items-center justify-center shadow-lg hover:bg-green-600 transition">
+        <i class="fab fa-whatsapp text-3xl"></i>
+    </a>
+
+    <!-- Scripts -->
+    <script>
+        // Menu mobile
+        const btnMenu = document.getElementById('btnMenuMobile');
+        const menuMobile = document.getElementById('menuMobile');
+        
+        btnMenu?.addEventListener('click', () => {
+            menuMobile.classList.toggle('hidden');
+        });
+        
+        // Fechar menu ao clicar em link
+        menuMobile?.querySelectorAll('a').forEach(link => {
+            link.addEventListener('click', () => {
+                menuMobile.classList.add('hidden');
+            });
+        });
+        
+        // PWA Service Worker
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js').catch(() => {});
+            });
+        }
+        
+        // Busca (placeholder - depois conecta no Firebase)
+        document.getElementById('buscaPrincipal')?.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                const termo = e.target.value.trim();
+                if (termo) {
+                    window.location.href = `busca.html?q=${encodeURIComponent(termo)}`;
+                }
+            }
+        });
+    </script>
+    <script src="install-app.js"></script>
+    <script src="empresas-dados.js"></script>
+    <script src="ranking.js"></script>
+    <script>
+        function carregarOfertasHome() {
+            var el = document.getElementById('ofertasPorSetor');
+            if (!el) return;
+            try {
+                if (window.RankingCD) {
+                    RankingCD.renderOfertasNaHome('ofertasPorSetor');
+                    return;
+                }
+            } catch (e) { console.error(e); }
+            el.innerHTML = '<p class="text-center text-gray-500 text-sm py-6">Nenhuma oferta ranqueada ainda. Cadastre empresas e avaliações para montar o Top por setor.</p>';
+        }
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', carregarOfertasHome);
+        } else {
+            carregarOfertasHome();
+        }
+        // fallback se script demorar
+        setTimeout(carregarOfertasHome, 600);
+    </script>
+</body>
+</html>
