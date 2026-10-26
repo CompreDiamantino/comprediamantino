@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="icon-192.png">
+    <title>Hub do Gestor — Compre Diamantino</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#0A2A6B',
+                        secondary: '#F5C518',
+                        accent: '#0D3B8C'
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-100 min-h-screen">
+
+    <header class="bg-primary text-white shadow">
+        <div class="container mx-auto px-4">
+            <div class="flex items-center justify-between h-14">
+                <div class="flex items-center gap-2">
+                    <img src="icon-192.png" alt="Logo" class="w-8 h-8 rounded-full">
+                    <div>
+                        <span class="font-bold text-sm">Compre Diamantino</span>
+                        <span class="block text-xs text-yellow-300 -mt-0.5">Gestor Master · acesso total</span>
+                    </div>
+                </div>
+                <button id="btnSair" class="text-sm bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg transition">
+                    <i class="fas fa-sign-out-alt mr-1"></i> Sair
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <div class="container mx-auto px-4 py-8 max-w-4xl">
+        
+        <div id="firebaseStatus" class="bg-gray-50 border border-gray-200 text-gray-600 rounded-xl p-3 text-sm mb-6 text-left">
+            <i class="fas fa-cloud mr-1"></i> Verificando nuvem Firebase…
+        </div>
+        <div class="text-center mb-8">
+            <h1 class="text-2xl font-bold text-primary">Painel do Gestor Master</h1>
+            <p class="text-gray-500 text-sm mt-1">Acesso total a todas as telas do sistema (como no IBN)</p>
+        </div>
+
+        <!-- GESTÃO -->
+        <h2 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 px-1">Gestão e controle</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
+            
+            <a href="admin-painel.html" class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md hover:border-primary transition group">
+                <div class="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center mb-4 group-hover:bg-primary transition">
+                    <i class="fas fa-cog text-xl text-primary group-hover:text-white"></i>
+                </div>
+                <h3 class="font-bold text-lg text-gray-900 mb-1">Painel de Gestão</h3>
+                <p class="text-sm text-gray-500">Pagamentos, status, bloquear, renovar, cadastrar lojistas</p>
+            </a>
+            
+            <a href="#" id="btnEntrarComoLojista" class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md hover:border-green-600 transition group">
+                <div class="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center mb-4 group-hover:bg-green-600 transition">
+                    <i class="fas fa-user-secret text-xl text-green-600 group-hover:text-white"></i>
+                </div>
+                <h3 class="font-bold text-lg text-gray-900 mb-1">Entrar como Lojista</h3>
+                <p class="text-sm text-gray-500">Abre o painel de qualquer anunciante (testar / corrigir)</p>
+            </a>
+        </div>
+
+        <!-- SITE PÚBLICO -->
+        <h2 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 px-1">Site público</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+            
+            <a href="index.html" class="bg-white rounded-xl p-5 shadow-sm border border-gray-100 hover:border-primary transition">
+                <i class="fas fa-home text-primary mb-2"></i>
+                <h3 class="font-bold text-gray-900">Home</h3>
+                <p class="text-xs text-gray-500">Página inicial do portal</p>
+            </a>
+            
+            <a href="mapa.html" class="bg-white rounded-xl p-5 shadow-sm border border-gray-100 hover:border-primary transition">
+                <i class="fas fa-map-marker-alt text-primary mb-2"></i>
+                <h3 class="font-bold text-gray-900">Mapa do comércio</h3>
+                <p class="text-xs text-gray-500">Pinos de todos os anunciantes ativos</p>
+            </a>
+            
+            <a href="empresa.html?id=1" class="bg-white rounded-xl p-5 shadow-sm border border-gray-100 hover:border-primary transition">
+                <i class="fas fa-store text-primary mb-2"></i>
+                <h3 class="font-bold text-gray-900">Perfil da empresa</h3>
+                <p class="text-xs text-gray-500">Vitrine + avaliações + mapa</p>
+            </a>
+            
+            <a href="anuncie.html" class="bg-white rounded-xl p-5 shadow-sm border border-gray-100 hover:border-primary transition">
+                <i class="fas fa-bullhorn text-primary mb-2"></i>
+                <h3 class="font-bold text-gray-900">Anuncie (planos)</h3>
+                <p class="text-xs text-gray-500">Página comercial</p>
+            </a>
+            
+            <a href="anuncie-acesso.html" class="bg-white rounded-xl p-5 shadow-sm border border-gray-100 hover:border-primary transition">
+                <i class="fas fa-door-open text-primary mb-2"></i>
+                <h3 class="font-bold text-gray-900">Anuncie (acesso)</h3>
+                <p class="text-xs text-gray-500">Login vs cadastro novo</p>
+            </a>
+            
+            <a href="lojista-painel.html" class="bg-white rounded-xl p-5 shadow-sm border border-gray-100 hover:border-primary transition">
+                <i class="fas fa-edit text-primary mb-2"></i>
+                <h3 class="font-bold text-gray-900">Painel do Lojista</h3>
+                <p class="text-xs text-gray-500">Direto (sessão gestor)</p>
+            </a>
+            
+            <a href="recuperar-senha.html" class="bg-white rounded-xl p-5 shadow-sm border border-gray-100 hover:border-primary transition">
+                <i class="fas fa-key text-primary mb-2"></i>
+                <h3 class="font-bold text-gray-900">Recuperar senha</h3>
+                <p class="text-xs text-gray-500">Fluxo do lojista</p>
+            </a>
+        </div>
+
+        <!-- LOGINS -->
+        <h2 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 px-1">Telas de login</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-8">
+            <a href="gestor-login.html" class="bg-white rounded-xl p-4 text-sm border border-gray-100 hover:border-secondary transition text-center font-medium">
+                Login Gestor
+            </a>
+            <a href="admin-login.html" class="bg-white rounded-xl p-4 text-sm border border-gray-100 hover:border-secondary transition text-center font-medium">
+                Login Admin
+            </a>
+            <a href="lojista-login.html" class="bg-white rounded-xl p-4 text-sm border border-gray-100 hover:border-secondary transition text-center font-medium">
+                Login Lojista
+            </a>
+        </div>
+
+        <div class="bg-primary/5 border border-primary/20 rounded-2xl p-5 text-sm text-gray-600">
+            <p class="font-bold text-primary mb-1"><i class="fas fa-shield-alt mr-1"></i> Acesso Master</p>
+            <p>Como gestor você passa por todas as proteções de tela. Pode gerir pagamentos, entrar como qualquer lojista e navegar no site público sem restrição.</p>
+        </div>
+        
+        <p class="text-center text-xs text-gray-400 mt-8">
+            Logado como <strong>Gestor Master</strong>
+        </p>
+    </div>
+
+    <!-- Modal escolher lojista -->
+    <div id="modalLojista" class="fixed inset-0 bg-black/50 z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-2xl w-full max-w-sm p-6 shadow-2xl">
+            <h3 class="font-bold text-primary mb-4">Entrar como qual lojista?</h3>
+            <div id="listaEscolhaLojista" class="space-y-2 max-h-60 overflow-y-auto mb-4"></div>
+            <button id="btnFecharModal" class="w-full bg-gray-100 text-gray-600 font-medium py-2.5 rounded-xl hover:bg-gray-200 transition">
+                Cancelar
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const gestor = JSON.parse(localStorage.getItem('cd_gestor') || 'null');
+        if (!gestor || !gestor.logado) {
+            window.location.href = 'gestor-login.html';
+        }
+        
+        // Garante flags de acesso total
+        localStorage.setItem('cd_admin', JSON.stringify({
+            logado: true,
+            logadoEm: new Date().toISOString(),
+            viaGestor: true,
+            nivel: 'gestor'
+        }));
+        
+        document.getElementById('btnSair').addEventListener('click', () => {
+            localStorage.removeItem('cd_gestor');
+            localStorage.removeItem('cd_admin');
+            localStorage.removeItem('cd_lojista');
+            window.location.href = 'gestor-login.html';
+        });
+        
+        document.getElementById('btnEntrarComoLojista').addEventListener('click', (e) => {
+            e.preventDefault();
+            const lojistas = JSON.parse(localStorage.getItem('cd_lojistas_admin') || '[]');
+            const lista = document.getElementById('listaEscolhaLojista');
+            
+            if (lojistas.length === 0) {
+                lista.innerHTML = `
+                    <button onclick="entrarComoLojista('demo001', 'Lojista Demo', 'destaque', 'ativo')" 
+                        class="w-full text-left px-4 py-3 rounded-xl border border-gray-200 hover:border-primary hover:bg-blue-50 transition">
+                        <p class="font-semibold">Lojista Demo</p>
+                        <p class="text-xs text-gray-400">Plano Destaque · ativo</p>
+                    </button>`;
+            } else {
+                lista.innerHTML = lojistas.map(lj => `
+                    <button onclick="entrarComoLojista('${lj.id}', '${(lj.nome || '').replace(/'/g, "\\'")}', '${lj.plano}', '${lj.status}')" 
+                        class="w-full text-left px-4 py-3 rounded-xl border border-gray-200 hover:border-primary hover:bg-blue-50 transition">
+                        <p class="font-semibold">${lj.nome}</p>
+                        <p class="text-xs text-gray-400">${lj.plano} · ${lj.status}</p>
+                    </button>
+                `).join('');
+            }
+            
+            document.getElementById('modalLojista').classList.remove('hidden');
+            document.getElementById('modalLojista').classList.add('flex');
+        });
+        
+        document.getElementById('btnFecharModal').addEventListener('click', () => {
+            document.getElementById('modalLojista').classList.add('hidden');
+            document.getElementById('modalLojista').classList.remove('flex');
+        });
+        
+        window.entrarComoLojista = (id, nome, plano, status) => {
+            localStorage.setItem('cd_lojista', JSON.stringify({
+                email: 'gestor@master',
+                nome: nome,
+                empresaId: id,
+                plano: plano || 'destaque',
+                status: status || 'ativo',
+                viaGestor: true,
+                nivel: 'gestor',
+                logadoEm: new Date().toISOString()
+            }));
+            window.location.href = 'lojista-painel.html';
+        };
+    </script>
+
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+    <script src="firebase-config.js"></script>
+    <script src="firebase-init.js"></script>
+</body>
+</html>

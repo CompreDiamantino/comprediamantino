@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="icon-192.png">
+    <title>Meu Painel — Compre Diamantino</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#0A2A6B',
+                        secondary: '#F5C518',
+                        accent: '#0D3B8C'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .nav-item.active { background: #0A2A6B; color: white; }
+        .nav-item:hover:not(.active) { background: #F1F5F9; }
+        .preview-img { object-fit: cover; }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+    <!-- Header -->
+    <header class="bg-primary text-white sticky top-0 z-40 shadow">
+        <div class="container mx-auto px-4">
+            <div class="flex items-center justify-between h-14">
+                <div class="flex items-center gap-2">
+                    <img src="icon-192.png" alt="Logo" class="w-8 h-8 rounded-full">
+                    <span class="font-bold text-sm sm:text-base">Área do Lojista</span>
+                </div>
+                <div class="flex items-center gap-3">
+                    <span id="nomeLojista" class="text-sm hidden sm:block text-blue-200"></span>
+                    <button id="btnSair" class="text-sm bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg transition">
+                        <i class="fas fa-sign-out-alt mr-1"></i> Sair
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="container mx-auto px-4 py-6 max-w-5xl">
+        
+        <!-- Status do plano -->
+        <div id="statusBox" class="mb-6 rounded-xl p-4 flex items-center gap-3">
+            <!-- Preenchido via JS -->
+        </div>
+
+        <!-- Navegação do painel -->
+        <div class="flex gap-2 mb-6 overflow-x-auto pb-1">
+            <button data-tab="perfil" class="nav-item active px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap">
+                <i class="fas fa-store mr-1"></i> Meu Perfil
+            </button>
+            <button data-tab="fotos" class="nav-item px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap">
+                <i class="fas fa-images mr-1"></i> Fotos
+            </button>
+            <button data-tab="promocoes" class="nav-item px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap">
+                <i class="fas fa-tags mr-1"></i> Promoções
+            </button>
+            <button data-tab="avaliacoes" class="nav-item px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap">
+                <i class="fas fa-star mr-1"></i> Avaliações
+            </button>
+        </div>
+
+        <!-- ==================== ABA PERFIL ==================== -->
+        <div id="tab-perfil" class="tab-content">
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                <h2 class="text-lg font-bold text-primary mb-5">Dados da Empresa</h2>
+                
+                <form id="formPerfil" class="space-y-5">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Nome fantasia *</label>
+                            <input type="text" id="nomeFantasia" required
+                                class="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-primary"
+                                placeholder="Ex: Padaria do Centro">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Categoria *</label>
+                            <select id="categoria" required
+                                class="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-primary">
+                                <option value="">Selecione...</option>
+                                <option value="alimentacao">Alimentação</option>
+                                <option value="moda">Moda e Vestuário</option>
+                                <option value="casa">Casa e Construção</option>
+                                <option value="automotivo">Automotivo</option>
+                                <option value="saude">Saúde e Beleza</option>
+                                <option value="servicos">Serviços</option>
+                                <option value="agro">Agro e Pet</option>
+                                <option value="outros">Outros</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Descrição curta (até 300 caracteres)</label>
+                        <textarea id="descricao" rows="3" maxlength="300"
+                            class="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-primary"
+                            placeholder="Conte um pouco sobre seu negócio..."></textarea>
+                        <p class="text-xs text-gray-400 mt-1"><span id="contadorDesc">0</span>/300</p>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">WhatsApp (com DDD) *</label>
+                            <input type="tel" id="whatsapp" required
+                                class="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-primary"
+                                placeholder="65999999999">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Instagram (opcional)</label>
+                            <input type="text" id="instagram"
+                                class="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-primary"
+                                placeholder="@seunegocio">
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Endereço completo *</label>
+                        <input type="text" id="endereco" required
+                            class="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-primary"
+                            placeholder="Rua, número, bairro">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Ponto de referência</label>
+                        <input type="text" id="referencia"
+                            class="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-primary"
+                            placeholder="Ex: Em frente à praça">
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Horário de funcionamento</label>
+                            <input type="text" id="horario"
+                                class="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-primary"
+                                placeholder="Seg a Sáb: 08h–18h">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Link do Google Maps (opcional)</label>
+                            <input type="url" id="mapsLink"
+                                class="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-primary"
+                                placeholder="https://maps.google.com/...">
+                        </div>
+                    </div>
+                    
+                    <div class="pt-2">
+                        <button type="submit" class="bg-primary text-white font-bold px-8 py-3 rounded-xl hover:bg-accent transition">
+                            <i class="fas fa-save mr-2"></i> Salvar alterações
+                        </button>
+                        <span id="msgSalvar" class="ml-3 text-sm hidden"></span>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- ==================== ABA FOTOS ==================== -->
+        <div id="tab-fotos" class="tab-content hidden">
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                <h2 class="text-lg font-bold text-primary mb-2">Fotos do seu negócio</h2>
+                <p class="text-sm text-gray-500 mb-5">Envie de 3 a 5 fotos. A primeira será a capa. Formatos: JPG ou PNG (máx. 2MB cada).</p>
+                
+                <!-- Logo -->
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Logo (recomendado fundo transparente)</label>
+                    <div class="flex items-center gap-4">
+                        <div id="previewLogo" class="w-20 h-20 bg-gray-100 rounded-xl flex items-center justify-center text-gray-400 border-2 border-dashed border-gray-200 overflow-hidden">
+                            <i class="fas fa-image text-2xl"></i>
+                        </div>
+                        <div>
+                            <input type="file" id="inputLogo" accept="image/png,image/jpeg" class="text-sm">
+                            <p class="text-xs text-gray-400 mt-1">PNG ou JPG, ideal 400x400px</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Galeria -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Galeria de fotos (produtos / ambiente)</label>
+                    <div id="galeriaPreview" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 mb-4">
+                        <!-- Previews aparecem aqui -->
+                    </div>
+                    <input type="file" id="inputFotos" accept="image/png,image/jpeg" multiple class="text-sm">
+                    <p class="text-xs text-gray-400 mt-1">Você pode selecionar várias de uma vez (máx. 5)</p>
+                </div>
+                
+                <div class="mt-6">
+                    <button id="btnSalvarFotos" class="bg-primary text-white font-bold px-8 py-3 rounded-xl hover:bg-accent transition">
+                        <i class="fas fa-cloud-upload-alt mr-2"></i> Salvar fotos
+                    </button>
+                    <span id="msgFotos" class="ml-3 text-sm hidden"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== ABA PROMOÇÕES ==================== -->
+        <div id="tab-promocoes" class="tab-content hidden">
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                <div class="flex items-center justify-between mb-5">
+                    <div>
+                        <h2 class="text-lg font-bold text-primary">Minhas Promoções</h2>
+                        <p class="text-sm text-gray-500">Crie ofertas que aparecem no site</p>
+                    </div>
+                    <button id="btnNovaPromo" class="bg-secondary text-primary font-bold px-4 py-2 rounded-xl text-sm hover:bg-yellow-400 transition">
+                        <i class="fas fa-plus mr-1"></i> Nova promoção
+                    </button>
+                </div>
+                
+                <!-- Formulário nova promoção (escondido) -->
+                <div id="formPromoBox" class="hidden mb-6 bg-gray-50 rounded-xl p-5 border border-gray-200">
+                    <h3 class="font-bold mb-4" id="tituloFormPromo">Nova promoção</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-1">Título da promoção *</label>
+                            <input type="text" id="promoTitulo" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-primary" placeholder="Ex: Combo Café da Manhã">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-1">Descrição</label>
+                            <textarea id="promoDesc" rows="2" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-primary" placeholder="Detalhes da oferta..."></textarea>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium mb-1">Validade (até)</label>
+                                <input type="date" id="promoValidade" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-primary">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-1">Selo (opcional)</label>
+                                <input type="text" id="promoSelo" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-primary" placeholder="Ex: -30% ou 2 por 1">
+                            </div>
+                        </div>
+                        <div class="flex gap-3">
+                            <button id="btnSalvarPromo" class="bg-primary text-white font-bold px-6 py-2.5 rounded-xl hover:bg-accent transition">
+                                Salvar promoção
+                            </button>
+                            <button id="btnCancelarPromo" class="bg-gray-200 text-gray-700 font-medium px-6 py-2.5 rounded-xl hover:bg-gray-300 transition">
+                                Cancelar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Lista de promoções -->
+                <div id="listaPromocoes" class="space-y-3">
+                    <p class="text-gray-400 text-sm text-center py-8">Nenhuma promoção cadastrada ainda.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== ABA AVALIAÇÕES ==================== -->
+        <div id="tab-avaliacoes" class="tab-content hidden">
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                <h2 class="text-lg font-bold text-primary mb-2">Avaliações recebidas</h2>
+                <p class="text-sm text-gray-500 mb-5">Seus clientes avaliam a loja. Acompanhe a média e a quantidade de votos.</p>
+                
+                <div class="flex items-center gap-4 mb-6 p-4 bg-yellow-50 rounded-xl">
+                    <div class="text-4xl font-bold text-yellow-500" id="mediaGeral">—</div>
+                    <div>
+                        <div id="estrelasMedia" class="flex gap-0.5 text-yellow-400 text-lg"></div>
+                        <p class="text-sm text-gray-500 mt-1"><span id="totalAvaliacoes">0</span> avaliações neste ciclo</p>
+                    </div>
+                </div>
+                
+                <div class="bg-blue-50 border border-blue-100 rounded-xl p-4 text-sm text-blue-900 mb-6">
+                    <i class="fas fa-info-circle mr-1"></i>
+                    Quanto mais avaliações positivas, maior a chance de benefício na <strong>próxima mensalidade</strong>
+                    (vale inclusive após a semana grátis). O <strong>% de desconto</strong> é calculado e aplicado
+                    somente pela <strong>gestão do portal</strong> — você acompanha as estrelas aqui.
+                </div>
+                
+                <div id="listaAvaliacoes" class="space-y-3">
+                    <p class="text-gray-400 text-sm text-center py-6">Ainda não há avaliações.</p>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // ========== PROTEÇÃO DE ACESSO ==========
+        let lojista = JSON.parse(localStorage.getItem('cd_lojista') || 'null');
+        const gestor = JSON.parse(localStorage.getItem('cd_gestor') || 'null');
+        
+        // Permite se for lojista logado OU gestor
+        if (!lojista && !(gestor && gestor.logado)) {
+            window.location.href = 'lojista-login.html';
+        }
+        
+        // Se gestor entrou sem escolher lojista, cria sessão demo
+        if (!lojista && gestor && gestor.logado) {
+            lojista = {
+                email: 'gestor@admin',
+                nome: 'Gestor',
+                empresaId: 'demo001',
+                plano: 'premium',
+                status: 'ativo',
+                viaGestor: true,
+                logadoEm: new Date().toISOString()
+            };
+            localStorage.setItem('cd_lojista', JSON.stringify(lojista));
+        }
+        
+        // Preenche nome
+        document.getElementById('nomeLojista').textContent = lojista.email + (lojista.viaGestor ? ' (Gestor)' : '');
+        
+        // Status do plano
+        const statusBox = document.getElementById('statusBox');
+        if (lojista.status === 'ativo') {
+            statusBox.className = 'mb-6 rounded-xl p-4 flex items-center gap-3 bg-green-50 border border-green-200';
+            statusBox.innerHTML = `
+                <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                    <i class="fas fa-check text-green-600"></i>
+                </div>
+                <div>
+                    <p class="font-bold text-green-800">Conta ativa — Plano ${lojista.plano || 'Básico'}</p>
+                    <p class="text-sm text-green-600">Seu perfil está visível no site</p>
+                </div>
+            `;
+        } else if (lojista.status === 'bloqueado') {
+            statusBox.className = 'mb-6 rounded-xl p-4 flex items-center gap-3 bg-red-50 border border-red-200';
+            statusBox.innerHTML = `
+                <div class="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                    <i class="fas fa-lock text-red-600"></i>
+                </div>
+                <div>
+                    <p class="font-bold text-red-800">Conta bloqueada</p>
+                    <p class="text-sm text-red-600">Entre em contato para regularizar o pagamento</p>
+                </div>
+            `;
+        } else {
+            statusBox.className = 'mb-6 rounded-xl p-4 flex items-center gap-3 bg-yellow-50 border border-yellow-200';
+            statusBox.innerHTML = `
+                <div class="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center">
+                    <i class="fas fa-clock text-yellow-600"></i>
+                </div>
+                <div>
+                    <p class="font-bold text-yellow-800">Aguardando liberação</p>
+                    <p class="text-sm text-yellow-600">Seu perfil será liberado após a confirmação do pagamento</p>
+                </div>
+            `;
+        }
+        
+        // ========== TABS ==========
+        const tabs = document.querySelectorAll('.nav-item');
+        const contents = document.querySelectorAll('.tab-content');
+        
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                tabs.forEach(t => t.classList.remove('active'));
+                contents.forEach(c => c.classList.add('hidden'));
+                tab.classList.add('active');
+                document.getElementById('tab-' + tab.dataset.tab).classList.remove('hidden');
+            });
+        });
+        
+        // ========== SAIR ==========
+        document.getElementById('btnSair').addEventListener('click', () => {
+            localStorage.removeItem('cd_lojista');
+            // Se é gestor, volta pro hub
+            if (gestor && gestor.logado) {
+                window.location.href = 'gestor-hub.html';
+            } else {
+                window.location.href = 'lojista-login.html';
+            }
+        });
+        
+        // ========== CONTADOR DESCRIÇÃO ==========
+        document.getElementById('descricao').addEventListener('input', (e) => {
+            document.getElementById('contadorDesc').textContent = e.target.value.length;
+        });
+        
+        // ========== SALVAR PERFIL (demo local) ==========
+        document.getElementById('formPerfil').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const msg = document.getElementById('msgSalvar');
+            
+            // Aqui depois salva no Firebase
+            const dados = {
+                nomeFantasia: document.getElementById('nomeFantasia').value,
+                categoria: document.getElementById('categoria').value,
+                descricao: document.getElementById('descricao').value,
+                whatsapp: document.getElementById('whatsapp').value,
+                instagram: document.getElementById('instagram').value,
+                endereco: document.getElementById('endereco').value,
+                referencia: document.getElementById('referencia').value,
+                horario: document.getElementById('horario').value,
+                mapsLink: document.getElementById('mapsLink').value
+            };
+            
+            localStorage.setItem('cd_perfil_' + lojista.empresaId, JSON.stringify(dados));
+            
+            msg.textContent = '✓ Salvo com sucesso!';
+            msg.className = 'ml-3 text-sm text-green-600 font-medium';
+            msg.classList.remove('hidden');
+            setTimeout(() => msg.classList.add('hidden'), 3000);
+        });
+        
+        // Carrega dados salvos
+        const perfilSalvo = JSON.parse(localStorage.getItem('cd_perfil_' + lojista.empresaId) || '{}');
+        if (perfilSalvo.nomeFantasia) {
+            document.getElementById('nomeFantasia').value = perfilSalvo.nomeFantasia || '';
+            document.getElementById('categoria').value = perfilSalvo.categoria || '';
+            document.getElementById('descricao').value = perfilSalvo.descricao || '';
+            document.getElementById('whatsapp').value = perfilSalvo.whatsapp || '';
+            document.getElementById('instagram').value = perfilSalvo.instagram || '';
+            document.getElementById('endereco').value = perfilSalvo.endereco || '';
+            document.getElementById('referencia').value = perfilSalvo.referencia || '';
+            document.getElementById('horario').value = perfilSalvo.horario || '';
+            document.getElementById('mapsLink').value = perfilSalvo.mapsLink || '';
+            document.getElementById('contadorDesc').textContent = (perfilSalvo.descricao || '').length;
+        }
+        
+        // ========== FOTOS (preview local) ==========
+        let fotosSelecionadas = [];
+        
+        document.getElementById('inputLogo').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                document.getElementById('previewLogo').innerHTML = `<img src="${ev.target.result}" class="w-full h-full object-cover">`;
+            };
+            reader.readAsDataURL(file);
+        });
+        
+        document.getElementById('inputFotos').addEventListener('change', (e) => {
+            const files = Array.from(e.target.files).slice(0, 5);
+            fotosSelecionadas = files;
+            const galeria = document.getElementById('galeriaPreview');
+            galeria.innerHTML = '';
+            
+            files.forEach(file => {
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    const div = document.createElement('div');
+                    div.className = 'aspect-square rounded-xl overflow-hidden border border-gray-200';
+                    div.innerHTML = `<img src="${ev.target.result}" class="w-full h-full object-cover">`;
+                    galeria.appendChild(div);
+                };
+                reader.readAsDataURL(file);
+            });
+        });
+        
+        document.getElementById('btnSalvarFotos').addEventListener('click', () => {
+            const msg = document.getElementById('msgFotos');
+            // Depois: upload para Firebase Storage
+            msg.textContent = '✓ Fotos salvas! (demo local)';
+            msg.className = 'ml-3 text-sm text-green-600 font-medium';
+            msg.classList.remove('hidden');
+            setTimeout(() => msg.classList.add('hidden'), 3000);
+        });
+        
+        // ========== PROMOÇÕES ==========
+        let promocoes = JSON.parse(localStorage.getItem('cd_promos_' + lojista.empresaId) || '[]');
+        
+        function renderPromocoes() {
+            const lista = document.getElementById('listaPromocoes');
+            if (promocoes.length === 0) {
+                lista.innerHTML = '<p class="text-gray-400 text-sm text-center py-8">Nenhuma promoção cadastrada ainda.</p>';
+                return;
+            }
+            
+            lista.innerHTML = promocoes.map((p, i) => `
+                <div class="border border-gray-200 rounded-xl p-4 flex items-start justify-between gap-3">
+                    <div>
+                        ${p.selo ? `<span class="inline-block bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full mb-1">${p.selo}</span>` : ''}
+                        <h4 class="font-bold">${p.titulo}</h4>
+                        <p class="text-sm text-gray-600">${p.descricao || ''}</p>
+                        ${p.validade ? `<p class="text-xs text-gray-400 mt-1">Válido até ${p.validade}</p>` : ''}
+                    </div>
+                    <button onclick="removerPromo(${i})" class="text-red-400 hover:text-red-600 p-1">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            `).join('');
+        }
+        
+        window.removerPromo = (index) => {
+            if (confirm('Remover esta promoção?')) {
+                promocoes.splice(index, 1);
+                localStorage.setItem('cd_promos_' + lojista.empresaId, JSON.stringify(promocoes));
+                renderPromocoes();
+            }
+        };
+        
+        document.getElementById('btnNovaPromo').addEventListener('click', () => {
+            document.getElementById('formPromoBox').classList.remove('hidden');
+            document.getElementById('promoTitulo').value = '';
+            document.getElementById('promoDesc').value = '';
+            document.getElementById('promoValidade').value = '';
+            document.getElementById('promoSelo').value = '';
+        });
+        
+        document.getElementById('btnCancelarPromo').addEventListener('click', () => {
+            document.getElementById('formPromoBox').classList.add('hidden');
+        });
+        
+        document.getElementById('btnSalvarPromo').addEventListener('click', () => {
+            const titulo = document.getElementById('promoTitulo').value.trim();
+            if (!titulo) {
+                alert('Digite o título da promoção');
+                return;
+            }
+            
+            promocoes.push({
+                titulo,
+                descricao: document.getElementById('promoDesc').value.trim(),
+                validade: document.getElementById('promoValidade').value,
+                selo: document.getElementById('promoSelo').value.trim(),
+                criadaEm: new Date().toISOString()
+            });
+            
+            localStorage.setItem('cd_promos_' + lojista.empresaId, JSON.stringify(promocoes));
+            document.getElementById('formPromoBox').classList.add('hidden');
+            renderPromocoes();
+        });
+        
+        renderPromocoes();
+    </script>
+</body>
+</html>

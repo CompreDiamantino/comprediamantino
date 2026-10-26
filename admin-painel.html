@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="icon-192.png">
+    <title>Gestão — Compre Diamantino</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#0A2A6B',
+                        secondary: '#F5C518',
+                        accent: '#0D3B8C'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .status-ativo { background: #DCFCE7; color: #166534; }
+        .status-aviso { background: #FEF9C3; color: #854D0E; }
+        .status-vencido { background: #FEE2E2; color: #991B1B; }
+        .status-bloqueado { background: #F3F4F6; color: #4B5563; }
+        .status-pendente { background: #DBEAFE; color: #1E40AF; }
+        
+        .modal-bg {
+            background: rgba(0,0,0,0.5);
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+
+    <!-- Header -->
+    <header class="bg-primary text-white sticky top-0 z-40 shadow">
+        <div class="container mx-auto px-4">
+            <div class="flex items-center justify-between h-14">
+                <div class="flex items-center gap-2">
+                    <img src="icon-192.png" alt="Logo" class="w-8 h-8 rounded-full">
+                    <span class="font-bold">Painel de Gestão</span>
+                </div>
+                <div class="flex items-center gap-3">
+                    <a href="index.html" target="_blank" class="text-sm text-blue-200 hover:text-white hidden sm:block">
+                        <i class="fas fa-external-link-alt mr-1"></i> Ver site
+                    </a>
+                    <button id="btnSairAdmin" class="text-sm bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg">
+                        <i class="fas fa-sign-out-alt mr-1"></i> Sair
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="container mx-auto px-4 py-6 max-w-6xl">
+
+        <!-- Resumo rápido -->
+        <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
+            <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100 text-center">
+                <p class="text-2xl font-bold text-primary" id="totalLojistas">0</p>
+                <p class="text-xs text-gray-500">Total</p>
+            </div>
+            <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100 text-center">
+                <p class="text-2xl font-bold text-green-600" id="totalAtivos">0</p>
+                <p class="text-xs text-gray-500">Ativos</p>
+            </div>
+            <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100 text-center">
+                <p class="text-2xl font-bold text-yellow-600" id="totalAviso">0</p>
+                <p class="text-xs text-gray-500">Vencendo (36h)</p>
+            </div>
+            <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100 text-center">
+                <p class="text-2xl font-bold text-red-600" id="totalVencidos">0</p>
+                <p class="text-xs text-gray-500">Vencidos</p>
+            </div>
+            <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100 text-center">
+                <p class="text-2xl font-bold text-gray-500" id="totalBloqueados">0</p>
+                <p class="text-xs text-gray-500">Bloqueados</p>
+            </div>
+        </div>
+
+        <div class="mb-4 bg-amber-50 border border-amber-100 rounded-xl p-3 text-sm text-amber-900">
+            <i class="fas fa-star text-yellow-500 mr-1"></i>
+            <strong>Avaliações</strong> aparecem para o gestor e para a loja.
+            A <strong>taxa de desconto</strong> é definida só por você, na hora de renovar/marcar como pago (vale para a próxima mensalidade).
+        </div>
+
+        <div id="firebaseStatus" class="bg-gray-50 border border-gray-200 text-gray-600 rounded-xl p-3 text-sm mb-4">
+            <i class="fas fa-cloud mr-1"></i> Verificando conexão com a nuvem…
+        </div>
+
+        <!-- Filtros + Botão novo -->
+        <div class="flex flex-col sm:flex-row gap-3 mb-4 items-start sm:items-center justify-between">
+            <div class="flex gap-2 flex-wrap">
+                <button data-filtro="todos" class="filtro-btn bg-primary text-white px-3 py-1.5 rounded-lg text-sm font-medium">Todos</button>
+                <button data-filtro="ativo" class="filtro-btn bg-white text-gray-600 px-3 py-1.5 rounded-lg text-sm font-medium border">Ativos</button>
+                <button data-filtro="aviso" class="filtro-btn bg-white text-gray-600 px-3 py-1.5 rounded-lg text-sm font-medium border">Vencendo</button>
+                <button data-filtro="vencido" class="filtro-btn bg-white text-gray-600 px-3 py-1.5 rounded-lg text-sm font-medium border">Vencidos</button>
+                <button data-filtro="bloqueado" class="filtro-btn bg-white text-gray-600 px-3 py-1.5 rounded-lg text-sm font-medium border">Bloqueados</button>
+                <button data-filtro="pendente" class="filtro-btn bg-white text-gray-600 px-3 py-1.5 rounded-lg text-sm font-medium border">Pendentes</button>
+            </div>
+            <button id="btnNovoLojista" class="bg-secondary text-primary font-bold px-4 py-2 rounded-xl text-sm hover:bg-yellow-400 transition whitespace-nowrap">
+                <i class="fas fa-plus mr-1"></i> Novo lojista
+            </button>
+        </div>
+
+        <!-- Busca -->
+        <div class="mb-4">
+            <input type="text" id="buscaLojista" placeholder="Buscar por nome ou WhatsApp..."
+                class="w-full sm:w-80 border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-primary">
+        </div>
+
+        <!-- Tabela de lojistas -->
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead class="bg-gray-50 text-gray-500 text-left">
+                        <tr>
+                            <th class="px-4 py-3 font-medium">Empresa</th>
+                            <th class="px-4 py-3 font-medium">Plano</th>
+                            <th class="px-4 py-3 font-medium">Status</th>
+                            <th class="px-4 py-3 font-medium">Vencimento</th>
+                            <th class="px-4 py-3 font-medium text-right">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabelaLojistas">
+                        <!-- Preenchido via JS -->
+                    </tbody>
+                </table>
+            </div>
+            <div id="vazioMsg" class="hidden text-center py-12 text-gray-400">
+                Nenhum lojista encontrado.
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== MODAL: Marcar como Pago ========== -->
+    <div id="modalPago" class="fixed inset-0 modal-bg z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-2xl w-full max-w-md p-6 shadow-2xl">
+            <h3 class="text-lg font-bold text-primary mb-1">Marcar como Pago</h3>
+            <p class="text-sm text-gray-500 mb-5" id="modalPagoNome">Empresa</p>
+            
+            <div class="mb-4">
+                <label class="block text-sm font-medium mb-2">Duração do plano</label>
+                <div class="grid grid-cols-2 gap-2">
+                    <button type="button" data-dias="30" class="dias-btn border-2 border-primary bg-primary text-white rounded-xl py-3 font-bold text-sm">30 dias</button>
+                    <button type="button" data-dias="90" class="dias-btn border-2 border-gray-200 rounded-xl py-3 font-bold text-sm hover:border-primary">90 dias</button>
+                    <button type="button" data-dias="180" class="dias-btn border-2 border-gray-200 rounded-xl py-3 font-bold text-sm hover:border-primary">180 dias</button>
+                    <button type="button" data-dias="365" class="dias-btn border-2 border-gray-200 rounded-xl py-3 font-bold text-sm hover:border-primary">1 ano</button>
+                </div>
+            </div>
+            
+            <div class="mb-5">
+                <label class="block text-sm font-medium mb-1">Ou data específica de vencimento</label>
+                <input type="date" id="dataVencimentoCustom" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-primary">
+            </div>
+            
+            <div class="mb-5">
+                <label class="block text-sm font-medium mb-1">Desconto na mensalidade (só gestão)</label>
+                <p id="infoEstrelasDesconto" class="text-xs text-amber-800 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2 mb-2">
+                    Contador de estrelas: carregando…
+                </p>
+                <select id="descontoProxima" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-primary">
+                    <option value="0">0% — sem desconto</option>
+                    <option value="100">100% — 15.000+ estrelas (mensalidade grátis)</option>
+                </select>
+                <p class="text-xs text-gray-400 mt-1">Sugestão automática pelo contador. Você pode alterar. Vale na próxima mensalidade (já na semana grátis).</p>
+            </div>
+            <div class="flex gap-3">
+                <button id="btnConfirmarPago" class="flex-1 bg-green-600 text-white font-bold py-3 rounded-xl hover:bg-green-700 transition">
+                    <i class="fas fa-check mr-1"></i> Confirmar pagamento
+                </button>
+                <button id="btnFecharModalPago" class="px-5 bg-gray-100 text-gray-600 font-medium py-3 rounded-xl hover:bg-gray-200 transition">
+                    Cancelar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== MODAL: Novo / Editar Lojista ========== -->
+    <div id="modalLojista" class="fixed inset-0 modal-bg z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-2xl w-full max-w-lg p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
+            <h3 class="text-lg font-bold text-primary mb-5" id="tituloModalLojista">Novo lojista</h3>
+            
+            <form id="formLojista" class="space-y-4">
+                <input type="hidden" id="editId">
+                
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Nome fantasia *</label>
+                        <input type="text" id="ljNome" required class="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-primary">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">WhatsApp *</label>
+                        <input type="tel" id="ljWhatsapp" required class="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-primary" placeholder="65999999999">
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-1">E-mail (login)</label>
+                        <input type="email" id="ljEmail" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-primary">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Plano</label>
+                        <select id="ljPlano" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-primary">
+                            <option value="basico">Básico</option>
+                            <option value="destaque">Destaque</option>
+                            <option value="premium">Premium</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium mb-1">Categoria</label>
+                    <select id="ljCategoria" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-primary">
+                        <option value="alimentacao">Alimentação</option>
+                        <option value="moda">Moda e Vestuário</option>
+                        <option value="casa">Casa e Construção</option>
+                        <option value="automotivo">Automotivo</option>
+                        <option value="saude">Saúde e Beleza</option>
+                        <option value="servicos">Serviços</option>
+                        <option value="agro">Agro e Pet</option>
+                        <option value="outros">Outros</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium mb-1">Localização (link do Maps ou lat, lng)</label>
+                    <input type="text" id="ljMaps" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-primary" placeholder="Cole link do Google Maps ou -14.4085, -56.4900">
+                    <p class="text-xs text-gray-400 mt-1">Ao salvar/ativar, o pin já aparece no mapa geral</p>
+                </div>
+                
+                <div class="flex gap-3 pt-2">
+                    <button type="submit" class="flex-1 bg-primary text-white font-bold py-3 rounded-xl hover:bg-accent transition">
+                        Salvar
+                    </button>
+                    <button type="button" id="btnFecharModalLojista" class="px-5 bg-gray-100 text-gray-600 font-medium py-3 rounded-xl hover:bg-gray-200 transition">
+                        Cancelar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // ========== PROTEÇÃO ==========
+        const admin = JSON.parse(localStorage.getItem('cd_admin') || 'null');
+        const gestor = JSON.parse(localStorage.getItem('cd_gestor') || 'null');
+        if ((!admin || !admin.logado) && (!gestor || !gestor.logado)) {
+            window.location.href = 'gestor-login.html';
+        }
+        
+        document.getElementById('btnSairAdmin').addEventListener('click', () => {
+            localStorage.removeItem('cd_admin');
+            // Se veio pelo gestor, volta pro hub
+            if (gestor && gestor.logado) {
+                window.location.href = 'gestor-hub.html';
+            } else {
+                window.location.href = 'admin-login.html';
+            }
+        });
+
+        // ========== DADOS (demo local — depois Firebase) ==========
+        const STORAGE_KEY = 'cd_lojistas_admin';
+        
+        // Dados iniciais de exemplo
+        function getLojistas() {
+            let dados = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
+            if (!dados) {
+                // Seed inicial
+                const agora = new Date();
+                dados = [
+                    {
+                        id: 'lj001',
+                        nome: 'Padaria do Centro',
+                        whatsapp: '65999991111',
+                        email: 'padaria@email.com',
+                        plano: 'premium',
+                        categoria: 'alimentacao',
+                        status: 'ativo',
+                        vencimento: new Date(agora.getTime() + 20 * 24 * 60 * 60 * 1000).toISOString(), // +20 dias
+                        criadoEm: agora.toISOString()
+                    },
+                    {
+                        id: 'lj002',
+                        nome: 'Auto Peças Diamantino',
+                        whatsapp: '65999992222',
+                        email: 'autopecas@email.com',
+                        plano: 'destaque',
+                        categoria: 'automotivo',
+                        status: 'aviso',
+                        vencimento: new Date(agora.getTime() + 1 * 24 * 60 * 60 * 1000).toISOString(), // +1 dia (menos de 36h)
+                        criadoEm: agora.toISOString()
+                    },
+                    {
+                        id: 'lj003',
+                        nome: 'Beleza & Estilo',
+                        whatsapp: '65999993333',
+                        email: 'beleza@email.com',
+                        plano: 'basico',
+                        categoria: 'saude',
+                        status: 'vencido',
+                        vencimento: new Date(agora.getTime() - 5 * 24 * 60 * 60 * 1000).toISOString(), // -5 dias
+                        criadoEm: agora.toISOString()
+                    },
+                    {
+                        id: 'lj004',
+                        nome: 'Casa Construir',
+                        whatsapp: '65999994444',
+                        email: 'casa@email.com',
+                        plano: 'destaque',
+                        categoria: 'casa',
+                        status: 'bloqueado',
+                        vencimento: null,
+                        criadoEm: agora.toISOString()
+                    },
+                    {
+                        id: 'lj005',
+                        nome: 'Pet Shop Amigo',
+                        whatsapp: '65999995555',
+                        email: 'pet@email.com',
+                        plano: 'basico',
+                        categoria: 'agro',
+                        status: 'pendente',
+                        vencimento: null,
+                        criadoEm: agora.toISOString()
+                    }
+                ];
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(dados));
+            }
+            return dados;
+        }
+        
+        function salvarLojistas(lista) {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(lista));
+        }
+        
+        // Atualiza status automático com base na data de vencimento
+        function atualizarStatusAutomatico(lista) {
+            const agora = new Date();
+            const limiteAviso = 36 * 60 * 60 * 1000; // 36 horas em ms
+            
+            lista.forEach(lj => {
+                if (lj.status === 'bloqueado' || lj.status === 'pendente') return;
+                
+                if (!lj.vencimento) {
+                    lj.status = 'vencido';
+                    return;
+                }
+                
+                const venc = new Date(lj.vencimento);
+                const diff = venc - agora;
+                
+                if (diff <= 0) {
+                    lj.status = 'vencido';
+                } else if (diff <= limiteAviso) {
+                    lj.status = 'aviso';
+                } else {
+                    lj.status = 'ativo';
+                }
+            });
+            
+            return lista;
+        }
+        
+        // ========== RENDER ==========
+        let filtroAtual = 'todos';
+        let termoBusca = '';
+        
+        function renderTabela() {
+            let lista = atualizarStatusAutomatico(getLojistas());
+            salvarLojistas(lista);
+            
+            // Contadores
+            document.getElementById('totalLojistas').textContent = lista.length;
+            document.getElementById('totalAtivos').textContent = lista.filter(l => l.status === 'ativo').length;
+            document.getElementById('totalAviso').textContent = lista.filter(l => l.status === 'aviso').length;
+            document.getElementById('totalVencidos').textContent = lista.filter(l => l.status === 'vencido').length;
+            document.getElementById('totalBloqueados').textContent = lista.filter(l => l.status === 'bloqueado').length;
+            
+            // Filtro
+            if (filtroAtual !== 'todos') {
+                lista = lista.filter(l => l.status === filtroAtual);
+            }
+            
+            // Busca
+            if (termoBusca) {
+                const t = termoBusca.toLowerCase();
+                lista = lista.filter(l => 
+                    l.nome.toLowerCase().includes(t) || 
+                    (l.whatsapp || '').includes(t) ||
+                    (l.email || '').toLowerCase().includes(t)
+                );
+            }
+            
+            const tbody = document.getElementById('tabelaLojistas');
+            const vazio = document.getElementById('vazioMsg');
+            
+            if (lista.length === 0) {
+                tbody.innerHTML = '';
+                vazio.classList.remove('hidden');
+                return;
+            }
+            
+            vazio.classList.add('hidden');
+            
+            tbody.innerHTML = lista.map(lj => {
+                const statusLabel = {
+                    ativo: 'Ativo',
+                    aviso: 'Vencendo',
+                    vencido: 'Vencido',
+                    bloqueado: 'Bloqueado',
+                    pendente: 'Pendente'
+                };
+                
+                const vencTxt = lj.vencimento 
+                    ? new Date(lj.vencimento).toLocaleDateString('pt-BR')
+                    : '—';
+                
+                return `
+                <tr class="border-t border-gray-100 hover:bg-gray-50">
+                    <td class="px-4 py-3">
+                        <p class="font-semibold text-gray-900">${lj.nome}</p>
+                        <p class="text-xs text-gray-400">${lj.whatsapp || ''} · ${lj.plano}</p>
+                    </td>
+                    <td class="px-4 py-3 capitalize">${lj.plano}</td>
+                    <td class="px-4 py-3">
+                        <span class="status-${lj.status} text-xs font-bold px-2.5 py-1 rounded-full">
+                            ${statusLabel[lj.status]}
+                        </span>
+                    </td>
+                    <td class="px-4 py-3 text-gray-600">${vencTxt}</td>
+                    <td class="px-4 py-3 text-right">
+                        <div class="flex gap-1 justify-end flex-wrap">
+                            ${lj.status !== 'ativo' && lj.status !== 'aviso' ? `
+                                <button onclick="abrirModalPago('${lj.id}')" class="text-xs bg-green-100 text-green-700 font-medium px-2.5 py-1 rounded-lg hover:bg-green-200" title="Marcar como pago">
+                                    <i class="fas fa-check"></i> Pago
+                                </button>
+                            ` : `
+                                <button onclick="abrirModalPago('${lj.id}')" class="text-xs bg-blue-100 text-blue-700 font-medium px-2.5 py-1 rounded-lg hover:bg-blue-200" title="Renovar">
+                                    <i class="fas fa-sync"></i> Renovar
+                                </button>
+                            `}
+                            
+                            ${lj.status === 'bloqueado' ? `
+                                <button onclick="desbloquear('${lj.id}')" class="text-xs bg-gray-100 text-gray-600 font-medium px-2.5 py-1 rounded-lg hover:bg-gray-200">
+                                    <i class="fas fa-unlock"></i>
+                                </button>
+                            ` : `
+                                <button onclick="bloquear('${lj.id}')" class="text-xs bg-red-50 text-red-600 font-medium px-2.5 py-1 rounded-lg hover:bg-red-100" title="Bloquear">
+                                    <i class="fas fa-lock"></i>
+                                </button>
+                            `}
+                            
+                            <button onclick="editarLojista('${lj.id}')" class="text-xs bg-gray-100 text-gray-600 font-medium px-2.5 py-1 rounded-lg hover:bg-gray-200" title="Editar">
+                                <i class="fas fa-pen"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                `;
+            }).join('');
+        }
+        
+        // ========== FILTROS ==========
+        document.querySelectorAll('.filtro-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.filtro-btn').forEach(b => {
+                    b.classList.remove('bg-primary', 'text-white');
+                    b.classList.add('bg-white', 'text-gray-600', 'border');
+                });
+                btn.classList.add('bg-primary', 'text-white');
+                btn.classList.remove('bg-white', 'text-gray-600', 'border');
+                filtroAtual = btn.dataset.filtro;
+                renderTabela();
+            });
+        });
+        
+        document.getElementById('buscaLojista').addEventListener('input', (e) => {
+            termoBusca = e.target.value.trim();
+            renderTabela();
+        });
+        
+        // ========== MODAL PAGO ==========
+        let lojistaPagoId = null;
+        let diasSelecionados = 30;
+        
+        window.abrirModalPago = (id) => {
+            lojistaPagoId = id;
+            const lista = getLojistas();
+            const lj = lista.find(l => l.id === id);
+            document.getElementById('modalPagoNome').textContent = lj ? lj.nome : '';
+            document.getElementById('dataVencimentoCustom').value = '';
+            diasSelecionados = 30;
+            
+            document.querySelectorAll('.dias-btn').forEach(b => {
+                b.classList.remove('border-primary', 'bg-primary', 'text-white');
+                b.classList.add('border-gray-200');
+            });
+            document.querySelector('.dias-btn[data-dias="30"]').classList.add('border-primary', 'bg-primary', 'text-white');
+            document.querySelector('.dias-btn[data-dias="30"]').classList.remove('border-gray-200');
+            
+            // Contador de estrelas → sugere % (só gestor)
+            (function() {
+                const info = document.getElementById('infoEstrelasDesconto');
+                const sel = document.getElementById('descontoProxima');
+                let total = 0;
+                try {
+                    // Avaliações locais por empresa (device_id_empresaId) — soma notas desta empresa
+                    const raw = JSON.parse(localStorage.getItem('cd_avaliacoes') || '{}');
+                    Object.keys(raw).forEach(function(k) {
+                        if (k.indexOf('_' + id) !== -1 || (raw[k].empresaId === id)) {
+                            total += parseInt(raw[k].nota, 10) || 0;
+                        }
+                    });
+                } catch (e) {}
+                // Também pode vir de cd_estrelas_empresa_{id}
+                try {
+                    const extra = parseInt(localStorage.getItem('cd_estrelas_empresa_' + id) || '0', 10);
+                    if (extra > total) total = extra;
+                } catch (e) {}
+
+                let pct = 0;
+                let txt = total + ' estrelas acumuladas → ';
+                if (window.DescontosEstrelas) {
+                    const r = DescontosEstrelas.calcularDesconto(total);
+                    pct = r.pct;
+                    txt = DescontosEstrelas.resumoTexto(total);
+                } else {
+                    pct = total >= 15000 ? 100 : 0;
+                    txt += pct === 100 ? '100% (15.000+ estrelas)' : 'faltam ' + (15000 - total) + ' para 100%';
+                }
+                if (info) info.textContent = txt;
+                if (sel) sel.value = String(pct);
+            })();
+
+            document.getElementById('modalPago').classList.remove('hidden');
+            document.getElementById('modalPago').classList.add('flex');
+        };
+        
+        document.querySelectorAll('.dias-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.dias-btn').forEach(b => {
+                    b.classList.remove('border-primary', 'bg-primary', 'text-white');
+                    b.classList.add('border-gray-200');
+                });
+                btn.classList.add('border-primary', 'bg-primary', 'text-white');
+                btn.classList.remove('border-gray-200');
+                diasSelecionados = parseInt(btn.dataset.dias);
+                document.getElementById('dataVencimentoCustom').value = '';
+            });
+        });
+        
+        document.getElementById('btnFecharModalPago').addEventListener('click', () => {
+            document.getElementById('modalPago').classList.add('hidden');
+            document.getElementById('modalPago').classList.remove('flex');
+        });
+        
+        document.getElementById('btnConfirmarPago').addEventListener('click', () => {
+            const lista = getLojistas();
+            const idx = lista.findIndex(l => l.id === lojistaPagoId);
+            if (idx === -1) return;
+            
+            let vencimento;
+            const custom = document.getElementById('dataVencimentoCustom').value;
+            
+            if (custom) {
+                vencimento = new Date(custom + 'T23:59:59').toISOString();
+            } else {
+                const agora = new Date();
+                // Se já tinha vencimento futuro, renova a partir dele; senão a partir de agora
+                let base = agora;
+                if (lista[idx].vencimento) {
+                    const antigo = new Date(lista[idx].vencimento);
+                    if (antigo > agora) base = antigo;
+                }
+                vencimento = new Date(base.getTime() + diasSelecionados * 24 * 60 * 60 * 1000).toISOString();
+            }
+            
+            const descEl = document.getElementById('descontoProxima');
+            const desconto = descEl ? parseInt(descEl.value, 10) || 0 : 0;
+            lista[idx].vencimento = vencimento;
+            lista[idx].status = 'ativo';
+            lista[idx].pagoEm = new Date().toISOString();
+            lista[idx].descontoAplicado = desconto;
+            lista[idx].descontoEm = new Date().toISOString();
+            
+            salvarLojistas(lista);
+
+            // Libera no mapa imediatamente (como célula ativa no IBN)
+            if (window.EmpresasDados) {
+                const lj = lista[idx];
+                EmpresasDados.upsertEmpresa({
+                    id: lj.id,
+                    nome: lj.nome,
+                    categoria: lj.categoria,
+                    plano: lj.plano,
+                    status: 'ativo',
+                    whatsapp: lj.whatsapp,
+                    endereco: lj.endereco || '',
+                    mapsLink: lj.mapsLink || ''
+                });
+            }
+            
+            document.getElementById('modalPago').classList.add('hidden');
+            document.getElementById('modalPago').classList.remove('flex');
+            renderTabela();
+            
+            alert(`Pagamento confirmado!\n${lista[idx].nome} está ATIVO até ${new Date(vencimento).toLocaleDateString('pt-BR')}`);
+        });
+        
+        // ========== BLOQUEAR / DESBLOQUEAR ==========
+        window.bloquear = (id) => {
+            if (!confirm('Bloquear este lojista? Os posts dele sumirão do site.')) return;
+            const lista = getLojistas();
+            const idx = lista.findIndex(l => l.id === id);
+            if (idx === -1) return;
+            lista[idx].status = 'bloqueado';
+            salvarLojistas(lista);
+            if (window.EmpresasDados) EmpresasDados.atualizarStatus(id, 'bloqueado');
+            renderTabela();
+        };
+        
+        window.desbloquear = (id) => {
+            const lista = getLojistas();
+            const idx = lista.findIndex(l => l.id === id);
+            if (idx === -1) return;
+            // Volta para o status baseado na data
+            lista[idx].status = 'ativo';
+            salvarLojistas(lista);
+            renderTabela();
+        };
+        
+        // ========== NOVO / EDITAR LOJISTA ==========
+        document.getElementById('btnNovoLojista').addEventListener('click', () => {
+            document.getElementById('tituloModalLojista').textContent = 'Novo lojista';
+            document.getElementById('editId').value = '';
+            document.getElementById('formLojista').reset();
+            document.getElementById('modalLojista').classList.remove('hidden');
+            document.getElementById('modalLojista').classList.add('flex');
+        });
+        
+        document.getElementById('btnFecharModalLojista').addEventListener('click', () => {
+            document.getElementById('modalLojista').classList.add('hidden');
+            document.getElementById('modalLojista').classList.remove('flex');
+        });
+        
+        window.editarLojista = (id) => {
+            const lista = getLojistas();
+            const lj = lista.find(l => l.id === id);
+            if (!lj) return;
+            
+            document.getElementById('tituloModalLojista').textContent = 'Editar lojista';
+            document.getElementById('editId').value = lj.id;
+            document.getElementById('ljNome').value = lj.nome;
+            document.getElementById('ljWhatsapp').value = lj.whatsapp || '';
+            document.getElementById('ljEmail').value = lj.email || '';
+            document.getElementById('ljPlano').value = lj.plano || 'basico';
+            document.getElementById('ljCategoria').value = lj.categoria || 'outros';
+            if (document.getElementById('ljMaps')) document.getElementById('ljMaps').value = lj.mapsLink || '';
+            
+            document.getElementById('modalLojista').classList.remove('hidden');
+            document.getElementById('modalLojista').classList.add('flex');
+        };
+        
+        document.getElementById('formLojista').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const lista = getLojistas();
+            const editId = document.getElementById('editId').value;
+            
+            const dados = {
+                nome: document.getElementById('ljNome').value.trim(),
+                whatsapp: document.getElementById('ljWhatsapp').value.trim(),
+                email: document.getElementById('ljEmail').value.trim(),
+                plano: document.getElementById('ljPlano').value,
+                categoria: document.getElementById('ljCategoria').value
+            };
+            
+            const mapsLink = (document.getElementById('ljMaps') || {}).value || '';
+            dados.mapsLink = mapsLink.trim();
+
+            let idFinal = editId;
+            if (editId) {
+                const idx = lista.findIndex(l => l.id === editId);
+                if (idx !== -1) {
+                    lista[idx] = { ...lista[idx], ...dados };
+                }
+            } else {
+                idFinal = 'lj' + Date.now();
+                lista.push({
+                    id: idFinal,
+                    ...dados,
+                    status: 'pendente',
+                    vencimento: null,
+                    criadoEm: new Date().toISOString()
+                });
+            }
+            
+            salvarLojistas(lista);
+
+            // Espelho no mapa (modelo células IBN) — só entra no mapa se ativo/aviso
+            if (window.EmpresasDados) {
+                const row = lista.find(l => l.id === idFinal) || dados;
+                EmpresasDados.upsertEmpresa({
+                    id: idFinal,
+                    nome: row.nome,
+                    categoria: row.categoria,
+                    plano: row.plano,
+                    status: row.status || 'pendente',
+                    whatsapp: row.whatsapp,
+                    endereco: row.endereco || '',
+                    mapsLink: mapsLink
+                });
+            }
+            document.getElementById('modalLojista').classList.add('hidden');
+            document.getElementById('modalLojista').classList.remove('flex');
+            renderTabela();
+        });
+        
+        // Inicializa
+        renderTabela();
+    </script>
+    <script src="empresas-dados.js"></script>
+    <script src="descontos-estrelas.js"></script>
+
+    <!-- Firebase (CDN compat) -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+    <script src="firebase-config.js"></script>
+    <script src="firebase-init.js"></script>
+
+</body>
+</html>

@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="icon-192.png">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0A2A6B">
+    <title>Categoria — Compre Diamantino</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: { primary: '#0A2A6B', secondary: '#F5C518', accent: '#0D3B8C' }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <header class="bg-primary text-white sticky top-0 z-40 shadow">
+        <div class="container mx-auto px-4 flex items-center justify-between h-14">
+            <a href="index.html" class="flex items-center gap-2">
+                <img src="icon-192.png" alt="" class="w-8 h-8 rounded-full">
+                <span class="font-bold text-sm">Compre Diamantino</span>
+            </a>
+            <a href="index.html" class="text-sm hover:text-secondary">← Início</a>
+        </div>
+    </header>
+
+    <div class="container mx-auto px-4 py-8 max-w-5xl">
+        <h1 id="tituloCat" class="text-2xl font-bold text-primary mb-1">Categoria</h1>
+        <p id="introCat" class="text-gray-500 text-sm mb-6">Empresas ativas em Diamantino-MT neste setor.</p>
+
+        <div id="lista" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <p class="text-gray-400 col-span-full text-center py-8">Carregando…</p>
+        </div>
+    </div>
+
+    <script src="empresas-dados.js"></script>
+    <script>
+        const NOMES = {
+            alimentacao: { t: 'Alimentação em Diamantino', d: 'Padarias, restaurantes, lanchonetes e afins.' },
+            moda: { t: 'Moda e Vestuário em Diamantino', d: 'Roupas, calçados e acessórios.' },
+            casa: { t: 'Casa e Construção em Diamantino', d: 'Materiais, móveis e reformas.' },
+            automotivo: { t: 'Automotivo em Diamantino', d: 'Oficinas, peças e serviços automotivos.' },
+            saude: { t: 'Saúde e Beleza em Diamantino', d: 'Farmácias, clínicas, salões e estética.' },
+            servicos: { t: 'Serviços em Diamantino', d: 'Prestadores de serviço da cidade.' },
+            agro: { t: 'Agro e Pet em Diamantino', d: 'Pet shops, agropecuária e afins.' },
+            outros: { t: 'Outros em Diamantino', d: 'Demais estabelecimentos.' }
+        };
+
+        const params = new URLSearchParams(location.search);
+        const cat = (params.get('cat') || '').toLowerCase() || 'outros';
+        const meta = NOMES[cat] || { t: 'Comércio em Diamantino', d: 'Empresas deste setor.' };
+        document.getElementById('tituloCat').textContent = meta.t;
+        document.getElementById('introCat').textContent = meta.d;
+        document.title = meta.t + ' — Compre Diamantino';
+
+        function render() {
+            const box = document.getElementById('lista');
+            let lista = [];
+            if (window.EmpresasDados) {
+                lista = EmpresasDados.seedSeVazio().filter(function (e) {
+                    return (e.status === 'ativo' || e.status === 'aviso') &&
+                        (e.categoria === cat) &&
+                        !e.publico;
+                });
+            }
+            if (!lista.length) {
+                box.innerHTML = '<div class="col-span-full text-center py-12">' +
+                    '<p class="text-gray-500 mb-2">Ainda não há empresas ativas nesta categoria.</p>' +
+                    '<p class="text-sm text-gray-400 mb-4">Quando o gestor aprovar um cadastro deste ramo, ele aparece aqui.</p>' +
+                    '<a href="cadastro-lojista.html" class="inline-block bg-primary text-white font-bold px-5 py-2.5 rounded-xl">Cadastrar meu negócio</a>' +
+                    '</div>';
+                return;
+            }
+            box.innerHTML = lista.map(function (e) {
+                const wa = e.whatsapp
+                    ? 'https://wa.me/55' + String(e.whatsapp).replace(/\\D/g, '')
+                    : null;
+                return '<div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex flex-col">' +
+                    '<h3 class="font-bold text-gray-900 text-lg mb-1">' + e.nome + '</h3>' +
+                    '<p class="text-xs text-gray-400 mb-3">' + (e.endereco || 'Diamantino-MT') + '</p>' +
+                    '<div class="mt-auto flex gap-2">' +
+                    '<a href="empresa.html?id=' + encodeURIComponent(e.id) + '" class="flex-1 text-center bg-primary text-white text-sm font-bold py-2 rounded-xl">Ver perfil</a>' +
+                    (wa ? '<a href="' + wa + '" target="_blank" class="bg-green-500 text-white w-11 flex items-center justify-center rounded-xl"><i class="fab fa-whatsapp"></i></a>' : '') +
+                    '</div></div>';
+            }).join('');
+        }
+        render();
+    </script>
+</body>
+</html>

@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="icon-192.png">
+    <title>Acesso Gestor — Compre Diamantino</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#0A2A6B',
+                        secondary: '#F5C518',
+                        accent: '#0D3B8C'
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gradient-to-br from-primary to-accent min-h-screen flex items-center justify-center p-4">
+
+    <div class="w-full max-w-md">
+        <div class="text-center mb-8">
+            <img src="icon-192.png" alt="Compre Diamantino" class="w-16 h-16 mx-auto rounded-full mb-3 shadow-lg">
+            <h1 class="text-2xl font-bold text-white">Acesso Gestor</h1>
+            <p class="text-blue-200 text-sm mt-1">Entre uma vez e acesse todas as áreas</p>
+        </div>
+
+        <div class="bg-white rounded-2xl shadow-2xl p-8">
+            <form id="formGestor" class="space-y-5">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">E-mail, telefone ou usuário</label>
+                    <input type="text" id="usuario" required
+                        list="listaUltimosLogins" autocomplete="username"
+                        class="w-full border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+                        placeholder="gestor, e-mail ou telefone" value="gestor">
+                    <div id="chipsUltimosLogins" class="flex flex-wrap gap-2 mt-2"></div>
+                    </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Senha do gestor</label>
+                    <div class="relative">
+                        <input type="password" id="senhaGestor" required autofocus
+                            class="w-full border border-gray-200 rounded-xl px-4 py-3 pr-12 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+                            placeholder="••••••••">
+                        <button type="button" id="btnOlho" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <button type="submit" class="w-full bg-primary text-white font-bold py-3.5 rounded-xl hover:bg-accent transition">
+                    <i class="fas fa-unlock-alt mr-2"></i> Entrar como Gestor
+                </button>
+            </form>
+            
+            <datalist id="listaUltimosLogins"></datalist>
+            <div id="msgErro" class="hidden mt-4 text-center text-red-600 text-sm font-medium"></div>
+            
+            <div class="mt-5 text-center text-sm">
+                <a href="recuperar-senha.html" class="text-primary font-semibold hover:underline">
+                    Esqueci minha senha
+                </a>
+            </div>
+        </div>
+        
+        <p class="text-center text-blue-200 text-xs mt-6">
+            <a href="index.html" class="hover:text-white">← Voltar ao site</a>
+        </p>
+    </div>
+
+    <script src="auth-utils.js"></script>
+    <script>
+        const SENHA_GESTOR = 'gestor123';
+        
+        AuthUtils.preencherUltimosLogins('usuario', 'chipsUltimosLogins', 'listaUltimosLogins');
+        AuthUtils.setupToggleSenha('senhaGestor', 'btnOlho');
+        
+        document.getElementById('formGestor').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const usuario = document.getElementById('usuario').value.trim();
+            const senha = document.getElementById('senhaGestor').value;
+            const msg = document.getElementById('msgErro');
+            
+            if (senha === SENHA_GESTOR) {
+                AuthUtils.salvarUltimoLogin(usuario || 'gestor');
+                
+                localStorage.setItem('cd_gestor', JSON.stringify({
+                    tipo: 'gestor',
+                    nivel: 'gestor',
+                    master: true,
+                    logado: true,
+                    usuario: usuario || 'gestor',
+                    logadoEm: new Date().toISOString()
+                }));
+                
+                localStorage.setItem('cd_admin', JSON.stringify({
+                    logado: true,
+                    logadoEm: new Date().toISOString(),
+                    viaGestor: true
+                }));
+                
+                window.location.href = 'gestor-hub.html';
+            } else {
+                msg.textContent = 'Senha incorreta. Use: gestor123 (demo)';
+                msg.classList.remove('hidden');
+            }
+        });
+    </script>
+</body>
+</html>

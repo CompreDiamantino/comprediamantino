@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0A2A6B">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <link rel="icon" type="image/png" href="icon-192.png">
+    
+    <meta name="description" content="Perfil da empresa no Compre Diamantino">
+    <title>Perfil da Empresa — Compre Diamantino</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#0A2A6B',
+                        secondary: '#F5C518',
+                        accent: '#0D3B8C',
+                        light: '#F8FAFC',
+                        dark: '#0F172A'
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        .btn-whatsapp { background: #25D366; }
+        .btn-whatsapp:hover { background: #1DA851; }
+        .selo-premium { background: linear-gradient(135deg, #F5C518, #E6A800); color: #0A2A6B; }
+        .selo-destaque { background: #0A2A6B; color: white; }
+        .selo-basico { background: #64748B; color: white; }
+        
+        .whatsapp-float {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            z-index: 50;
+            animation: pulse-green 2s infinite;
+        }
+        @keyframes pulse-green {
+            0% { box-shadow: 0 0 0 0 rgba(37, 211, 102, 0.5); }
+            70% { box-shadow: 0 0 0 12px rgba(37, 211, 102, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(37, 211, 102, 0); }
+        }
+        
+        .gallery-img {
+            transition: transform 0.3s ease;
+            cursor: pointer;
+        }
+        .gallery-img:hover {
+            transform: scale(1.03);
+        }
+        
+        #mapa {
+            height: 280px;
+            border-radius: 16px;
+            width: 100%;
+        }
+    </style>
+</head>
+<body class="bg-light text-gray-800 font-sans antialiased">
+
+    <!-- Header simples -->
+    <header class="bg-primary text-white sticky top-0 z-40 shadow-lg">
+        <div class="container mx-auto px-4">
+            <div class="flex items-center justify-between h-16">
+                <a href="index.html" class="flex items-center gap-2">
+                    <img src="icon-192.png" alt="Compre Diamantino" class="w-9 h-9 rounded-full">
+                    <span class="font-bold hidden sm:block">Compre Diamantino</span>
+                </a>
+                <a href="index.html" class="text-sm hover:text-secondary transition">
+                    <i class="fas fa-arrow-left mr-1"></i> Voltar
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- ==================== CAPA / LOGO ==================== -->
+    <section class="bg-white border-b">
+        <div class="container mx-auto px-4 py-8">
+            <div class="flex flex-col md:flex-row items-center md:items-start gap-6">
+                <!-- Logo -->
+                <div class="w-28 h-28 md:w-32 md:h-32 bg-gradient-to-br from-blue-100 to-blue-50 rounded-2xl shadow-md flex items-center justify-center text-4xl font-bold text-primary flex-shrink-0">
+                    P
+                </div>
+                
+                <div class="flex-1 text-center md:text-left">
+                    <div class="flex flex-wrap items-center justify-center md:justify-start gap-2 mb-2">
+                        <h1 class="text-2xl md:text-3xl font-bold text-gray-900">Padaria do Centro</h1>
+                        <span class="selo-premium text-xs font-bold px-2.5 py-1 rounded-full">Premium</span>
+                    </div>
+                    
+                    <p class="text-gray-500 mb-3">
+                        <i class="fas fa-utensils text-orange-400 mr-1"></i> Alimentação · Padaria
+                    </p>
+                    
+                    <p class="text-gray-700 max-w-xl leading-relaxed">
+                        Pães frescos todos os dias, doces caseiros, salgados e café da manhã completo. Tradição e qualidade no centro de Diamantino desde 1998.
+                    </p>
+                    
+                    <div class="flex flex-wrap gap-3 mt-5 justify-center md:justify-start">
+                        <a href="https://wa.me/5565999999999?text=Olá! Vi o perfil da Padaria do Centro no Compre Diamantino" target="_blank" class="btn-whatsapp text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 shadow-md">
+                            <i class="fab fa-whatsapp text-xl"></i> Falar no WhatsApp
+                        </a>
+                        <a href="https://www.google.com/maps/dir/?api=1&destination=-14.4089,-56.4458" target="_blank" class="bg-primary text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 hover:bg-accent transition">
+                            <i class="fas fa-location-arrow"></i> Como chegar
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================== GALERIA ==================== -->
+    <section class="py-8 bg-gray-50">
+        <div class="container mx-auto px-4">
+            <h2 class="text-xl font-bold text-primary mb-4">
+                <i class="fas fa-images mr-2"></i> Fotos
+            </h2>
+            
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div class="gallery-img aspect-square bg-gray-200 rounded-xl overflow-hidden">
+                    <div class="w-full h-full bg-gradient-to-br from-amber-100 to-orange-100 flex items-center justify-center text-4xl">🥖</div>
+                </div>
+                <div class="gallery-img aspect-square bg-gray-200 rounded-xl overflow-hidden">
+                    <div class="w-full h-full bg-gradient-to-br from-yellow-100 to-amber-100 flex items-center justify-center text-4xl">🥐</div>
+                </div>
+                <div class="gallery-img aspect-square bg-gray-200 rounded-xl overflow-hidden">
+                    <div class="w-full h-full bg-gradient-to-br from-orange-100 to-red-100 flex items-center justify-center text-4xl">☕</div>
+                </div>
+                <div class="gallery-img aspect-square bg-gray-200 rounded-xl overflow-hidden">
+                    <div class="w-full h-full bg-gradient-to-br from-pink-100 to-rose-100 flex items-center justify-center text-4xl">🍰</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================== INFORMAÇÕES ==================== -->
+    <section class="py-8 bg-white">
+        <div class="container mx-auto px-4">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                
+                <!-- Dados de contato -->
+                <div>
+                    <h2 class="text-xl font-bold text-primary mb-5">
+                        <i class="fas fa-info-circle mr-2"></i> Informações
+                    </h2>
+                    
+                    <div class="space-y-4">
+                        <!-- Endereço -->
+                        <div class="flex gap-4 p-4 bg-gray-50 rounded-xl">
+                            <div class="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
+                                <i class="fas fa-map-marker-alt text-red-500"></i>
+                            </div>
+                            <div>
+                                <p class="font-semibold text-gray-900">Endereço</p>
+                                <p class="text-gray-600 text-sm">Rua das Flores, 123 - Centro</p>
+                                <p class="text-gray-500 text-xs mt-1">Ponto de referência: Em frente à praça</p>
+                            </div>
+                        </div>
+                        
+                        <!-- Horário -->
+                        <div class="flex gap-4 p-4 bg-gray-50 rounded-xl">
+                            <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                                <i class="fas fa-clock text-blue-500"></i>
+                            </div>
+                            <div>
+                                <p class="font-semibold text-gray-900">Horário de funcionamento</p>
+                                <p class="text-gray-600 text-sm">Seg a Sáb: 06:00 – 20:00</p>
+                                <p class="text-gray-600 text-sm">Domingo: 07:00 – 12:00</p>
+                            </div>
+                        </div>
+                        
+                        <!-- WhatsApp -->
+                        <div class="flex gap-4 p-4 bg-gray-50 rounded-xl">
+                            <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
+                                <i class="fab fa-whatsapp text-green-500"></i>
+                            </div>
+                            <div>
+                                <p class="font-semibold text-gray-900">WhatsApp</p>
+                                <a href="https://wa.me/5565999999999" class="text-green-600 text-sm font-medium hover:underline">(65) 99999-9999</a>
+                            </div>
+                        </div>
+                        
+                        <!-- Instagram -->
+                        <div class="flex gap-4 p-4 bg-gray-50 rounded-xl">
+                            <div class="w-10 h-10 bg-pink-100 rounded-full flex items-center justify-center flex-shrink-0">
+                                <i class="fab fa-instagram text-pink-500"></i>
+                            </div>
+                            <div>
+                                <p class="font-semibold text-gray-900">Instagram</p>
+                                <a href="#" class="text-pink-600 text-sm font-medium hover:underline">@padariadocentro</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Mapa -->
+                <div>
+                    <h2 class="text-xl font-bold text-primary mb-5">
+                        <i class="fas fa-map mr-2"></i> Localização
+                    </h2>
+                    
+                    <!-- Google Maps (JavaScript API) -->
+                    <div id="mapa" class="bg-gray-200 relative overflow-hidden rounded-2xl" style="height:280px;width:100%;"></div>
+                    
+                    <a href="https://www.google.com/maps/dir/?api=1&destination=-14.4089,-56.4458" target="_blank" class="mt-3 inline-flex items-center gap-2 text-primary font-semibold text-sm hover:underline">
+                        <i class="fas fa-external-link-alt"></i> Abrir no Google Maps
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================== AVALIAÇÕES ==================== -->
+    <section class="py-8 bg-white border-t">
+        <div class="container mx-auto px-4 max-w-xl">
+            <h2 class="text-xl font-bold text-primary mb-4">
+                <i class="fas fa-star text-yellow-400 mr-2"></i> Avaliações
+            </h2>
+            
+            <!-- Média (exemplo) -->
+            <div class="flex items-center gap-3 mb-6 p-4 bg-yellow-50 rounded-xl">
+                <span class="text-3xl font-bold text-yellow-500">4.5</span>
+                <div>
+                    <div class="flex gap-0.5 text-yellow-400">
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star-half-alt"></i>
+                    </div>
+                    <p class="text-sm text-gray-500">12 avaliações</p>
+                </div>
+            </div>
+            
+            <!-- Formulário de avaliação -->
+            <div id="boxAvaliacao"></div>
+        </div>
+    </section>
+
+    <!-- ==================== EMPRESAS DA MESMA CATEGORIA ==================== -->
+    <section class="py-10 bg-gray-50 border-t">
+        <div class="container mx-auto px-4">
+            <h2 class="text-xl font-bold text-primary mb-6">Outras em Alimentação</h2>
+            
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <a href="empresa.html?id=5" class="bg-white rounded-xl p-4 flex items-center gap-4 shadow-sm hover:shadow-md transition border border-gray-100">
+                    <div class="w-14 h-14 bg-orange-100 rounded-xl flex items-center justify-center text-xl font-bold text-orange-600">R</div>
+                    <div>
+                        <h3 class="font-semibold">Restaurante do Zezito</h3>
+                        <p class="text-xs text-gray-500">Alimentação</p>
+                    </div>
+                </a>
+                <a href="empresa.html?id=6" class="bg-white rounded-xl p-4 flex items-center gap-4 shadow-sm hover:shadow-md transition border border-gray-100">
+                    <div class="w-14 h-14 bg-yellow-100 rounded-xl flex items-center justify-center text-xl font-bold text-yellow-600">L</div>
+                    <div>
+                        <h3 class="font-semibold">Lanchonete Central</h3>
+                        <p class="text-xs text-gray-500">Alimentação</p>
+                    </div>
+                </a>
+                <a href="empresa.html?id=7" class="bg-white rounded-xl p-4 flex items-center gap-4 shadow-sm hover:shadow-md transition border border-gray-100">
+                    <div class="w-14 h-14 bg-red-100 rounded-xl flex items-center justify-center text-xl font-bold text-red-600">C</div>
+                    <div>
+                        <h3 class="font-semibold">Casa do Pastel</h3>
+                        <p class="text-xs text-gray-500">Alimentação</p>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Rodapé mínimo -->
+    <footer class="bg-dark text-gray-400 py-6 text-center text-sm">
+        <p>© 2026 Compre Diamantino · <a href="index.html" class="hover:text-secondary">Voltar ao início</a></p>
+    </footer>
+
+    <!-- WhatsApp flutuante -->
+    <a href="https://wa.me/5565999999999?text=Olá! Vi o perfil da Padaria do Centro no Compre Diamantino" target="_blank" class="whatsapp-float bg-green-500 text-white w-14 h-14 rounded-full flex items-center justify-center shadow-lg">
+        <i class="fab fa-whatsapp text-3xl"></i>
+    </a>
+
+    <!-- Sistema de Avaliações -->
+    <script src="avaliacoes.js"></script>
+    <script>
+        // ID da empresa (depois vem da URL ou Firebase)
+        const empresaId = new URLSearchParams(window.location.search).get('id') || '1';
+        
+        // Renderiza o formulário de avaliação
+        document.addEventListener('DOMContentLoaded', () => {
+            if (window.Avaliacoes) {
+                Avaliacoes.renderEstrelasAvaliacao('boxAvaliacao', empresaId);
+            }
+        });
+    </script>
+
+
+    <!-- Google Maps API - Compre Diamantino -->
+    <script>
+        // Coordenadas exemplo: Centro de Diamantino-MT
+        // Depois vem do Firebase (lat/lng de cada empresa)
+        const EMPRESA_LAT = -14.4089;
+        const EMPRESA_LNG = -56.4458;
+        const EMPRESA_NOME = 'Padaria do Centro';
+
+        function initMapaEmpresa() {
+            const el = document.getElementById('mapa');
+            if (!el || typeof google === 'undefined') return;
+
+            const pos = { lat: EMPRESA_LAT, lng: EMPRESA_LNG };
+            const map = new google.maps.Map(el, {
+                zoom: 16,
+                center: pos,
+                mapTypeControl: true,
+                streetViewControl: false,
+                fullscreenControl: true
+            });
+
+            new google.maps.Marker({
+                position: pos,
+                map: map,
+                title: EMPRESA_NOME
+            });
+        }
+    </script>
+    <script async defer
+        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAvYuOn7kclHGS5eGkdBO81EJ6J2FOTf3A&callback=initMapaEmpresa&language=pt-BR">
+    </script>
+
+</body>
+</html>

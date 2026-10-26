@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="icon-192.png">
+    <title>Cadastrar meu negócio — Compre Diamantino</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: { primary: '#0A2A6B', secondary: '#F5C518', accent: '#0D3B8C' }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <header class="bg-primary text-white">
+        <div class="container mx-auto px-4 h-14 flex items-center justify-between">
+            <a href="index.html" class="flex items-center gap-2">
+                <img src="icon-192.png" alt="" class="w-8 h-8 rounded-full">
+                <span class="font-bold text-sm">Compre Diamantino</span>
+            </a>
+            <a href="index.html" class="text-sm hover:text-secondary">← Voltar</a>
+        </div>
+    </header>
+
+    <div class="container mx-auto px-4 py-8 max-w-lg">
+        <h1 class="text-2xl font-bold text-primary text-center mb-1">Cadastrar meu negócio</h1>
+        <p class="text-center text-gray-500 text-sm mb-6">Somente empresas de <strong>Diamantino-MT</strong></p>
+
+        <!-- Steps indicator -->
+        <div class="flex justify-between mb-8 text-xs font-bold">
+            <span id="s1" class="text-primary">1. Dados</span>
+            <span id="s2" class="text-gray-300">2. Atividade</span>
+            <span id="s3" class="text-gray-300">3. Plano</span>
+            <span id="s4" class="text-gray-300">4. Enviar</span>
+        </div>
+
+        <!-- STEP 1 -->
+        <div id="step1" class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-4">
+            <h2 class="font-bold text-primary">Dados do responsável e da loja</h2>
+            <div>
+                <label class="block text-sm font-medium mb-1">Seu nome *</label>
+                <input id="nomeResp" type="text" required class="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-primary" placeholder="Nome completo">
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1">WhatsApp *</label>
+                <input id="whatsapp" type="tel" required class="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-primary" placeholder="65 99999-9999">
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1">E-mail</label>
+                <input id="email" type="email" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-primary" placeholder="opcional">
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1">Nome do estabelecimento *</label>
+                <input id="nomeLoja" type="text" required class="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-primary" placeholder="Como aparece no portal">
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1">Endereço em Diamantino *</label>
+                <input id="endereco" type="text" required class="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-primary" placeholder="Rua, número, bairro">
+            </div>
+            <p class="text-xs text-gray-400">Cidade fixa: Diamantino-MT (outras cidades não são aceitas)</p>
+            <button type="button" onclick="irPasso(2)" class="w-full bg-primary text-white font-bold py-3 rounded-xl hover:bg-accent transition">Continuar</button>
+        </div>
+
+        <!-- STEP 2 -->
+        <div id="step2" class="hidden bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-4">
+            <h2 class="font-bold text-primary">Ramo de atividade</h2>
+            <p class="text-sm text-gray-500">Escolha a categoria para aparecer no setor certo do portal.</p>
+            <div class="grid grid-cols-2 gap-2" id="cats">
+                <button type="button" data-cat="alimentacao" class="cat-btn border border-gray-200 rounded-xl p-3 text-sm font-medium hover:border-primary">Alimentação</button>
+                <button type="button" data-cat="moda" class="cat-btn border border-gray-200 rounded-xl p-3 text-sm font-medium hover:border-primary">Moda e Vestuário</button>
+                <button type="button" data-cat="casa" class="cat-btn border border-gray-200 rounded-xl p-3 text-sm font-medium hover:border-primary">Casa e Construção</button>
+                <button type="button" data-cat="automotivo" class="cat-btn border border-gray-200 rounded-xl p-3 text-sm font-medium hover:border-primary">Automotivo</button>
+                <button type="button" data-cat="saude" class="cat-btn border border-gray-200 rounded-xl p-3 text-sm font-medium hover:border-primary">Saúde e Beleza</button>
+                <button type="button" data-cat="servicos" class="cat-btn border border-gray-200 rounded-xl p-3 text-sm font-medium hover:border-primary">Serviços</button>
+                <button type="button" data-cat="agro" class="cat-btn border border-gray-200 rounded-xl p-3 text-sm font-medium hover:border-primary">Agro e Pet</button>
+                <button type="button" data-cat="outros" class="cat-btn border border-gray-200 rounded-xl p-3 text-sm font-medium hover:border-primary">Outros</button>
+            </div>
+            <input type="hidden" id="categoria" value="">
+            <div>
+                <label class="block text-sm font-medium mb-1">Descreva em uma frase o que você faz</label>
+                <textarea id="descricao" rows="2" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-primary" placeholder="Ex.: Padaria e confeitaria no centro"></textarea>
+            </div>
+            <div class="flex gap-2">
+                <button type="button" onclick="irPasso(1)" class="flex-1 bg-gray-100 text-gray-700 font-bold py-3 rounded-xl">Voltar</button>
+                <button type="button" onclick="irPasso(3)" class="flex-1 bg-primary text-white font-bold py-3 rounded-xl hover:bg-accent">Continuar</button>
+            </div>
+        </div>
+
+        <!-- STEP 3 -->
+        <div id="step3" class="hidden bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-4">
+            <h2 class="font-bold text-primary">Taxa de manutenção (após 7 dias grátis)</h2>
+            <p class="text-sm text-gray-500">O portal é para <strong>divulgação</strong> do comércio local. Após a semana grátis, há uma taxa mensal de manutenção conforme a quantidade de fotos na vitrine.</p>
+            
+            <label class="block border-2 border-gray-200 rounded-xl p-4 cursor-pointer hover:border-primary has-[:checked]:border-primary has-[:checked]:bg-blue-50">
+                <input type="radio" name="plano" value="basico" class="mr-2" checked>
+                <span class="font-bold">Básico — R$ 10/mês</span>
+                <span class="block text-sm text-gray-500 ml-6">Até <strong>3 fotos</strong> · perfil, mapa e WhatsApp</span>
+            </label>
+            <label class="block border-2 border-gray-200 rounded-xl p-4 cursor-pointer hover:border-primary has-[:checked]:border-primary has-[:checked]:bg-blue-50">
+                <input type="radio" name="plano" value="plus" class="mr-2">
+                <span class="font-bold">Plus — R$ 29/mês</span>
+                <span class="block text-sm text-gray-500 ml-6">Até <strong>5 fotos</strong> · destaque e prioridade no mapa</span>
+            </label>
+
+            <div class="bg-amber-50 border border-amber-100 rounded-xl p-4 text-sm text-amber-950">
+                <p class="font-bold mb-1"><i class="fas fa-star text-yellow-500"></i> Pode ficar gratuito</p>
+                <p>Quanto mais clientes avaliarem (1 a 5★) e quanto melhor a nota, maior o desconto na <strong>próxima mensalidade</strong>. Com <strong>15.000 estrelas</strong> acumuladas, a gestão pode aplicar <strong>100% de desconto</strong> (mensalidade zerada naquele ciclo). O % é definido só pelo gestor.</p>
+            </div>
+
+            <div class="flex gap-2">
+                <button type="button" onclick="irPasso(2)" class="flex-1 bg-gray-100 text-gray-700 font-bold py-3 rounded-xl">Voltar</button>
+                <button type="button" onclick="irPasso(4)" class="flex-1 bg-primary text-white font-bold py-3 rounded-xl hover:bg-accent">Continuar</button>
+            </div>
+        </div>
+
+        <!-- STEP 4 -->
+        <div id="step4" class="hidden bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-4">
+            <h2 class="font-bold text-primary">Revisão e envio</h2>
+            <div id="resumo" class="text-sm text-gray-600 bg-gray-50 rounded-xl p-4 space-y-1"></div>
+            
+            <div class="bg-blue-50 border border-blue-100 rounded-xl p-4 text-sm text-blue-900">
+                <p class="font-bold mb-1">Aprovação da gestão</p>
+                <p>Seu cadastro fica <strong>pendente</strong> até o gestor do portal analisar e liberar (como no IBN). Depois da aprovação você recebe acesso para postar fotos e promoções. Os primeiros <strong>7 dias são grátis</strong>.</p>
+            </div>
+
+            <label class="flex items-start gap-2 text-sm text-gray-600">
+                <input type="checkbox" id="aceite" class="mt-1">
+                <span>Li e concordo: o site é para divulgação em Diamantino-MT; após o período grátis há taxa de manutenção (R$ 10 ou R$ 29 conforme o plano); descontos por estrelas são aplicados pela gestão.</span>
+            </label>
+
+            <div id="msgErro" class="hidden text-red-600 text-sm font-medium"></div>
+
+            <div class="flex gap-2">
+                <button type="button" onclick="irPasso(3)" class="flex-1 bg-gray-100 text-gray-700 font-bold py-3 rounded-xl">Voltar</button>
+                <button type="button" id="btnEnviar" class="flex-1 bg-secondary text-primary font-bold py-3 rounded-xl hover:bg-yellow-400">Enviar cadastro</button>
+            </div>
+        </div>
+
+        <!-- DONE -->
+        <div id="stepOk" class="hidden bg-white rounded-2xl shadow-sm border border-green-100 p-8 text-center">
+            <div class="text-4xl text-green-500 mb-3"><i class="fas fa-check-circle"></i></div>
+            <h2 class="text-xl font-bold text-primary mb-2">Cadastro enviado!</h2>
+            <p class="text-gray-600 text-sm mb-6">Aguarde a aprovação do gestor. Você será contactado no WhatsApp informado.</p>
+            <a href="index.html" class="inline-block bg-primary text-white font-bold px-6 py-3 rounded-xl">Voltar ao site</a>
+        </div>
+    </div>
+
+    <script>
+        let passo = 1;
+        let categoria = '';
+
+        document.querySelectorAll('.cat-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('border-primary', 'bg-blue-50'));
+                btn.classList.add('border-primary', 'bg-blue-50');
+                categoria = btn.getAttribute('data-cat');
+                document.getElementById('categoria').value = categoria;
+            });
+        });
+
+        function irPasso(n) {
+            if (n === 2) {
+                if (!document.getElementById('nomeResp').value.trim() ||
+                    !document.getElementById('whatsapp').value.trim() ||
+                    !document.getElementById('nomeLoja').value.trim() ||
+                    !document.getElementById('endereco').value.trim()) {
+                    alert('Preencha os campos obrigatórios (*)');
+                    return;
+                }
+            }
+            if (n === 3 && !categoria) {
+                alert('Escolha o ramo de atividade');
+                return;
+            }
+            if (n === 4) {
+                const plano = document.querySelector('input[name="plano"]:checked').value;
+                const planoTxt = plano === 'plus' ? 'Plus — R$ 29/mês (5 fotos)' : 'Básico — R$ 10/mês (3 fotos)';
+                document.getElementById('resumo').innerHTML =
+                    '<p><strong>Loja:</strong> ' + document.getElementById('nomeLoja').value + '</p>' +
+                    '<p><strong>Responsável:</strong> ' + document.getElementById('nomeResp').value + '</p>' +
+                    '<p><strong>WhatsApp:</strong> ' + document.getElementById('whatsapp').value + '</p>' +
+                    '<p><strong>Endereço:</strong> ' + document.getElementById('endereco').value + ' — Diamantino-MT</p>' +
+                    '<p><strong>Ramo:</strong> ' + categoria + '</p>' +
+                    '<p><strong>Plano:</strong> ' + planoTxt + '</p>' +
+                    '<p><strong>7 dias grátis</strong> · depois taxa de manutenção · estrelas podem zerar a mensalidade</p>';
+            }
+
+            for (let i = 1; i <= 4; i++) {
+                document.getElementById('step' + i).classList.add('hidden');
+                document.getElementById('s' + i).className = i === n ? 'text-primary' : (i < n ? 'text-green-600' : 'text-gray-300');
+            }
+            document.getElementById('step' + n).classList.remove('hidden');
+            passo = n;
+        }
+
+        document.getElementById('btnEnviar').addEventListener('click', () => {
+            const msg = document.getElementById('msgErro');
+            if (!document.getElementById('aceite').checked) {
+                msg.textContent = 'Marque o aceite para enviar.';
+                msg.classList.remove('hidden');
+                return;
+            }
+            const plano = document.querySelector('input[name="plano"]:checked').value;
+            const reg = {
+                id: 'lj' + Date.now(),
+                nome: document.getElementById('nomeLoja').value.trim(),
+                responsavel: document.getElementById('nomeResp').value.trim(),
+                whatsapp: document.getElementById('whatsapp').value.trim(),
+                email: document.getElementById('email').value.trim(),
+                endereco: document.getElementById('endereco').value.trim() + ' — Diamantino-MT',
+                categoria: categoria,
+                descricao: document.getElementById('descricao').value.trim(),
+                plano: plano,
+                status: 'pendente',
+                vencimento: null,
+                criadoEm: new Date().toISOString(),
+                trialDias: 7
+            };
+
+            // Fila do gestor (igual pedidos do IBN)
+            let lista = [];
+            try { lista = JSON.parse(localStorage.getItem('cd_lojistas_admin') || '[]'); } catch (e) {}
+            lista.push(reg);
+            localStorage.setItem('cd_lojistas_admin', JSON.stringify(lista));
+
+            // Também no mapa como pendente (não aparece até ativo)
+            if (window.EmpresasDados) {
+                EmpresasDados.upsertEmpresa({
+                    id: reg.id,
+                    nome: reg.nome,
+                    categoria: reg.categoria,
+                    plano: reg.plano,
+                    status: 'pendente',
+                    whatsapp: reg.whatsapp,
+                    endereco: reg.endereco
+                });
+            }
+
+            document.getElementById('step4').classList.add('hidden');
+            document.getElementById('stepOk').classList.remove('hidden');
+        });
+    </script>
+    <script src="empresas-dados.js"></script>
+</body>
+</html>

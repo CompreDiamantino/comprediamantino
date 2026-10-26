@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0A2A6B">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <link rel="icon" type="image/png" href="icon-192.png">
+    
+    <meta name="description" content="Anuncie seu negócio no Compre Diamantino — Portal do comércio local">
+    <title>Anuncie seu negócio — Compre Diamantino</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#0A2A6B',
+                        secondary: '#F5C518',
+                        accent: '#0D3B8C',
+                        light: '#F8FAFC',
+                        dark: '#0F172A'
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        .hero-gradient {
+            background: linear-gradient(135deg, #0A2A6B 0%, #0D3B8C 50%, #1E40AF 100%);
+        }
+        .btn-whatsapp { background: #25D366; }
+        .btn-whatsapp:hover { background: #1DA851; }
+        .plan-card {
+            transition: all 0.3s ease;
+        }
+        .plan-card:hover {
+            transform: translateY(-8px);
+        }
+        .plan-destaque {
+            border: 3px solid #F5C518;
+            position: relative;
+        }
+        .plan-destaque::before {
+            content: 'Mais popular';
+            position: absolute;
+            top: -12px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #F5C518;
+            color: #0A2A6B;
+            font-size: 12px;
+            font-weight: 700;
+            padding: 4px 16px;
+            border-radius: 20px;
+        }
+    </style>
+</head>
+<body class="bg-light text-gray-800 font-sans antialiased">
+
+    <!-- Header -->
+    <header class="bg-primary text-white sticky top-0 z-40 shadow-lg">
+        <div class="container mx-auto px-4">
+            <div class="flex items-center justify-between h-16">
+                <a href="index.html" class="flex items-center gap-2">
+                    <img src="icon-192.png" alt="Compre Diamantino" class="w-9 h-9 rounded-full">
+                    <span class="font-bold hidden sm:block">Compre Diamantino</span>
+                </a>
+                <a href="index.html" class="text-sm hover:text-secondary transition">
+                    <i class="fas fa-arrow-left mr-1"></i> Voltar ao site
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Hero -->
+    <section class="hero-gradient text-white py-14 md:py-20">
+        <div class="container mx-auto px-4 text-center">
+            <h1 class="text-3xl md:text-5xl font-bold mb-4">
+                Seu negócio no portal do<br class="hidden md:block"> comércio de Diamantino
+            </h1>
+            <p class="text-blue-100 text-lg md:text-xl max-w-2xl mx-auto mb-8">
+                Tenha uma vitrine profissional com fotos, mapa, WhatsApp e destaque. Seja encontrado por quem procura na cidade.
+            </p>
+            <a href="#planos" class="inline-flex items-center gap-2 bg-secondary text-primary px-8 py-4 rounded-2xl font-bold text-lg hover:bg-yellow-400 transition shadow-lg">
+                Ver planos <i class="fas fa-arrow-down"></i>
+            </a>
+        </div>
+    </section>
+
+    <!-- Benefícios -->
+    <section class="py-14 bg-white">
+        <div class="container mx-auto px-4">
+            <h2 class="text-2xl md:text-3xl font-bold text-primary text-center mb-10">Por que anunciar conosco?</h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div class="text-center p-6">
+                    <div class="w-16 h-16 mx-auto mb-4 bg-blue-100 rounded-2xl flex items-center justify-center">
+                        <i class="fas fa-store text-2xl text-primary"></i>
+                    </div>
+                    <h3 class="font-bold mb-2">Vitrine profissional</h3>
+                    <p class="text-sm text-gray-500">Logo, fotos, descrição e informações completas do seu negócio.</p>
+                </div>
+                <div class="text-center p-6">
+                    <div class="w-16 h-16 mx-auto mb-4 bg-green-100 rounded-2xl flex items-center justify-center">
+                        <i class="fab fa-whatsapp text-2xl text-green-600"></i>
+                    </div>
+                    <h3 class="font-bold mb-2">WhatsApp direto</h3>
+                    <p class="text-sm text-gray-500">Cliente clica e já fala com você. Sem intermediário.</p>
+                </div>
+                <div class="text-center p-6">
+                    <div class="w-16 h-16 mx-auto mb-4 bg-red-100 rounded-2xl flex items-center justify-center">
+                        <i class="fas fa-map-marker-alt text-2xl text-red-500"></i>
+                    </div>
+                    <h3 class="font-bold mb-2">Mapa e como chegar</h3>
+                    <p class="text-sm text-gray-500">Google Maps integrado. Facilita o cliente te encontrar.</p>
+                </div>
+                <div class="text-center p-6">
+                    <div class="w-16 h-16 mx-auto mb-4 bg-yellow-100 rounded-2xl flex items-center justify-center">
+                        <i class="fas fa-search text-2xl text-yellow-600"></i>
+                    </div>
+                    <h3 class="font-bold mb-2">Apareça nas buscas</h3>
+                    <p class="text-sm text-gray-500">SEO local + divulgação do portal = mais clientes te encontrando.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Planos -->
+    <section id="planos" class="py-14 bg-gray-50">
+        <div class="container mx-auto px-4">
+            <div class="text-center mb-10">
+                <h2 class="text-2xl md:text-3xl font-bold text-primary mb-2">Escolha o plano ideal</h2>
+                <p class="text-gray-500">Lançamento: <strong class="text-green-600">7 dias grátis</strong> para os primeiros anunciantes de Diamantino.</p>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto">
+                <!-- Básico -->
+                <div class="plan-card bg-white rounded-2xl p-7 shadow-md border border-gray-100">
+                    <h3 class="text-lg font-bold text-gray-700 mb-1">Básico</h3>
+                    <p class="text-sm text-gray-400 mb-4">Até 3 fotos na vitrine</p>
+                    <div class="mb-6">
+                        <span class="text-4xl font-bold text-primary">R$ 10</span>
+                        <span class="text-gray-400">/mês</span>
+                    </div>
+                    <ul class="space-y-3 text-sm text-gray-600 mb-8">
+                        <li class="flex items-center gap-2"><i class="fas fa-check text-green-500"></i> Perfil da empresa no portal</li>
+                        <li class="flex items-center gap-2"><i class="fas fa-check text-green-500"></i> Até <strong>3 fotos</strong></li>
+                        <li class="flex items-center gap-2"><i class="fas fa-check text-green-500"></i> WhatsApp e mapa</li>
+                        <li class="flex items-center gap-2"><i class="fas fa-check text-green-500"></i> Aparece nas categorias</li>
+                        <li class="flex items-center gap-2"><i class="fas fa-gift text-secondary"></i> 7 dias grátis no lançamento</li>
+                    </ul>
+                    <a href="https://wa.me/5565999999999?text=Olá! Quero o plano Básico (R$10) do Compre Diamantino" target="_blank" class="block w-full text-center bg-gray-100 text-primary font-bold py-3 rounded-xl hover:bg-gray-200 transition">
+                        Quero este plano
+                    </a>
+                </div>
+                
+                <!-- Plus -->
+                <div class="plan-card bg-white rounded-2xl p-7 shadow-md border-2 border-secondary relative">
+                    <span class="absolute -top-3 left-1/2 -translate-x-1/2 bg-secondary text-primary text-xs font-bold px-3 py-1 rounded-full">Mais escolhido</span>
+                    <h3 class="text-lg font-bold text-gray-700 mb-1">Plus</h3>
+                    <p class="text-sm text-gray-400 mb-4">Até 5 fotos na vitrine</p>
+                    <div class="mb-6">
+                        <span class="text-4xl font-bold text-primary">R$ 29</span>
+                        <span class="text-gray-400">/mês</span>
+                    </div>
+                    <ul class="space-y-3 text-sm text-gray-600 mb-8">
+                        <li class="flex items-center gap-2"><i class="fas fa-check text-green-500"></i> Tudo do plano Básico</li>
+                        <li class="flex items-center gap-2"><i class="fas fa-check text-green-500"></i> Até <strong>5 fotos</strong></li>
+                        <li class="flex items-center gap-2"><i class="fas fa-check text-green-500"></i> Destaque nas buscas</li>
+                        <li class="flex items-center gap-2"><i class="fas fa-check text-green-500"></i> Prioridade no mapa</li>
+                        <li class="flex items-center gap-2"><i class="fas fa-gift text-secondary"></i> 7 dias grátis no lançamento</li>
+                    </ul>
+                    <a href="https://wa.me/5565999999999?text=Olá! Quero o plano Plus (R$29) do Compre Diamantino" target="_blank" class="block w-full text-center bg-secondary text-primary font-bold py-3 rounded-xl hover:bg-yellow-400 transition">
+                        Quero este plano
+                    </a>
+                </div>
+            </div>
+            
+            <p class="text-center text-sm text-gray-400 mt-8 max-w-xl mx-auto">
+                Avaliações (1 a 5★) somam no contador. Com <strong>15.000 estrelas</strong>, a gestão pode aplicar <strong>100% de desconto</strong> na próxima mensalidade.
+            </p>
+        </div>
+    </section>
+
+    <!-- Como funciona -->
+    <section class="py-14 bg-white">
+        <div class="container mx-auto px-4 max-w-3xl">
+            <h2 class="text-2xl md:text-3xl font-bold text-primary text-center mb-10">Como funciona</h2>
+            
+            <div class="space-y-6">
+                <div class="flex gap-4 items-start">
+                    <div class="w-10 h-10 bg-primary text-white rounded-full flex items-center justify-center font-bold flex-shrink-0">1</div>
+                    <div>
+                        <h3 class="font-bold">Você envia o material</h3>
+                        <p class="text-gray-600 text-sm">Logo (PNG preferencialmente), 3 a 5 fotos, endereço, WhatsApp, horário e descrição curta.</p>
+                    </div>
+                </div>
+                <div class="flex gap-4 items-start">
+                    <div class="w-10 h-10 bg-primary text-white rounded-full flex items-center justify-center font-bold flex-shrink-0">2</div>
+                    <div>
+                        <h3 class="font-bold">Nós publicamos</h3>
+                        <p class="text-gray-600 text-sm">Montamos o perfil completo no portal em até 48 horas úteis.</p>
+                    </div>
+                </div>
+                <div class="flex gap-4 items-start">
+                    <div class="w-10 h-10 bg-primary text-white rounded-full flex items-center justify-center font-bold flex-shrink-0">3</div>
+                    <div>
+                        <h3 class="font-bold">Você recebe clientes</h3>
+                        <p class="text-gray-600 text-sm">O perfil fica no ar. Quando quiser trocar fotos ou dados, é só mandar de novo.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA final -->
+    <section class="py-14 hero-gradient text-white text-center">
+        <div class="container mx-auto px-4">
+            <h2 class="text-2xl md:text-3xl font-bold mb-4">Pronto para aparecer em Diamantino?</h2>
+            <p class="text-blue-100 mb-8 max-w-lg mx-auto">Fale conosco agora e tire suas dúvidas. Sem compromisso.</p>
+            
+            <a href="https://wa.me/5565999999999?text=Olá! Quero anunciar meu negócio no Compre Diamantino" target="_blank" class="inline-flex items-center gap-3 btn-whatsapp text-white px-8 py-4 rounded-2xl font-bold text-lg shadow-lg">
+                <i class="fab fa-whatsapp text-2xl"></i> Falar no WhatsApp agora
+            </a>
+        </div>
+    </section>
+
+    <!-- Rodapé -->
+    <footer class="bg-dark text-gray-400 py-6 text-center text-sm">
+        <p>© 2026 Compre Diamantino · <a href="index.html" class="hover:text-secondary">Voltar ao início</a></p>
+    </footer>
+
+</body>
+</html>

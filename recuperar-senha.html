@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="icon-192.png">
+    <title>Recuperar Senha — Compre Diamantino</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#0A2A6B',
+                        secondary: '#F5C518',
+                        accent: '#0D3B8C'
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-50 min-h-screen flex items-center justify-center p-4">
+
+    <div class="w-full max-w-md">
+        <div class="text-center mb-8">
+            <img src="icon-192.png" alt="Logo" class="w-14 h-14 mx-auto rounded-full mb-3">
+            <h1 class="text-2xl font-bold text-primary">Recuperar Senha</h1>
+            <p class="text-gray-500 text-sm">Compre Diamantino</p>
+        </div>
+
+        <div class="bg-white rounded-2xl shadow-lg p-8">
+
+            <!-- Passo 1: informar e-mail/WhatsApp -->
+            <div id="passo1" class="space-y-4">
+                <p class="text-sm text-gray-600">
+                    Informe o e-mail ou telefone cadastrado. Vamos gerar uma senha temporária para você entrar.
+                </p>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">E-mail ou Telefone</label>
+                    <input type="text" id="identificador" 
+                        class="w-full border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:border-primary"
+                        placeholder="seu@email.com ou telefone">
+                </div>
+                <button type="button" id="btnGerar" class="w-full bg-primary text-white font-bold py-3 rounded-xl hover:bg-accent transition">
+                    Gerar senha temporária
+                </button>
+                <p class="text-center text-sm text-gray-500">
+                    Ou fale com o gestor:
+                    <a href="https://wa.me/5565999999999?text=Olá! Preciso recuperar minha senha do Compre Diamantino" 
+                       target="_blank" class="text-green-600 font-semibold hover:underline">
+                        <i class="fab fa-whatsapp"></i> WhatsApp
+                    </a>
+                </p>
+            </div>
+
+            <!-- Passo 2: senha gerada -->
+            <div id="passo2" class="space-y-4 hidden text-center">
+                <div class="bg-green-50 border border-green-200 rounded-xl p-4">
+                    <p class="text-green-800 font-semibold mb-2">
+                        <i class="fas fa-check-circle mr-1"></i> Senha temporária gerada!
+                    </p>
+                    <input type="text" id="senhaTemp" readonly
+                        class="w-full text-center text-xl font-bold tracking-widest bg-white border border-green-300 rounded-xl py-3 px-4">
+                    <p class="text-xs text-gray-500 mt-2">Anote ou copie. Use no login e troque depois.</p>
+                </div>
+                
+                <button type="button" id="btnCopiar" class="w-full bg-secondary text-primary font-bold py-3 rounded-xl hover:bg-yellow-400 transition">
+                    <i class="fas fa-copy mr-1"></i> Copiar senha
+                </button>
+                <p id="msgCopiou" class="text-green-600 text-sm font-medium hidden">Copiado!</p>
+                
+                <a href="lojista-login.html" class="block w-full bg-primary text-white font-bold py-3 rounded-xl hover:bg-accent transition text-center">
+                    Ir para o login
+                </a>
+            </div>
+
+            <div id="msgErro" class="hidden mt-4 text-center text-red-600 text-sm font-medium"></div>
+        </div>
+
+        <p class="text-center text-xs text-gray-400 mt-6">
+            <a href="lojista-login.html" class="hover:text-primary">← Voltar ao login</a>
+        </p>
+    </div>
+
+    <script src="auth-utils.js"></script>
+    <script>
+        document.getElementById('btnGerar').addEventListener('click', () => {
+            const id = document.getElementById('identificador').value.trim();
+            const msg = document.getElementById('msgErro');
+            
+            if (!id || id.length < 5) {
+                msg.textContent = 'Informe um e-mail ou telefone válido.';
+                msg.classList.remove('hidden');
+                return;
+            }
+            
+            msg.classList.add('hidden');
+            
+            // Gera senha temporária
+            const senhaTemp = AuthUtils.gerarSenhaTemporaria();
+            
+            // Salva localmente (depois será Firebase)
+            // Formato: cd_senha_temp_{identificador} = senha
+            const idNorm = (window.AuthUtils && AuthUtils.normalizarIdentificador) ? AuthUtils.normalizarIdentificador(id) : id.toLowerCase().replace(/\s/g, '');
+            const chave = 'cd_senha_temp_' + idNorm;
+            localStorage.setItem(chave, JSON.stringify({
+                senha: senhaTemp,
+                geradaEm: new Date().toISOString(),
+                usada: false
+            }));
+            
+            // Também salva para o login reconhecer
+            localStorage.setItem('cd_temp_login_' + idNorm, senhaTemp);
+            
+            document.getElementById('senhaTemp').value = senhaTemp;
+            document.getElementById('passo1').classList.add('hidden');
+            document.getElementById('passo2').classList.remove('hidden');
+        });
+        
+        document.getElementById('btnCopiar').addEventListener('click', () => {
+            const senha = document.getElementById('senhaTemp').value;
+            navigator.clipboard.writeText(senha).then(() => {
+                document.getElementById('msgCopiou').classList.remove('hidden');
+                setTimeout(() => document.getElementById('msgCopiou').classList.add('hidden'), 2000);
+            }).catch(() => {
+                // Fallback
+                document.getElementById('senhaTemp').select();
+                document.execCommand('copy');
+                document.getElementById('msgCopiou').classList.remove('hidden');
+            });
+        });
+    </script>
+</body>
+</html>

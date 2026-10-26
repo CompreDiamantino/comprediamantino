@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="icon-192.png">
+    <title>Anuncie — Compre Diamantino</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#0A2A6B',
+                        secondary: '#F5C518',
+                        accent: '#0D3B8C'
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+    <!-- Header simples -->
+    <header class="bg-primary text-white">
+        <div class="container mx-auto px-4">
+            <div class="flex items-center justify-between h-14">
+                <a href="index.html" class="flex items-center gap-2">
+                    <img src="icon-192.png" alt="Logo" class="w-8 h-8 rounded-full">
+                    <span class="font-bold text-sm hidden sm:block">Compre Diamantino</span>
+                </a>
+                <a href="index.html" class="text-sm hover:text-secondary transition">
+                    <i class="fas fa-arrow-left mr-1"></i> Voltar
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <div class="container mx-auto px-4 py-12 max-w-3xl">
+        <div class="text-center mb-10">
+            <h1 class="text-2xl md:text-3xl font-bold text-primary mb-2">Anuncie no Compre Diamantino</h1>
+            <p class="text-gray-500">Escolha a opção que se encaixa com você</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+            <!-- Já sou anunciante -->
+            <a href="lojista-login.html" class="bg-white rounded-2xl p-8 shadow-sm border-2 border-gray-100 hover:border-primary hover:shadow-md transition group text-center">
+                <div class="w-16 h-16 mx-auto mb-4 bg-green-100 rounded-2xl flex items-center justify-center group-hover:bg-green-600 transition">
+                    <i class="fas fa-sign-in-alt text-2xl text-green-600 group-hover:text-white"></i>
+                </div>
+                <h2 class="font-bold text-xl text-gray-900 mb-2">Já sou anunciante</h2>
+                <p class="text-sm text-gray-500 mb-4">Já tenho conta. Quero entrar no meu painel para editar perfil, fotos e promoções.</p>
+                <span class="inline-flex items-center gap-2 bg-primary text-white font-bold px-5 py-2.5 rounded-xl text-sm group-hover:bg-accent transition">
+                    Entrar no painel <i class="fas fa-arrow-right"></i>
+                </span>
+            </a>
+
+            <!-- Quero me cadastrar -->
+            <a href="anuncie.html" class="bg-white rounded-2xl p-8 shadow-sm border-2 border-secondary hover:shadow-md transition group text-center">
+                <div class="w-16 h-16 mx-auto mb-4 bg-yellow-100 rounded-2xl flex items-center justify-center group-hover:bg-secondary transition">
+                    <i class="fas fa-rocket text-2xl text-yellow-600 group-hover:text-primary"></i>
+                </div>
+                <h2 class="font-bold text-xl text-gray-900 mb-2">Quero me cadastrar</h2>
+                <p class="text-sm text-gray-500 mb-4">Ainda não anuncio. Quero ver os planos e começar a aparecer no portal.</p>
+                <span class="inline-flex items-center gap-2 bg-secondary text-primary font-bold px-5 py-2.5 rounded-xl text-sm group-hover:bg-yellow-400 transition">
+                    Ver planos <i class="fas fa-arrow-right"></i>
+                </span>
+            </a>
+
+        </div>
+
+        <p class="text-center text-sm text-gray-400 mt-8">
+            Dúvidas?
+            <a href="https://wa.me/5565999999999?text=Olá! Quero saber sobre anunciar no Compre Diamantino" target="_blank" class="text-green-600 font-semibold hover:underline">
+                <i class="fab fa-whatsapp"></i> Fale no WhatsApp
+            </a>
+        </p>
+    </div>
+
+</body>
+</html>

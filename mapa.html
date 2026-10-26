@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="icon-192.png">
+    <title>Mapa do Comércio — Compre Diamantino</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#0A2A6B',
+                        secondary: '#F5C518',
+                        accent: '#0D3B8C'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        #mapaGeral { height: 420px; border-radius: 16px; width: 100%; }
+        @media (max-width: 768px) { #mapaGeral { height: 340px; } }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+    <header class="bg-primary text-white sticky top-0 z-40 shadow">
+        <div class="container mx-auto px-4 flex items-center justify-between h-14">
+            <a href="index.html" class="flex items-center gap-2">
+                <img src="icon-192.png" alt="Logo" class="w-8 h-8 rounded-full">
+                <span class="font-bold text-sm">Compre Diamantino</span>
+            </a>
+            <a href="index.html" class="text-sm hover:text-secondary"><i class="fas fa-arrow-left mr-1"></i> Voltar</a>
+        </div>
+    </header>
+
+    <div class="container mx-auto px-4 py-8 max-w-5xl">
+        <div class="mb-6">
+            <h1 class="text-2xl font-bold text-primary">Mapa do comércio</h1>
+            <p class="text-gray-500 text-sm mt-1">Todos os anunciantes ativos em Diamantino. Clique no pin para detalhes e “Como chegar”.</p>
+        </div>
+
+        <div class="flex flex-wrap gap-2 mb-4">
+            <button id="btnLocalizar" class="bg-primary text-white text-sm font-bold px-4 py-2 rounded-xl hover:bg-accent transition">
+                <i class="fas fa-location-arrow mr-1"></i> Usar minha localização
+            </button>
+            <span id="infoLoc" class="text-sm text-gray-500 self-center"></span>
+        </div>
+
+        <div id="mapaGeral" class="bg-gray-200 shadow-md mb-6"></div>
+
+        <div id="resultadoProxima" class="hidden mb-4 p-4 bg-blue-50 border border-blue-100 rounded-xl text-sm"></div>
+
+        <h2 class="font-bold text-primary mb-3">Lista rápida</h2>
+        <div id="listaEmpresas" class="space-y-2"></div>
+    </div>
+
+    <script src="maps-config.js"></script>
+    <script src="empresas-dados.js"></script>
+    <script>
+        let mapa = null;
+        let marcadores = [];
+        let posicaoUsuario = null;
+
+        function renderLista(empresas) {
+            const box = document.getElementById('listaEmpresas');
+            if (!empresas.length) {
+                box.innerHTML = '<p class="text-gray-400 text-sm">Nenhuma empresa ativa no mapa ainda.</p>';
+                return;
+            }
+            box.innerHTML = empresas.map(e => {
+                const dir = EmpresasDados.linkComoChegar(e.lat, e.lng, posicaoUsuario);
+                const dist = e.distanciaTexto
+                    ? `<span class="text-secondary text-xs font-semibold"><i class="fas fa-location-arrow"></i> ${e.distanciaTexto}</span>`
+                    : '';
+                return `
+                <div class="bg-white border border-gray-100 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div>
+                        <p class="font-bold text-gray-900">${e.nome}</p>
+                        <p class="text-xs text-gray-500">${e.categoria || ''} · ${e.endereco || ''}</p>
+                        ${dist}
+                    </div>
+                    <div class="flex flex-wrap gap-2">
+                        <a href="empresa.html?id=${e.id}" class="text-xs bg-primary text-white px-3 py-1.5 rounded-lg font-semibold">Ver perfil</a>
+                        <a href="${dir}" target="_blank" class="text-xs bg-secondary text-primary px-3 py-1.5 rounded-lg font-semibold">Como chegar</a>
+                        ${e.whatsapp ? `<a href="https://wa.me/55${String(e.whatsapp).replace(/\D/g,'')}" target="_blank" class="text-xs bg-green-500 text-white px-3 py-1.5 rounded-lg font-semibold"><i class="fab fa-whatsapp"></i></a>` : ''}
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        function montarMarcadores(empresas) {
+            marcadores.forEach(m => m.setMap(null));
+            marcadores = [];
+            const bounds = new google.maps.LatLngBounds();
+
+            empresas.forEach(e => {
+                const pos = { lat: e.lat, lng: e.lng };
+                bounds.extend(pos);
+                const marker = new google.maps.Marker({
+                    position: pos,
+                    map: mapa,
+                    title: e.nome
+                });
+                const dir = EmpresasDados.linkComoChegar(e.lat, e.lng, posicaoUsuario);
+                const info = new google.maps.InfoWindow({
+                    content: `
+                        <div style="min-width:180px;font-family:sans-serif">
+                            <strong>${e.nome}</strong><br>
+                            <span style="color:#666;font-size:12px">${e.endereco || ''}</span><br>
+                            <a href="empresa.html?id=${e.id}" style="font-size:12px">Ver perfil</a> ·
+                            <a href="${dir}" target="_blank" style="font-size:12px">Como chegar</a>
+                        </div>`
+                });
+                marker.addListener('click', () => info.open(mapa, marker));
+                marcadores.push(marker);
+            });
+
+            if (empresas.length === 1) {
+                mapa.setCenter({ lat: empresas[0].lat, lng: empresas[0].lng });
+                mapa.setZoom(16);
+            } else if (empresas.length > 1) {
+                mapa.fitBounds(bounds, 48);
+            }
+        }
+
+        function aplicarDistancias(empresas) {
+            if (!posicaoUsuario) return empresas;
+            return empresas.map(e => {
+                const km = EmpresasDados.distanciaKm(posicaoUsuario.lat, posicaoUsuario.lng, e.lat, e.lng);
+                const distanciaTexto = km < 1 ? Math.round(km * 1000) + ' m' : km.toFixed(1) + ' km';
+                return { ...e, distanciaTexto, _km: km };
+            }).sort((a, b) => a._km - b._km);
+        }
+
+        function atualizarTudo() {
+            let empresas = EmpresasDados.empresasNoMapa();
+            empresas = aplicarDistancias(empresas);
+            if (mapa) montarMarcadores(empresas);
+            renderLista(empresas);
+        }
+
+        function initMapaGeral() {
+            const el = document.getElementById('mapaGeral');
+            if (!el || typeof google === 'undefined') return;
+            const center = (window.CD_MAPS_CENTER) || EmpresasDados.CENTER;
+            mapa = new google.maps.Map(el, {
+                zoom: 14,
+                center: center,
+                mapTypeControl: true,
+                streetViewControl: false
+            });
+            atualizarTudo();
+        }
+
+        document.getElementById('btnLocalizar').addEventListener('click', () => {
+            const info = document.getElementById('infoLoc');
+            const res = document.getElementById('resultadoProxima');
+            if (!navigator.geolocation) {
+                info.textContent = 'Geolocalização não suportada.';
+                return;
+            }
+            info.textContent = 'Obtendo localização…';
+            navigator.geolocation.getCurrentPosition(
+                (pos) => {
+                    posicaoUsuario = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+                    info.textContent = 'Localização ativada';
+                    if (mapa) {
+                        new google.maps.Marker({
+                            position: posicaoUsuario,
+                            map: mapa,
+                            title: 'Você está aqui',
+                            icon: { url: 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png' }
+                        });
+                    }
+                    let empresas = aplicarDistancias(EmpresasDados.empresasNoMapa());
+                    atualizarTudo();
+                    if (empresas.length) {
+                        res.classList.remove('hidden');
+                        res.innerHTML = `<strong>Mais perto de você:</strong> ${empresas[0].nome} (${empresas[0].distanciaTexto})`;
+                    }
+                },
+                () => { info.textContent = 'Não foi possível obter o GPS.'; },
+                { enableHighAccuracy: true, timeout: 15000 }
+            );
+        });
+
+        // Expõe callback global para a API do Google
+        window.initMapaGeral = initMapaGeral;
+    </script>
+    <script async defer
+        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAvYuOn7kclHGS5eGkdBO81EJ6J2FOTf3A&callback=initMapaGeral&language=pt-BR">
+    </script>
+</body>
+</html>
