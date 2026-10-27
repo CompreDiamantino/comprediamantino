@@ -501,7 +501,19 @@
         // PWA Service Worker
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/sw.js').catch(() => {});
+                navigator.serviceWorker.register('/sw.js').then(function(reg) {
+                    reg.update();
+                    if (reg.waiting) {
+                        try { reg.waiting.postMessage({ type: 'SKIP_WAITING' }); } catch (e) {}
+                    }
+                }).catch(() => {});
+                // limpa caches antigos (v3 etc.) uma vez
+                if (caches && caches.keys) {
+                    caches.keys().then(function(keys) {
+                        keys.filter(function(k) { return k.indexOf('compre-diamantino-v10') === -1; })
+                            .forEach(function(k) { caches.delete(k); });
+                    });
+                }
             });
         }
         

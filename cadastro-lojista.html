@@ -77,6 +77,9 @@
                 <input type="hidden" id="coordLat" value="">
                 <input type="hidden" id="coordLng" value="">
                 <div class="mt-2 flex flex-wrap gap-2">
+                    <button type="button" id="btnGpsCadastro" class="text-xs font-semibold bg-emerald-50 border border-emerald-600 text-emerald-800 px-3 py-1.5 rounded-lg">
+                        <i class="fas fa-location-arrow mr-1"></i> Usar minha localização (GPS)
+                    </button>
                     <button type="button" id="btnAbrirMaps" class="text-xs font-semibold bg-white border border-primary text-primary px-3 py-1.5 rounded-lg hover:bg-blue-50 transition">
                         <i class="fas fa-map-marker-alt mr-1"></i> Abrir no Google Maps e salvar localização
                     </button>
@@ -254,6 +257,24 @@
             return null;
         }
 
+
+        
+        document.getElementById('btnGpsCadastro') && document.getElementById('btnGpsCadastro').addEventListener('click', function () {
+            var st = document.getElementById('mapsStatus');
+            if (!navigator.geolocation) {
+                if (st) st.textContent = 'GPS indisponível';
+                return;
+            }
+            if (st) st.textContent = 'Obtendo GPS...';
+            navigator.geolocation.getCurrentPosition(function (pos) {
+                document.getElementById('coordLat').value = String(pos.coords.latitude);
+                document.getElementById('coordLng').value = String(pos.coords.longitude);
+                document.getElementById('mapsLink').value = 'https://www.google.com/maps?q=' + pos.coords.latitude + ',' + pos.coords.longitude;
+                if (st) { st.textContent = 'Localização capturada ✓'; st.className = 'text-xs text-green-600 self-center font-semibold'; }
+            }, function () {
+                if (st) st.textContent = 'Ative a localização do celular e tente de novo';
+            }, { enableHighAccuracy: true, timeout: 20000 });
+        });
 
         document.getElementById('btnAbrirMaps') && document.getElementById('btnAbrirMaps').addEventListener('click', function () {
             var end = (document.getElementById('endereco').value || '').trim();

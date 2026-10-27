@@ -1,11 +1,5 @@
-const CACHE_NAME = 'compre-diamantino-v3';
-const urlsToCache = [
-  './',
-  './index.html',
-  './mapa.html',
-  './anuncie-acesso.html',
-  './anuncie.html',
-  './instalar.html',
+const CACHE_NAME = 'compre-diamantino-v10';
+const PRECACHE = [
   './icon-192.png',
   './icon-512.png',
   './manifest.json'
@@ -13,7 +7,7 @@ const urlsToCache = [
 
 self.addEventListener('install', event => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => cache.addAll(urlsToCache)).then(() => self.skipWaiting())
+    caches.open(CACHE_NAME).then(cache => cache.addAll(PRECACHE)).then(() => self.skipWaiting())
   );
 });
 
@@ -25,8 +19,31 @@ self.addEventListener('activate', event => {
   );
 });
 
+// Rede primeiro para HTML/JS/CSS — evita ficar preso na versão antiga no celular
 self.addEventListener('fetch', event => {
+  const req = event.request;
+  if (req.method !== 'GET') return;
+
+  const url = new URL(req.url);
+  const isDoc = req.mode === 'navigate' ||
+    (url.origin === self.location.origin && /\.(html?|js|css)(\?|$)/i.test(url.pathname));
+
+  if (isDoc) {
+    event.respondWith(
+      fetch(req).then(res => {
+        const copy = res.clone();
+        caches.open(CACHE_NAME).then(c => c.put(req, copy)).catch(() => {});
+        return res;
+      }).catch(() => caches.match(req).then(r => r || caches.match('./index.html')))
+    );
+    return;
+  }
+
   event.respondWith(
-    caches.match(event.request).then(response => response || fetch(event.request).catch(() => caches.match('./index.html')))
+    caches.match(req).then(cached => cached || fetch(req).then(res => {
+      const copy = res.clone();
+      caches.open(CACHE_NAME).then(c => c.put(req, copy)).catch(() => {});
+      return res;
+    }).catch(() => cached))
   );
 });

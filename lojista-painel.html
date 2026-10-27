@@ -148,7 +148,19 @@
                             <input type="url" id="mapsLink"
                                 class="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-primary"
                                 placeholder="https://maps.google.com/...">
+                            <input type="hidden" id="coordLat" value="">
+                            <input type="hidden" id="coordLng" value="">
                         </div>
+                    </div>
+
+                    <div class="flex flex-wrap gap-2 items-center">
+                        <button type="button" id="btnGpsPainel" class="text-xs font-bold bg-emerald-50 border border-emerald-600 text-emerald-800 px-3 py-2 rounded-xl">
+                            <i class="fas fa-location-arrow mr-1"></i> Usar minha localização (GPS)
+                        </button>
+                        <button type="button" id="btnMapsPainel" class="text-xs font-bold bg-white border border-primary text-primary px-3 py-2 rounded-xl">
+                            <i class="fas fa-map-marker-alt mr-1"></i> Abrir Maps com o endereço
+                        </button>
+                        <span id="mapsStatusPainel" class="text-xs text-gray-500"></span>
                     </div>
                     
                     <div class="pt-2">
@@ -433,6 +445,65 @@
             } catch (e2) {}
         }
 
+        
+        function parseMapsLink(link) {
+            if (!link) return null;
+            var m = String(link).match(/@(-?\d+\.\d+),(-?\d+\.\d+)/) ||
+                String(link).match(/[?&]q=(-?\d+\.\d+),(-?\d+\.\d+)/) ||
+                String(link).match(/(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)/);
+            if (!m) return null;
+            return { lat: parseFloat(m[1]), lng: parseFloat(m[2]) };
+        }
+        function setMapsStatus(msg, ok) {
+            var el = document.getElementById('mapsStatusPainel');
+            if (!el) return;
+            el.textContent = msg || '';
+            el.className = 'text-xs ' + (ok ? 'text-green-600 font-semibold' : 'text-gray-500');
+        }
+        document.getElementById('btnGpsPainel') && document.getElementById('btnGpsPainel').addEventListener('click', function () {
+            if (!navigator.geolocation) {
+                setMapsStatus('GPS indisponível neste aparelho', false);
+                return;
+            }
+            setMapsStatus('Obtendo GPS...', false);
+            navigator.geolocation.getCurrentPosition(function (pos) {
+                var lat = pos.coords.latitude;
+                var lng = pos.coords.longitude;
+                var latEl = document.getElementById('coordLat');
+                var lngEl = document.getElementById('coordLng');
+                if (latEl) latEl.value = String(lat);
+                if (lngEl) lngEl.value = String(lng);
+                var link = 'https://www.google.com/maps?q=' + lat + ',' + lng;
+                var ml = document.getElementById('mapsLink');
+                if (ml) ml.value = link;
+                setMapsStatus('Localização capturada ✓', true);
+            }, function () {
+                setMapsStatus('Não foi possível obter GPS. Ative a localização e tente de novo.', false);
+            }, { enableHighAccuracy: true, timeout: 20000 });
+        });
+        document.getElementById('btnMapsPainel') && document.getElementById('btnMapsPainel').addEventListener('click', function () {
+            var end = (document.getElementById('endereco') || {}).value || '';
+            var q = encodeURIComponent((end.trim() || 'Diamantino MT') + ', Diamantino MT');
+            window.open('https://www.google.com/maps/search/?api=1&query=' + q, '_blank');
+            setTimeout(function () {
+                var link = prompt('No Google Maps: Compartilhar → Copiar link, e cole aqui:');
+                if (!link) return;
+                var ml = document.getElementById('mapsLink');
+                if (ml) ml.value = link.trim();
+                var c = parseMapsLink(link);
+                if (c) {
+                    var latEl = document.getElementById('coordLat');
+                    var lngEl = document.getElementById('coordLng');
+                    if (latEl) latEl.value = String(c.lat);
+                    if (lngEl) lngEl.value = String(c.lng);
+                    setMapsStatus('Ponto do Maps salvo ✓', true);
+                } else {
+                    setMapsStatus('Link salvo (coordenadas não detectadas)', true);
+                }
+            }, 600);
+        });
+
+
         document.getElementById('formPerfil').addEventListener('submit', (e) => {
             e.preventDefault();
             const msg = document.getElementById('msgSalvar');
@@ -451,6 +522,8 @@
                 referencia: document.getElementById('referencia').value.trim(),
                 horario: document.getElementById('horario').value.trim(),
                 mapsLink: document.getElementById('mapsLink').value.trim(),
+                lat: parseFloat((document.getElementById('coordLat') || {}).value) || null,
+                lng: parseFloat((document.getElementById('coordLng') || {}).value) || null,
                 salvoEm: new Date().toISOString()
             };
             
@@ -609,5 +682,18 @@
         
         renderPromocoes();
     </script>
+
+<script>
+(function(){
+  if (!('serviceWorker' in navigator)) return;
+  navigator.serviceWorker.getRegistrations().then(function(regs){
+    regs.forEach(function(r){ r.update(); });
+  });
+  navigator.serviceWorker.register('/sw.js').then(function(reg){
+    if (reg.waiting) reg.waiting.postMessage({type:'SKIP_WAITING'});
+    reg.update();
+  }).catch(function(){});
+})();
+</script>
 </body>
 </html>
