@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" type="image/png" href="icon-192.png">
-    <title>Área do Lojista — Compre Diamantino</title>
+    <title>Área do Anunciante — Compre Diamantino</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
     <script>
@@ -26,8 +26,8 @@
     <div class="w-full max-w-md">
         <div class="text-center mb-8">
             <img src="icon-192.png" alt="Compre Diamantino" class="w-16 h-16 mx-auto rounded-full mb-3">
-            <h1 class="text-2xl font-bold text-primary">Área do Lojista</h1>
-            <p class="text-gray-500 text-sm mt-1">Gerencie seu perfil e promoções</p>
+            <h1 class="text-2xl font-bold text-primary">Área do Anunciante</h1>
+            <p class="text-gray-500 text-sm mt-1">Gerencie seu negócio, perfil e promoções</p>
         </div>
 
         <div class="bg-white rounded-2xl shadow-lg p-8">
@@ -72,7 +72,7 @@
             <div class="mt-4 text-center text-sm text-gray-500">
                 <p>Ainda não tem acesso?</p>
                 <a href="anuncie-acesso.html" class="text-primary font-semibold hover:underline">
-                    Quero anunciar meu negócio
+                    Cadastrar meu negócio
                 </a>
             </div>
         </div>
@@ -84,6 +84,22 @@
 
     <script src="auth-utils.js"></script>
     <script>
+        
+        // Se gestor já logado, vai pro hub (não pede senha de novo)
+        (function() {
+            try {
+                const g = AuthUtils.getGestorSession && AuthUtils.getGestorSession();
+                if (g && g.logado) {
+                    window.location.href = 'gestor-hub.html';
+                    return;
+                }
+                const lj = JSON.parse(localStorage.getItem('cd_lojista') || 'null');
+                if (lj && lj.empresaId && !lj.viaGestor) {
+                    window.location.href = 'lojista-painel.html';
+                }
+            } catch (_) {}
+        })();
+
         AuthUtils.preencherUltimosLogins('identificador', 'chipsUltimosLogins', 'listaUltimosLogins');
         AuthUtils.setupToggleSenha('senha', 'btnOlho');
         
@@ -91,59 +107,72 @@
             e.preventDefault();
             
             const id = document.getElementById('identificador').value.trim();
-            const senha = document.getElementById('senha').value;
+            const senha = document.getElementById('senha').value.trim();
             const msg = document.getElementById('msgErro');
+            msg.classList.add('hidden');
             const idNorm = AuthUtils.normalizarIdentificador(id);
             const idLower = id.toLowerCase();
             
-            // ——— GESTOR MASTER (acesso total) ———
-            // Aceita: senha gestor123 + qualquer identificador
-            // ou identificador contendo "gestor"
-            const ehSenhaGestor = (senha === 'gestor123');
-            const ehIdGestor = idLower.includes('gestor') || idLower === 'admin' || idNorm === 'gestor';
+            // ——— GESTOR MASTER (acesso total) → hub do gestor ———
+            // Senhas oficiais IBN (também listadas em auth-utils.js)
+            const SENHAS_GESTOR = ['IbnDiamantino@2026', 'IBN-Gestor-2026!'];
+            const ehGestor = (typeof AuthUtils !== 'undefined' && AuthUtils.senhaGestorValida)
+                ? AuthUtils.senhaGestorValida(senha)
+                : SENHAS_GESTOR.includes(senha);
             
-            if (ehSenhaGestor) {
-                AuthUtils.salvarUltimoLogin(id || 'gestor');
-                
-                localStorage.setItem('cd_gestor', JSON.stringify({
-                    tipo: 'gestor',
-                    nivel: 'gestor',
-                    master: true,
-                    logado: true,
-                    usuario: id || 'gestor',
-                    logadoEm: new Date().toISOString()
-                }));
-                
-                localStorage.setItem('cd_admin', JSON.stringify({
-                    logado: true,
-                    viaGestor: true,
-                    nivel: 'gestor',
-                    logadoEm: new Date().toISOString()
-                }));
-                
+            if (ehGestor) {
+                if (typeof AuthUtils !== 'undefined' && AuthUtils.loginGestor) {
+                    AuthUtils.loginGestor(id || 'gestor');
+                } else {
+                    localStorage.setItem('cd_gestor', JSON.stringify({
+                        tipo: 'gestor', nivel: 'gestor', master: true, logado: true,
+                        bloqueado: false, usuario: id || 'gestor',
+                        logadoEm: new Date().toISOString(), ultimaAtividade: Date.now()
+                    }));
+                    localStorage.setItem('cd_admin', JSON.stringify({
+                        logado: true, viaGestor: true, nivel: 'gestor',
+                        logadoEm: new Date().toISOString()
+                    }));
+                }
                 window.location.href = 'gestor-hub.html';
                 return;
             }
             
-            // ——— SENHA TEMPORÁRIA ———
-            const chaveTemp = 'cd_temp_login_' + idNorm;
-            const senhaTemp = localStorage.getItem(chaveTemp);
-            
-            // ——— LOJISTA (demo) ———
-            if (senha === 'demo123' || (senhaTemp && senha === senhaTemp)) {
+            // ——— LOJISTA: busca por e-mail OU telefone + senha cadastrada ———
+            const lojistaCad = AuthUtils.buscarLojistaPorIdentificador(id);
+            if (lojistaCad && AuthUtils.validarSenhaLojista(lojistaCad, senha)) {
                 AuthUtils.salvarUltimoLogin(id);
-                
                 localStorage.setItem('cd_lojista', JSON.stringify({
-                    email: id.includes('@') ? id : '',
-                    telefone: !id.includes('@') ? idNorm : '',
+                    email: lojistaCad.email || (id.includes('@') ? id : ''),
+                    telefone: AuthUtils.normalizarIdentificador(lojistaCad.whatsapp || (!id.includes('@') ? id : '')),
                     identificador: id,
-                    nome: 'Lojista',
-                    empresaId: 'demo001',
-                    plano: 'destaque',
-                    status: 'ativo',
+                    nome: lojistaCad.nome || lojistaCad.responsavel || 'Lojista',
+                    empresaId: lojistaCad.id,
+                    plano: lojistaCad.plano || 'basico',
+                    status: lojistaCad.status || 'pendente',
                     logadoEm: new Date().toISOString()
                 }));
-                
+                window.location.href = 'lojista-painel.html';
+                return;
+            }
+            
+            // ——— SENHA TEMPORÁRIA (recuperação de senha) ———
+            const chaveTemp = 'cd_temp_login_' + idNorm;
+            const senhaTemp = localStorage.getItem(chaveTemp);
+            if (senhaTemp && senha === senhaTemp) {
+                // Tenta achar lojista real; se achar, usa os dados dele
+                const ljTemp = AuthUtils.buscarLojistaPorIdentificador(id);
+                AuthUtils.salvarUltimoLogin(id);
+                localStorage.setItem('cd_lojista', JSON.stringify({
+                    email: (ljTemp && ljTemp.email) || (id.includes('@') ? id : ''),
+                    telefone: (ljTemp && AuthUtils.normalizarIdentificador(ljTemp.whatsapp || '')) || (!id.includes('@') ? idNorm : ''),
+                    identificador: id,
+                    nome: (ljTemp && (ljTemp.nome || ljTemp.responsavel)) || 'Lojista',
+                    empresaId: (ljTemp && ljTemp.id) || '',
+                    plano: (ljTemp && ljTemp.plano) || 'basico',
+                    status: (ljTemp && ljTemp.status) || 'pendente',
+                    logadoEm: new Date().toISOString()
+                }));
                 window.location.href = 'lojista-painel.html';
                 return;
             }

@@ -193,14 +193,14 @@
                     </div>
                     <div>
                         <label class="block text-sm font-medium mb-1">WhatsApp *</label>
-                        <input type="tel" id="ljWhatsapp" required class="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-primary" placeholder="65999999999">
+                        <input type="tel" id="ljWhatsapp" required class="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-primary" placeholder="65999667725">
                     </div>
                 </div>
                 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                         <label class="block text-sm font-medium mb-1">E-mail (login)</label>
-                        <input type="email" id="ljEmail" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-primary">
+                        <input type="email" id="ljEmail" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-primary" placeholder="email@exemplo.com">
                     </div>
                     <div>
                         <label class="block text-sm font-medium mb-1">Plano</label>
@@ -226,6 +226,18 @@
                     </select>
                 </div>
                 
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Senha de login *</label>
+                        <input type="text" id="ljSenha" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-primary" placeholder="Defina a senha do lojista" autocomplete="new-password">
+                        <p class="text-xs text-gray-400 mt-1">Login: e-mail ou WhatsApp + esta senha</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Confirmar senha</label>
+                        <input type="text" id="ljSenha2" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-primary" placeholder="Repita a senha" autocomplete="new-password">
+                    </div>
+                </div>
+
                 <div>
                     <label class="block text-sm font-medium mb-1">Localização (link do Maps ou lat, lng)</label>
                     <input type="text" id="ljMaps" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-primary" placeholder="Cole link do Google Maps ou -14.4085, -56.4900">
@@ -244,90 +256,38 @@
         </div>
     </div>
 
+    <script src="auth-utils.js"></script>
     <script>
         // ========== PROTEÇÃO ==========
+        if (typeof AuthUtils !== 'undefined') {
+            const g = AuthUtils.getGestorSession();
+            if (g && g.logado) AuthUtils.protegerPaginaGestor();
+        }
         const admin = JSON.parse(localStorage.getItem('cd_admin') || 'null');
-        const gestor = JSON.parse(localStorage.getItem('cd_gestor') || 'null');
+        const gestor = (typeof AuthUtils !== 'undefined' && AuthUtils.getGestorSession()) || JSON.parse(localStorage.getItem('cd_gestor') || 'null');
         if ((!admin || !admin.logado) && (!gestor || !gestor.logado)) {
             window.location.href = 'gestor-login.html';
         }
         
         document.getElementById('btnSairAdmin').addEventListener('click', () => {
+            // Sai só do admin; se é gestor, volta ao hub (mantém sessão gestor)
             localStorage.removeItem('cd_admin');
-            // Se veio pelo gestor, volta pro hub
             if (gestor && gestor.logado) {
+                if (typeof AuthUtils !== 'undefined') AuthUtils.tocarAtividadeGestor();
                 window.location.href = 'gestor-hub.html';
             } else {
                 window.location.href = 'admin-login.html';
             }
         });
 
-        // ========== DADOS (demo local — depois Firebase) ==========
+        // ========== DADOS LOJISTAS ==========
         const STORAGE_KEY = 'cd_lojistas_admin';
         
-        // Dados iniciais de exemplo
+        // Lista de lojistas cadastrados
         function getLojistas() {
             let dados = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
             if (!dados) {
-                // Seed inicial
-                const agora = new Date();
-                dados = [
-                    {
-                        id: 'lj001',
-                        nome: 'Padaria do Centro',
-                        whatsapp: '65999991111',
-                        email: 'padaria@email.com',
-                        plano: 'premium',
-                        categoria: 'alimentacao',
-                        status: 'ativo',
-                        vencimento: new Date(agora.getTime() + 20 * 24 * 60 * 60 * 1000).toISOString(), // +20 dias
-                        criadoEm: agora.toISOString()
-                    },
-                    {
-                        id: 'lj002',
-                        nome: 'Auto Peças Diamantino',
-                        whatsapp: '65999992222',
-                        email: 'autopecas@email.com',
-                        plano: 'destaque',
-                        categoria: 'automotivo',
-                        status: 'aviso',
-                        vencimento: new Date(agora.getTime() + 1 * 24 * 60 * 60 * 1000).toISOString(), // +1 dia (menos de 36h)
-                        criadoEm: agora.toISOString()
-                    },
-                    {
-                        id: 'lj003',
-                        nome: 'Beleza & Estilo',
-                        whatsapp: '65999993333',
-                        email: 'beleza@email.com',
-                        plano: 'basico',
-                        categoria: 'saude',
-                        status: 'vencido',
-                        vencimento: new Date(agora.getTime() - 5 * 24 * 60 * 60 * 1000).toISOString(), // -5 dias
-                        criadoEm: agora.toISOString()
-                    },
-                    {
-                        id: 'lj004',
-                        nome: 'Casa Construir',
-                        whatsapp: '65999994444',
-                        email: 'casa@email.com',
-                        plano: 'destaque',
-                        categoria: 'casa',
-                        status: 'bloqueado',
-                        vencimento: null,
-                        criadoEm: agora.toISOString()
-                    },
-                    {
-                        id: 'lj005',
-                        nome: 'Pet Shop Amigo',
-                        whatsapp: '65999995555',
-                        email: 'pet@email.com',
-                        plano: 'basico',
-                        categoria: 'agro',
-                        status: 'pendente',
-                        vencimento: null,
-                        criadoEm: agora.toISOString()
-                    }
-                ];
+                dados = [];
                 localStorage.setItem(STORAGE_KEY, JSON.stringify(dados));
             }
             return dados;
@@ -659,6 +619,8 @@
             document.getElementById('ljEmail').value = lj.email || '';
             document.getElementById('ljPlano').value = lj.plano || 'basico';
             document.getElementById('ljCategoria').value = lj.categoria || 'outros';
+            if (document.getElementById('ljSenha')) document.getElementById('ljSenha').value = lj.senha || '';
+            if (document.getElementById('ljSenha2')) document.getElementById('ljSenha2').value = lj.senha || '';
             if (document.getElementById('ljMaps')) document.getElementById('ljMaps').value = lj.mapsLink || '';
             
             document.getElementById('modalLojista').classList.remove('hidden');
@@ -670,6 +632,16 @@
             const lista = getLojistas();
             const editId = document.getElementById('editId').value;
             
+            const senhaVal = (document.getElementById('ljSenha') || {}).value || '';
+            const senha2 = (document.getElementById('ljSenha2') || {}).value || '';
+            if (senhaVal && senhaVal !== senha2) {
+                alert('As senhas não conferem.');
+                return;
+            }
+            if (!editId && !senhaVal) {
+                alert('Defina uma senha de login para o lojista.');
+                return;
+            }
             const dados = {
                 nome: document.getElementById('ljNome').value.trim(),
                 whatsapp: document.getElementById('ljWhatsapp').value.trim(),
@@ -677,6 +649,7 @@
                 plano: document.getElementById('ljPlano').value,
                 categoria: document.getElementById('ljCategoria').value
             };
+            if (senhaVal) dados.senha = senhaVal;
             
             const mapsLink = (document.getElementById('ljMaps') || {}).value || '';
             dados.mapsLink = mapsLink.trim();

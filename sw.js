@@ -1,4 +1,4 @@
-const CACHE_NAME = 'compre-diamantino-v2';
+const CACHE_NAME = 'compre-diamantino-v3';
 const urlsToCache = [
   './',
   './index.html',

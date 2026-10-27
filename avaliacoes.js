@@ -1,133 +1,196 @@
 /**
- * Sistema de Avaliações - Compre Diamantino
- * Regra: 1 avaliação por empresa a cada 30 dias (por dispositivo)
+ * Avaliações — Compre Diamantino
+ *
+ * Visitante: 1 voto/mês por CELULAR, por loja (vários celulares = vários votos possíveis).
+ * Anunciante logado: 1 voto/mês por LOGIN (conta), por loja — vale em qualquer aparelho.
+ * Pode avaliar várias lojas no mesmo mês.
  */
-
 const AVALIACOES_KEY = 'cd_avaliacoes';
-const PRAZO_DIAS = 30;
 
-// Gera um ID único do dispositivo (persistente no navegador)
-function getDeviceId() {
-    let id = localStorage.getItem('cd_device_id');
-    if (!id) {
-        id = 'dev_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-        localStorage.setItem('cd_device_id', id);
-    }
-    return id;
+function normalizarCelular(tel) {
+    return String(tel || '').replace(/\D/g, '');
 }
 
-// Busca todas as avaliações salvas localmente
+function mesAnoAtual() {
+    const d = new Date();
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+}
+
 function getAvaliacoesLocais() {
-    try {
-        return JSON.parse(localStorage.getItem(AVALIACOES_KEY) || '{}');
-    } catch {
-        return {};
-    }
+    try { return JSON.parse(localStorage.getItem(AVALIACOES_KEY) || '{}'); }
+    catch { return {}; }
 }
 
-// Salva avaliações locais
 function salvarAvaliacoesLocais(dados) {
     localStorage.setItem(AVALIACOES_KEY, JSON.stringify(dados));
 }
 
-/**
- * Verifica se o usuário já avaliou esta empresa nos últimos 30 dias
- * @returns { object } { pode: boolean, diasRestantes: number }
- */
-function podeAvaliar(empresaId) {
-    const deviceId = getDeviceId();
-    const avaliacoes = getAvaliacoesLocais();
-    const chave = `${deviceId}_${empresaId}`;
-    
-    if (!avaliacoes[chave]) {
-        return { pode: true, diasRestantes: 0 };
+/** Sessão de anunciante logado (não conta gestor master como “conta de loja” para voto extra). */
+function getAnuncianteLogado() {
+    try {
+        const lj = JSON.parse(localStorage.getItem('cd_lojista') || 'null');
+        if (!lj) return null;
+        // Gestor entrando “como lojista” ainda é conta de teste — usa id da empresa
+        const id =
+            lj.email ||
+            lj.identificador ||
+            lj.telefone ||
+            lj.empresaId ||
+            null;
+        if (!id) return null;
+        return {
+            id: String(id).toLowerCase().trim(),
+            nome: lj.nome || 'Anunciante',
+            viaGestor: !!lj.viaGestor
+        };
+    } catch {
+        return null;
     }
-    
-    const dataAvaliacao = new Date(avaliacoes[chave].data);
-    const agora = new Date();
-    const diffMs = agora - dataAvaliacao;
-    const diffDias = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-    
-    if (diffDias >= PRAZO_DIAS) {
-        return { pode: true, diasRestantes: 0 };
-    }
-    
-    return {
-        pode: false,
-        diasRestantes: PRAZO_DIAS - diffDias
-    };
 }
 
 /**
- * Registra uma avaliação localmente (e depois no Firebase)
- * @param {string} empresaId 
- * @param {number} nota - 1 a 5
- * @param {string} comentario - opcional
+ * Identidade do voto:
+ * - logado → login:email_ou_id
+ * - visitante → cel:6599...
  */
-function registrarAvaliacao(empresaId, nota, comentario = '') {
-    const check = podeAvaliar(empresaId);
-    
+function identidadeVoto(celularOpcional) {
+    const an = getAnuncianteLogado();
+    if (an && an.id) {
+        return { tipo: 'login', chave: 'login:' + an.id, label: an.nome };
+    }
+    const cel = normalizarCelular(celularOpcional);
+    if (cel.length >= 10) {
+        return { tipo: 'celular', chave: 'cel:' + cel, label: cel };
+    }
+    return null;
+}
+
+function chaveVoto(identidadeChave, empresaId, mes) {
+    return identidadeChave + '_' + empresaId + '_' + (mes || mesAnoAtual());
+}
+
+function podeAvaliar(empresaId, celularOpcional) {
+    const idn = identidadeVoto(celularOpcional);
+    if (!idn) {
+        return {
+            pode: false,
+            precisaCelular: !getAnuncianteLogado(),
+            mensagem: 'Informe seu celular com DDD para votar.'
+        };
+    }
+    const avaliacoes = getAvaliacoesLocais();
+    const chave = chaveVoto(idn.chave, empresaId);
+    if (avaliacoes[chave]) {
+        return {
+            pode: false,
+            precisaCelular: false,
+            mensagem: 'Você já votou para essa loja ou comércio esse mês.'
+        };
+    }
+    return { pode: true, precisaCelular: false, mensagem: '', identidade: idn };
+}
+
+function registrarAvaliacao(empresaId, nota, comentario, celularOpcional) {
+    const check = podeAvaliar(empresaId, celularOpcional);
     if (!check.pode) {
         return {
             sucesso: false,
-            mensagem: `Você já avaliou esta empresa recentemente. Poderá avaliar novamente em ${check.diasRestantes} dia(s).`
+            mensagem: check.mensagem || 'Você já votou para essa loja ou comércio esse mês.'
         };
     }
-    
     if (nota < 1 || nota > 5) {
         return { sucesso: false, mensagem: 'Nota inválida. Escolha de 1 a 5 estrelas.' };
     }
-    
-    const deviceId = getDeviceId();
+
+    const idn = check.identidade || identidadeVoto(celularOpcional);
+    const mes = mesAnoAtual();
+    const chave = chaveVoto(idn.chave, empresaId, mes);
     const avaliacoes = getAvaliacoesLocais();
-    const chave = `${deviceId}_${empresaId}`;
-    
+
     avaliacoes[chave] = {
         empresaId,
-        nota,
-        comentario: comentario.trim().substring(0, 300),
+        nota: parseInt(nota, 10),
+        comentario: String(comentario || '').trim().substring(0, 300),
         data: new Date().toISOString(),
-        deviceId
+        mes: mes,
+        tipo: idn.tipo,
+        identidade: idn.chave
     };
-    
     salvarAvaliacoesLocais(avaliacoes);
-    
-    // Aqui depois salvamos também no Firebase
-    // salvarAvaliacaoFirebase(empresaId, nota, comentario, deviceId);
-    
-    return {
-        sucesso: true,
-        mensagem: 'Avaliação enviada com sucesso! Obrigado.'
-    };
+
+    try {
+        const listaKey = 'cd_avaliacoes_lista_' + empresaId;
+        const lista = JSON.parse(localStorage.getItem(listaKey) || '[]');
+        lista.push({
+            nota: parseInt(nota, 10),
+            tipo: idn.tipo,
+            identidade: idn.chave,
+            mes: mes,
+            em: new Date().toISOString()
+        });
+        localStorage.setItem(listaKey, JSON.stringify(lista));
+    } catch (e) {}
+
+    return { sucesso: true, mensagem: 'Avaliação enviada com sucesso! Obrigado.' };
 }
 
-/**
- * Renderiza o componente de estrelas para avaliar
- */
+function totalEstrelasEmpresa(empresaId) {
+    try {
+        const lista = JSON.parse(localStorage.getItem('cd_avaliacoes_lista_' + empresaId) || '[]');
+        return lista.reduce((acc, a) => acc + (parseInt(a.nota, 10) || 0), 0);
+    } catch { return 0; }
+}
+
+function mediaEmpresa(empresaId) {
+    try {
+        const lista = JSON.parse(localStorage.getItem('cd_avaliacoes_lista_' + empresaId) || '[]');
+        if (!lista.length) return { media: 0, total: 0 };
+        const soma = lista.reduce((acc, a) => acc + (parseInt(a.nota, 10) || 0), 0);
+        return { media: soma / lista.length, total: lista.length };
+    } catch { return { media: 0, total: 0 }; }
+}
+
 function renderEstrelasAvaliacao(containerId, empresaId) {
     const container = document.getElementById(containerId);
     if (!container) return;
-    
-    const check = podeAvaliar(empresaId);
-    
-    if (!check.pode) {
-        container.innerHTML = `
-            <div class="bg-yellow-50 border border-yellow-200 rounded-xl p-4 text-center">
-                <p class="text-yellow-800 font-medium">
-                    <i class="fas fa-info-circle mr-1"></i>
-                    Você já avaliou esta empresa recentemente.
-                </p>
-                <p class="text-yellow-600 text-sm mt-1">
-                    Poderá avaliar novamente em <strong>${check.diasRestantes} dia(s)</strong>.
-                </p>
-            </div>
-        `;
-        return;
+
+    const logado = getAnuncianteLogado();
+
+    // Se já logado, checa se já votou este mês sem pedir celular
+    if (logado) {
+        const check = podeAvaliar(empresaId, null);
+        if (!check.pode) {
+            container.innerHTML = `
+                <div class="bg-yellow-50 border border-yellow-200 rounded-xl p-4 text-center">
+                    <p class="text-yellow-800 font-medium">
+                        <i class="fas fa-info-circle mr-1"></i>
+                        Você já votou para essa loja ou comércio esse mês.
+                    </p>
+                    <p class="text-yellow-700 text-sm mt-1">Conta logada: voto único no mês, em qualquer aparelho.</p>
+                </div>`;
+            return;
+        }
     }
-    
+
+    const campoCelular = logado ? '' : `
+            <div class="mb-3">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Seu celular (WhatsApp)</label>
+                <input type="tel" id="celAvaliacao" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary" placeholder="65 9xxxx-xxxx" inputmode="numeric">
+                <p class="text-[11px] text-gray-400 mt-1">Visitante: 1 voto por mês por celular, nesta loja.</p>
+            </div>`;
+
+    const avisoLogado = logado ? `
+            <p class="text-xs text-green-700 bg-green-50 border border-green-100 rounded-lg px-3 py-2 mb-3">
+                <i class="fas fa-user-check mr-1"></i> Logado como <strong>${(logado.nome || 'anunciante').replace(/</g,'')}</strong> —
+                seu voto conta 1 vez no mês nesta loja (vale em todos os aparelhos da mesma conta).
+            </p>` : '';
+
     container.innerHTML = `
         <div class="bg-white border border-gray-200 rounded-xl p-5">
-            <h3 class="font-bold text-gray-800 mb-3">Avalie esta empresa</h3>
+            <h3 class="font-bold text-gray-800 mb-1">Avalie este estabelecimento</h3>
+            <p class="text-xs text-gray-500 mb-3">De 1 a 5 estrelas. Pode avaliar várias lojas. Cada loja: 1 voto por mês.</p>
+            ${avisoLogado}
+            ${campoCelular}
             <div class="flex gap-1 mb-4" id="estrelasSelect">
                 ${[1,2,3,4,5].map(n => `
                     <button type="button" data-nota="${n}" class="estrela-btn text-3xl text-gray-300 hover:text-yellow-400 transition focus:outline-none">
@@ -135,7 +198,7 @@ function renderEstrelasAvaliacao(containerId, empresaId) {
                     </button>
                 `).join('')}
             </div>
-            <textarea id="comentarioAvaliacao" rows="2" maxlength="300" 
+            <textarea id="comentarioAvaliacao" rows="2" maxlength="300"
                 placeholder="Comentário opcional (máx. 300 caracteres)"
                 class="w-full border border-gray-200 rounded-lg p-3 text-sm focus:outline-none focus:border-primary mb-3"></textarea>
             <button id="btnEnviarAvaliacao" class="w-full bg-primary text-white font-bold py-2.5 rounded-xl hover:bg-accent transition disabled:opacity-50" disabled>
@@ -144,12 +207,12 @@ function renderEstrelasAvaliacao(containerId, empresaId) {
             <p id="msgAvaliacao" class="text-sm mt-2 text-center hidden"></p>
         </div>
     `;
-    
+
     let notaSelecionada = 0;
     const estrelas = container.querySelectorAll('.estrela-btn');
     const btnEnviar = document.getElementById('btnEnviarAvaliacao');
     const msg = document.getElementById('msgAvaliacao');
-    
+
     estrelas.forEach(btn => {
         btn.addEventListener('click', () => {
             notaSelecionada = parseInt(btn.dataset.nota);
@@ -165,17 +228,24 @@ function renderEstrelasAvaliacao(containerId, empresaId) {
             btnEnviar.disabled = false;
         });
     });
-    
+
     btnEnviar.addEventListener('click', () => {
+        const celEl = document.getElementById('celAvaliacao');
+        const celular = celEl ? celEl.value : '';
         const comentario = document.getElementById('comentarioAvaliacao').value;
-        const resultado = registrarAvaliacao(empresaId, notaSelecionada, comentario);
-        
+        const resultado = registrarAvaliacao(empresaId, notaSelecionada, comentario, celular);
+
         msg.classList.remove('hidden');
         if (resultado.sucesso) {
             msg.className = 'text-sm mt-2 text-center text-green-600 font-medium';
             msg.textContent = resultado.mensagem;
-            // Re-renderiza para mostrar a mensagem de "já avaliou"
-            setTimeout(() => renderEstrelasAvaliacao(containerId, empresaId), 1500);
+            setTimeout(() => {
+                container.innerHTML = `
+                    <div class="bg-green-50 border border-green-200 rounded-xl p-4 text-center">
+                        <p class="text-green-800 font-medium"><i class="fas fa-check-circle mr-1"></i> Avaliação registrada.</p>
+                        <p class="text-green-700 text-sm mt-1">Você poderá votar novamente nesta loja no próximo mês.</p>
+                    </div>`;
+            }, 800);
         } else {
             msg.className = 'text-sm mt-2 text-center text-red-600 font-medium';
             msg.textContent = resultado.mensagem;
@@ -183,16 +253,10 @@ function renderEstrelasAvaliacao(containerId, empresaId) {
     });
 }
 
-/**
- * Renderiza as estrelas de média (somente leitura)
- * @param {number} media - média de 0 a 5
- * @param {number} total - quantidade de avaliações
- */
 function renderMediaEstrelas(media, total = 0) {
     const cheias = Math.floor(media);
     const meia = media % 1 >= 0.5;
     let html = '<div class="flex items-center gap-1">';
-    
     for (let i = 1; i <= 5; i++) {
         if (i <= cheias) {
             html += '<i class="fas fa-star text-yellow-400"></i>';
@@ -202,16 +266,20 @@ function renderMediaEstrelas(media, total = 0) {
             html += '<i class="far fa-star text-gray-300"></i>';
         }
     }
-    
-    html += `<span class="text-sm text-gray-500 ml-1">${media.toFixed(1)} (${total})</span></div>`;
+    if (total > 0) {
+        html += '<span class="text-sm text-gray-500 ml-1">(' + total + ')</span>';
+    }
+    html += '</div>';
     return html;
 }
 
-// Exporta para uso global
 window.Avaliacoes = {
     podeAvaliar,
     registrarAvaliacao,
     renderEstrelasAvaliacao,
     renderMediaEstrelas,
-    getDeviceId
+    totalEstrelasEmpresa,
+    mediaEmpresa,
+    normalizarCelular,
+    getAnuncianteLogado
 };

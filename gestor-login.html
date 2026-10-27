@@ -46,7 +46,7 @@
                     <div class="relative">
                         <input type="password" id="senhaGestor" required autofocus
                             class="w-full border border-gray-200 rounded-xl px-4 py-3 pr-12 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
-                            placeholder="••••••••">
+                            placeholder="Senha do gestor">
                         <button type="button" id="btnOlho" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
                             <i class="fas fa-eye"></i>
                         </button>
@@ -75,41 +75,41 @@
 
     <script src="auth-utils.js"></script>
     <script>
-        const SENHA_GESTOR = 'gestor123';
-        
         AuthUtils.preencherUltimosLogins('usuario', 'chipsUltimosLogins', 'listaUltimosLogins');
         AuthUtils.setupToggleSenha('senhaGestor', 'btnOlho');
+        
+        // Se já logado e ativo, vai direto pro hub
+        (function() {
+            const g = AuthUtils.getGestorSession();
+            if (g && g.logado && !g.bloqueado) {
+                const ultima = g.ultimaAtividade || (g.logadoEm ? new Date(g.logadoEm).getTime() : 0);
+                if (Date.now() - ultima <= 60 * 1000) {
+                    window.location.href = 'gestor-hub.html';
+                    return;
+                }
+            }
+        })();
         
         document.getElementById('formGestor').addEventListener('submit', (e) => {
             e.preventDefault();
             const usuario = document.getElementById('usuario').value.trim();
-            const senha = document.getElementById('senhaGestor').value;
+            const senha = document.getElementById('senhaGestor').value.trim();
             const msg = document.getElementById('msgErro');
             
-            if (senha === SENHA_GESTOR) {
-                AuthUtils.salvarUltimoLogin(usuario || 'gestor');
-                
-                localStorage.setItem('cd_gestor', JSON.stringify({
-                    tipo: 'gestor',
-                    nivel: 'gestor',
-                    master: true,
-                    logado: true,
-                    usuario: usuario || 'gestor',
-                    logadoEm: new Date().toISOString()
-                }));
-                
-                localStorage.setItem('cd_admin', JSON.stringify({
-                    logado: true,
-                    logadoEm: new Date().toISOString(),
-                    viaGestor: true
-                }));
-                
+            // Aceita senhas padrão IBN (login completo)
+            const SENHAS_GESTOR = ['IbnDiamantino@2026', 'IBN-Gestor-2026!'];
+            const ok = (typeof AuthUtils !== 'undefined' && AuthUtils.senhaGestorValida)
+                ? AuthUtils.senhaGestorValida(senha)
+                : SENHAS_GESTOR.includes(senha);
+            if (ok) {
+                AuthUtils.loginGestor(usuario || 'gestor');
                 window.location.href = 'gestor-hub.html';
             } else {
-                msg.textContent = 'Senha incorreta. Use: gestor123 (demo)';
+                msg.textContent = 'Senha incorreta.';
                 msg.classList.remove('hidden');
             }
         });
     </script>
+
 </body>
 </html>

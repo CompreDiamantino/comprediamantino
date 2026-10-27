@@ -92,7 +92,11 @@
         .search-input:focus {
             box-shadow: 0 0 0 3px rgba(245, 197, 24, 0.4);
         }
-    </style>
+    
+        @media (max-width: 767px) {
+            .whatsapp-float { display: none !important; }
+        }
+</style>
 </head>
 <body class="bg-light text-gray-800 font-sans antialiased">
 
@@ -269,7 +273,7 @@
                 </a>
             </div>
             
-            <!-- Grid de cards (exemplo estático - depois vem do Firebase) -->
+            <!-- Grid de cards -->
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" id="empresasDestaque">
                 <div class="col-span-full text-center py-12 bg-white rounded-2xl border border-dashed border-gray-200">
                     <i class="fas fa-store text-4xl text-gray-300 mb-3"></i>
@@ -322,26 +326,63 @@
                     <i class="fas fa-bullhorn"></i> Quero anunciar meu negócio
                 </a>
             </div>
-            <p class="text-blue-200 text-sm mt-4">Formulário de cadastro · aprovação da gestão · 7 dias grátis</p>
+            <p class="text-blue-200 text-sm mt-4">Cadastro simples · só negócios de <strong class="text-white">Diamantino-MT</strong></p>
             
-            <!-- Mini planos -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-10 max-w-2xl mx-auto text-left">
-                <div class="bg-white/10 rounded-xl p-4 border border-white/20">
-                    <p class="text-secondary font-bold text-sm mb-1">Básico</p>
-                    <p class="text-2xl font-bold">R$ 80<span class="text-sm font-normal text-blue-200">/mês</span></p>
-                    <p class="text-blue-200 text-xs mt-1">3 fotos/dia · 7 dias grátis</p>
-                </div>
-                <div class="bg-white/10 rounded-xl p-4 border-2 border-secondary">
-                    <p class="text-secondary font-bold text-sm mb-1">Plus</p>
-                    <p class="text-2xl font-bold">R$ 120<span class="text-sm font-normal text-blue-200">/mês</span></p>
-                    <p class="text-blue-200 text-xs mt-1">5 fotos/dia · 7 dias grátis</p>
-                </div>
+            <!-- Quem pode anunciar -->
+            <div class="mt-10 max-w-2xl mx-auto text-left bg-white/10 rounded-2xl p-5 border border-white/20">
+                <p class="text-secondary font-bold text-sm mb-3 text-center">Quem pode anunciar aqui</p>
+                <p class="text-blue-100 text-sm text-center mb-4">Qualquer pessoa ou negócio de Diamantino que tenha algo para vender, produzir ou oferecer — <strong class="text-white">com ou sem CNPJ</strong>:</p>
+                <ul class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm text-blue-50">
+                    <li class="flex gap-2"><i class="fas fa-check text-secondary mt-0.5"></i> Lojas e comércios</li>
+                    <li class="flex gap-2"><i class="fas fa-check text-secondary mt-0.5"></i> Padarias, mercados, lanches</li>
+                    <li class="flex gap-2"><i class="fas fa-check text-secondary mt-0.5"></i> Mecânicos e autopeças</li>
+                    <li class="flex gap-2"><i class="fas fa-check text-secondary mt-0.5"></i> Eletricistas, encanadores, serviços</li>
+                    <li class="flex gap-2"><i class="fas fa-check text-secondary mt-0.5"></i> Beleza, saúde e bem-estar</li>
+                    <li class="flex gap-2"><i class="fas fa-check text-secondary mt-0.5"></i> Moda, casa, agro, pet e outros</li>
+                    <li class="flex gap-2"><i class="fas fa-check text-secondary mt-0.5"></i> Produção caseira e artesanato</li>
+                    <li class="flex gap-2"><i class="fas fa-check text-secondary mt-0.5"></i> Economia informal e autônomos</li>
+                </ul>
+                <p class="text-center text-blue-100 text-xs mt-4">Portal de <strong class="text-white">divulgação</strong> do que é feito e vendido em Diamantino. <strong class="text-white">CNPJ não é obrigatório.</strong></p>
+                <p class="text-center text-blue-200 text-xs mt-2">Foco em quem está em <strong class="text-white">Diamantino-MT</strong>.</p>
             </div>
-            <p class="text-blue-200 text-sm mt-4">Quanto mais estrelas, maior o desconto na mensalidade</p>
         </div>
     </section>
 
     <!-- ==================== RODAPÉ ==================== -->
+    
+    <!-- ==================== SUPORTE (discreto) ==================== -->
+    <section id="contato" class="py-3 bg-gray-50 border-t border-gray-100">
+        <div class="container mx-auto px-4 max-w-md">
+            <details class="bg-white rounded-lg border border-gray-100">
+                <summary class="cursor-pointer list-none px-4 py-2 flex items-center justify-between text-xs text-gray-500 hover:text-primary">
+                    <span class="inline-flex items-center gap-1.5 font-medium">
+                        <i class="fas fa-headset text-primary/60 text-xs"></i> Precisa de suporte?
+                    </span>
+                    <span class="text-[11px] text-gray-400">Abrir</span>
+                </summary>
+                <div class="px-5 pb-5 pt-1 border-t border-gray-50">
+                    <p class="text-xs text-gray-500 mb-3">Envie uma mensagem à equipe do portal. Usamos isso para suporte técnico e dúvidas sobre anúncio.</p>
+                    <form id="formContatoSite" class="space-y-3">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <input type="text" id="contatoNome" required class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary" placeholder="Seu nome">
+                            <input type="tel" id="contatoTel" required class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary" placeholder="WhatsApp">
+                        </div>
+                        <textarea id="contatoMsg" required rows="2" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary" placeholder="Descreva o problema ou a dúvida"></textarea>
+                        <div class="flex flex-col sm:flex-row gap-2">
+                            <button type="submit" class="flex-1 bg-primary text-white text-sm font-semibold py-2.5 rounded-lg hover:bg-accent transition">
+                                Enviar ao suporte
+                            </button>
+                            <a href="https://wa.me/5565999667725?text=Olá! Preciso de suporte no Compre Diamantino" target="_blank" class="flex-1 text-center text-sm font-semibold py-2.5 rounded-lg border border-green-500 text-green-700 hover:bg-green-50 transition">
+                                <i class="fab fa-whatsapp"></i> WhatsApp
+                            </a>
+                        </div>
+                        <p id="contatoOk" class="hidden text-center text-green-700 text-xs font-medium">Mensagem enviada ao suporte. O gestor foi avisado.</p>
+                    </form>
+                </div>
+            </details>
+        </div>
+    </section>
+
     <footer class="bg-dark text-gray-300 py-12">
         <div class="container mx-auto px-4">
             <div class="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
@@ -375,7 +416,7 @@
                     <ul class="space-y-3 text-sm">
                         <li class="flex items-center gap-2">
                             <i class="fab fa-whatsapp text-green-400"></i>
-                            <a href="https://wa.me/5565999999999" class="hover:text-secondary">(65) 99999-9999</a>
+                            <a href="https://wa.me/5565999667725" class="hover:text-secondary">(65) 99966-7725</a>
                         </li>
                         <li class="flex items-center gap-2">
                             <i class="fas fa-envelope text-blue-400"></i>
@@ -398,7 +439,7 @@
                         <a href="#" class="w-10 h-10 bg-gray-700 rounded-full flex items-center justify-center hover:bg-secondary hover:text-primary transition">
                             <i class="fab fa-facebook-f"></i>
                         </a>
-                        <a href="https://wa.me/5565999999999" class="w-10 h-10 bg-gray-700 rounded-full flex items-center justify-center hover:bg-green-500 transition">
+                        <a href="https://wa.me/5565999667725" class="w-10 h-10 bg-gray-700 rounded-full flex items-center justify-center hover:bg-green-500 transition">
                             <i class="fab fa-whatsapp"></i>
                         </a>
                     </div>
@@ -413,10 +454,16 @@
                 </div>
             </div>
         </div>
+    
+                <p class="text-xs text-gray-500 mt-4 max-w-md">
+                    De outra cidade e gostou da ideia? Entre em contato pelo
+                    <a href="#contato" class="text-secondary hover:underline">suporte</a>
+                    — podemos conversar sobre um portal assim na sua cidade.
+                </p>
     </footer>
 
     <!-- Botão WhatsApp flutuante -->
-    <a href="https://wa.me/5565999999999?text=Olá! Vim pelo site Compre Diamantino" target="_blank" class="whatsapp-float bg-green-500 text-white w-14 h-14 rounded-full flex items-center justify-center shadow-lg hover:bg-green-600 transition">
+    <a href="https://wa.me/5565999667725?text=Olá! Vim pelo site Compre Diamantino" target="_blank" class="whatsapp-float hidden md:flex bg-green-500 text-white w-14 h-14 rounded-full flex items-center justify-center shadow-lg hover:bg-green-600 transition">
         <i class="fab fa-whatsapp text-3xl"></i>
     </a>
 
@@ -477,5 +524,46 @@
         // fallback se script demorar
         setTimeout(carregarOfertasHome, 600);
     </script>
+    <script src="auth-utils.js"></script>
+    <script src="auth-utils.js"></script>
+    <script>
+      document.addEventListener('DOMContentLoaded', function () {
+        if (window.AuthUtils && AuthUtils.renderBarraSessao) AuthUtils.renderBarraSessao();
+      });
+    </script>
+    <script src="notificacoes-gestor.js"></script>
+
+    <script>
+      (function(){
+        var form = document.getElementById('formContatoSite');
+        if (!form) return;
+        form.addEventListener('submit', function(e){
+          e.preventDefault();
+          var nome = (document.getElementById('contatoNome').value || '').trim();
+          var tel = (document.getElementById('contatoTel').value || '').trim();
+          var msg = (document.getElementById('contatoMsg').value || '').trim();
+          if (!nome || !msg) return;
+
+          // Guarda mensagem local
+          try {
+            var lista = JSON.parse(localStorage.getItem('cd_mensagens_contato') || '[]');
+            lista.unshift({ id: 'm'+Date.now(), nome: nome, tel: tel, msg: msg, em: new Date().toISOString(), lida: false });
+            localStorage.setItem('cd_mensagens_contato', JSON.stringify(lista.slice(0, 100)));
+          } catch(err) {}
+
+          // Aviso luminoso para o gestor (roxo)
+          if (window.NotifGestor && NotifGestor.add) {
+            NotifGestor.add('contato', 'Mensagem de ' + nome,
+              (tel ? tel + ' · ' : '') + msg.substring(0, 120),
+              { nome: nome, tel: tel });
+          }
+
+          document.getElementById('contatoOk').classList.remove('hidden');
+          form.reset();
+          setTimeout(function(){ document.getElementById('contatoOk').classList.add('hidden'); }, 4000);
+        });
+      })();
+    </script>
+
 </body>
 </html>

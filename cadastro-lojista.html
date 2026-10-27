@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" type="image/png" href="icon-192.png">
-    <title>Cadastrar meu negócio — Compre Diamantino</title>
+    <title>Cadastrar negócio — Compre Diamantino</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
     <script>
@@ -30,7 +30,7 @@
 
     <div class="container mx-auto px-4 py-8 max-w-lg">
         <h1 class="text-2xl font-bold text-primary text-center mb-1">Cadastrar meu negócio</h1>
-        <p class="text-center text-gray-500 text-sm mb-6">Somente empresas de <strong>Diamantino-MT</strong></p>
+        <p class="text-center text-gray-500 text-sm mb-6">Lojas, serviços, ofícios e economia informal de <strong>Diamantino-MT</strong> — padaria, mecânica, artesanato, produção caseira e muito mais. <strong>CNPJ não é obrigatório</strong></p>
 
         <!-- Steps indicator -->
         <div class="flex justify-between mb-8 text-xs font-bold">
@@ -52,18 +52,38 @@
                 <input id="whatsapp" type="tel" required class="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-primary" placeholder="65 99999-9999">
             </div>
             <div>
-                <label class="block text-sm font-medium mb-1">E-mail</label>
-                <input id="email" type="email" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-primary" placeholder="opcional">
+                <label class="block text-sm font-medium mb-1">E-mail (para login)</label>
+                <input id="email" type="email" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-primary" placeholder="seu@email.com">
+                <p class="text-xs text-gray-400 mt-1">Login pode ser e-mail ou WhatsApp</p>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-sm font-medium mb-1">Senha de acesso *</label>
+                    <input id="senha" type="password" required class="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-primary" placeholder="Mín. 6 caracteres" autocomplete="new-password">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">Confirmar senha *</label>
+                    <input id="senha2" type="password" required class="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-primary" placeholder="Repita a senha" autocomplete="new-password">
+                </div>
             </div>
             <div>
-                <label class="block text-sm font-medium mb-1">Nome do estabelecimento *</label>
-                <input id="nomeLoja" type="text" required class="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-primary" placeholder="Como aparece no portal">
+                <label class="block text-sm font-medium mb-1">Nome do negócio / o que você anuncia *</label>
+                <input id="nomeLoja" type="text" required class="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-primary" placeholder="Nome do negócio, da barraca, do serviço...">
             </div>
             <div>
                 <label class="block text-sm font-medium mb-1">Endereço em Diamantino *</label>
                 <input id="endereco" type="text" required class="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-primary" placeholder="Rua, número, bairro">
+                <input type="hidden" id="mapsLink" value="">
+                <input type="hidden" id="coordLat" value="">
+                <input type="hidden" id="coordLng" value="">
+                <div class="mt-2 flex flex-wrap gap-2">
+                    <button type="button" id="btnAbrirMaps" class="text-xs font-semibold bg-white border border-primary text-primary px-3 py-1.5 rounded-lg hover:bg-blue-50 transition">
+                        <i class="fas fa-map-marker-alt mr-1"></i> Abrir no Google Maps e salvar localização
+                    </button>
+                    <span id="mapsStatus" class="text-xs text-gray-400 self-center"></span>
+                </div>
             </div>
-            <p class="text-xs text-gray-400">Cidade fixa: Diamantino-MT (outras cidades não são aceitas)</p>
+            <p class="text-xs text-gray-400">Somente <strong>Diamantino-MT</strong>. Use o Maps para marcar o ponto exato no mapa do portal.</p>
             <button type="button" onclick="irPasso(2)" class="w-full bg-primary text-white font-bold py-3 rounded-xl hover:bg-accent transition">Continuar</button>
         </div>
 
@@ -108,9 +128,48 @@
                 <span class="block text-sm text-gray-500 ml-6"><strong>5 fotos por dia</strong> · destaque e prioridade no mapa</span>
             </label>
 
-            <div class="bg-amber-50 border border-amber-100 rounded-xl p-4 text-sm text-amber-950">
-                <p class="font-bold mb-1"><i class="fas fa-star text-yellow-500"></i> Pode ficar gratuito</p>
-                <p>Quanto mais clientes avaliarem (1 a 5★) e quanto melhor a nota, maior o desconto na <strong>próxima mensalidade</strong>. Quanto mais clientes avaliarem e quanto melhores as notas, <strong>maior o desconto na mensalidade</strong>. O percentual é aplicado pela gestão.</p>
+            <div class="border border-gray-200 rounded-xl p-4 bg-gray-50">
+                <label class="block text-sm font-medium text-gray-800 mb-1">Melhor dia para pagamento *</label>
+                <p class="text-xs text-gray-500 mb-2">Escolha o dia do mês em que prefere pagar a manutenção. O vencimento mensal segue esse dia.</p>
+                <select id="diaPagamento" required class="w-full border border-gray-200 rounded-xl px-4 py-2.5 bg-white focus:outline-none focus:border-primary">
+                    <option value="">Selecione o dia…</option>
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                    <option value="4">4</option>
+                    <option value="5">5</option>
+                    <option value="6">6</option>
+                    <option value="7">7</option>
+                    <option value="8">8</option>
+                    <option value="9">9</option>
+                    <option value="10">10</option>
+                    <option value="11">11</option>
+                    <option value="12">12</option>
+                    <option value="13">13</option>
+                    <option value="14">14</option>
+                    <option value="15">15</option>
+                    <option value="16">16</option>
+                    <option value="17">17</option>
+                    <option value="18">18</option>
+                    <option value="19">19</option>
+                    <option value="20">20</option>
+                    <option value="21">21</option>
+                    <option value="22">22</option>
+                    <option value="23">23</option>
+                    <option value="24">24</option>
+                    <option value="25">25</option>
+                    <option value="26">26</option>
+                    <option value="27">27</option>
+                    <option value="28">28</option>
+                </select>
+                <p class="text-[11px] text-gray-400 mt-1">Dias 1 a 28 (evita problema em meses curtos). A gestão usa este dia no boleto/aviso de renovação.</p>
+            </div>
+
+            <div class="bg-amber-50 border border-amber-100 rounded-xl p-4 text-sm text-amber-950 space-y-2">
+                <p class="font-bold"><i class="fas fa-info-circle text-amber-600"></i> Custo de manutenção do site</p>
+                <p>Os valores (R$ 80 ou R$ 120) servem para <strong>manutenção do portal</strong> (hospedagem, mapa, atualizações). Não é “aluguel de vitrine” comercial à parte — é o custo de manter o Compre Diamantino no ar para a cidade.</p>
+                <p class="font-bold pt-1"><i class="fas fa-star text-yellow-500"></i> Bônus por estrelas</p>
+                <p>Visitantes e outros anunciantes podem dar nota (1 a 5★). Cada pessoa vota <strong>só 1 vez por mês</strong> em cada estabelecimento (controle pelo celular). A partir de <strong>500 estrelas</strong> começa o desconto na mensalidade; quanto mais estrelas, maior o bônus (pode chegar a 100%). O desconto é aplicado pela gestão na renovação.</p>
             </div>
 
             <div class="flex gap-2">
@@ -131,7 +190,7 @@
 
             <label class="flex items-start gap-2 text-sm text-gray-600">
                 <input type="checkbox" id="aceite" class="mt-1">
-                <span>Li e concordo: o site é para divulgação em Diamantino-MT; após o período grátis há taxa de manutenção (R$ 80 ou R$ 120 conforme o plano); descontos por estrelas são aplicados pela gestão.</span>
+                <span>Li e concordo: o portal é só para <strong>divulgação</strong> em <strong>Diamantino-MT</strong> (formal ou informal; CNPJ não obrigatório); após os 7 dias grátis há taxa de manutenção do site (R$ 80 ou R$ 120); o sistema de estrelas (a partir de 500) gera desconto aplicado pela gestão; cada celular vota só 1 vez por mês em cada loja.</span>
             </label>
 
             <div id="msgErro" class="hidden text-red-600 text-sm font-medium"></div>
@@ -153,6 +212,36 @@
 
     <script>
         let passo = 1;
+
+        document.getElementById('btnAbrirMaps') && document.getElementById('btnAbrirMaps').addEventListener('click', function () {
+            var end = (document.getElementById('endereco').value || '').trim();
+            if (!end) {
+                alert('Digite o endereço (rua, número, bairro) antes de abrir o Maps.');
+                return;
+            }
+            var q = encodeURIComponent(end + ', Diamantino, Mato Grosso, Brasil');
+            // Abre busca no Google Maps para a pessoa confirmar/salvar o local
+            window.open('https://www.google.com/maps/search/?api=1&query=' + q, '_blank');
+            // Pede o link do ponto (compartilhar > copiar link)
+            setTimeout(function () {
+                var link = prompt('No Google Maps: toque em "Compartilhar" → "Copiar link" e cole aqui para salvar a localização no portal:');
+                if (!link) return;
+                link = link.trim();
+                document.getElementById('mapsLink').value = link;
+                // tenta extrair lat,lng se houver
+                var m = link.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/) || link.match(/[?&]q=(-?\d+\.\d+),(-?\d+\.\d+)/) || link.match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/);
+                if (m) {
+                    document.getElementById('coordLat').value = m[1];
+                    document.getElementById('coordLng').value = m[2];
+                }
+                var st = document.getElementById('mapsStatus');
+                if (st) {
+                    st.textContent = 'Localização salva ✓';
+                    st.className = 'text-xs text-green-600 self-center font-medium';
+                }
+            }, 600);
+        });
+
         let categoria = '';
 
         document.querySelectorAll('.cat-btn').forEach(btn => {
@@ -173,6 +262,16 @@
                     alert('Preencha os campos obrigatórios (*)');
                     return;
                 }
+                const s1 = (document.getElementById('senha') || {}).value || '';
+                const s2 = (document.getElementById('senha2') || {}).value || '';
+                if (!s1 || s1.length < 6) {
+                    alert('Defina uma senha de acesso com pelo menos 6 caracteres.');
+                    return;
+                }
+                if (s1 !== s2) {
+                    alert('As senhas não conferem.');
+                    return;
+                }
             }
             if (n === 3 && !categoria) {
                 alert('Escolha o ramo de atividade');
@@ -185,9 +284,11 @@
                     '<p><strong>Loja:</strong> ' + document.getElementById('nomeLoja').value + '</p>' +
                     '<p><strong>Responsável:</strong> ' + document.getElementById('nomeResp').value + '</p>' +
                     '<p><strong>WhatsApp:</strong> ' + document.getElementById('whatsapp').value + '</p>' +
+                    '<p><strong>Login:</strong> e-mail ou WhatsApp + senha definida</p>' +
                     '<p><strong>Endereço:</strong> ' + document.getElementById('endereco').value + ' — Diamantino-MT</p>' +
                     '<p><strong>Ramo:</strong> ' + categoria + '</p>' +
                     '<p><strong>Plano:</strong> ' + planoTxt + '</p>' +
+                    '<p><strong>Dia de pagamento:</strong> todo dia ' + (document.getElementById('diaPagamento').value || '—') + '</p>' +
                     '<p><strong>7 dias grátis</strong> · depois taxa de manutenção · estrelas podem zerar a mensalidade</p>';
             }
 
@@ -213,15 +314,30 @@
                 responsavel: document.getElementById('nomeResp').value.trim(),
                 whatsapp: document.getElementById('whatsapp').value.trim(),
                 email: document.getElementById('email').value.trim(),
+                senha: (document.getElementById('senha') || {}).value || '',
                 endereco: document.getElementById('endereco').value.trim() + ' — Diamantino-MT',
+                mapsLink: (document.getElementById('mapsLink') || {}).value || '',
+                lat: parseFloat((document.getElementById('coordLat') || {}).value) || null,
+                lng: parseFloat((document.getElementById('coordLng') || {}).value) || null,
                 categoria: categoria,
                 descricao: document.getElementById('descricao').value.trim(),
                 plano: plano,
+                diaPagamento: parseInt(document.getElementById('diaPagamento').value, 10) || 10,
                 status: 'pendente',
                 vencimento: null,
                 criadoEm: new Date().toISOString(),
                 trialDias: 7
             };
+            // Calcula 1º vencimento após trial (7 dias), no dia escolhido
+            (function () {
+                const dia = reg.diaPagamento;
+                const base = new Date();
+                base.setDate(base.getDate() + 7);
+                let y = base.getFullYear(), m = base.getMonth(), d = dia;
+                let venc = new Date(y, m, d);
+                if (venc < base) venc = new Date(y, m + 1, d);
+                reg.vencimento = venc.toISOString().slice(0, 10);
+            })();
 
             // Fila do gestor (igual pedidos do IBN)
             let lista = [];
@@ -241,7 +357,12 @@
                     plano: reg.plano,
                     status: 'pendente',
                     whatsapp: reg.whatsapp,
-                    endereco: reg.endereco
+                    endereco: reg.endereco,
+                    mapsLink: reg.mapsLink || '',
+                    lat: reg.lat,
+                    lng: reg.lng,
+                    diaPagamento: reg.diaPagamento,
+                    vencimento: reg.vencimento
                 });
             }
 
@@ -251,5 +372,20 @@
     </script>
     <script src="empresas-dados.js"></script>
     <script src="notificacoes-gestor.js"></script>
+    <script src="auth-utils.js"></script>
+    <script src="auth-utils.js"></script>
+    <script>
+      document.addEventListener('DOMContentLoaded', function () {
+        if (window.AuthUtils && AuthUtils.renderBarraSessao) AuthUtils.renderBarraSessao();
+      });
+    </script>
 </body>
 </html>
+            if (n === 4) {
+                const dia = document.getElementById('diaPagamento');
+                if (!dia || !dia.value) {
+                    alert('Escolha o melhor dia do mês para o pagamento.');
+                    return;
+                }
+            }
+

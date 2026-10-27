@@ -88,29 +88,28 @@
         <div class="container mx-auto px-4 py-8">
             <div class="flex flex-col md:flex-row items-center md:items-start gap-6">
                 <!-- Logo -->
-                <div class="w-28 h-28 md:w-32 md:h-32 bg-gradient-to-br from-blue-100 to-blue-50 rounded-2xl shadow-md flex items-center justify-center text-4xl font-bold text-primary flex-shrink-0">
-                    P
+                <div id="empLogo" class="w-28 h-28 md:w-32 md:h-32 bg-gradient-to-br from-blue-100 to-blue-50 rounded-2xl shadow-md flex items-center justify-center text-4xl font-bold text-primary flex-shrink-0">
+                    —
                 </div>
                 
                 <div class="flex-1 text-center md:text-left">
                     <div class="flex flex-wrap items-center justify-center md:justify-start gap-2 mb-2">
-                        <h1 class="text-2xl md:text-3xl font-bold text-gray-900">Padaria do Centro</h1>
-                        <span class="selo-premium text-xs font-bold px-2.5 py-1 rounded-full">Premium</span>
+                        <h1 id="empNome" class="text-2xl md:text-3xl font-bold text-gray-900">Carregando…</h1>
+                        <span id="empSelo" class="hidden text-xs font-bold px-2.5 py-1 rounded-full"></span>
                     </div>
                     
-                    <p class="text-gray-500 mb-3">
-                        <i class="fas fa-utensils text-orange-400 mr-1"></i> Alimentação · Padaria
+                    <p id="empCat" class="text-gray-500 mb-3">
+                        —
                     </p>
                     
-                    <p class="text-gray-700 max-w-xl leading-relaxed">
-                        Pães frescos todos os dias, doces caseiros, salgados e café da manhã completo. Tradição e qualidade no centro de Diamantino desde 1998.
+                    <p id="empDesc" class="text-gray-700 max-w-xl leading-relaxed">
                     </p>
                     
                     <div class="flex flex-wrap gap-3 mt-5 justify-center md:justify-start">
-                        <a href="https://wa.me/5565999999999?text=Olá! Vi o perfil da Padaria do Centro no Compre Diamantino" target="_blank" class="btn-whatsapp text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 shadow-md">
+                        <a id="empWhats" href="#" target="_blank" class="btn-whatsapp text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 shadow-md hidden">
                             <i class="fab fa-whatsapp text-xl"></i> Falar no WhatsApp
                         </a>
-                        <a href="https://www.google.com/maps/dir/?api=1&destination=-14.4089,-56.4458" target="_blank" class="bg-primary text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 hover:bg-accent transition">
+                        <a id="empMaps" href="#" target="_blank" class="bg-primary text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 hover:bg-accent transition">
                             <i class="fas fa-location-arrow"></i> Como chegar
                         </a>
                     </div>
@@ -186,7 +185,7 @@
                             </div>
                             <div>
                                 <p class="font-semibold text-gray-900">WhatsApp</p>
-                                <a href="https://wa.me/5565999999999" class="text-green-600 text-sm font-medium hover:underline">(65) 99999-9999</a>
+                                <a href="https://wa.me/5565999667725" class="text-green-600 text-sm font-medium hover:underline">(65) 99966-7725</a>
                             </div>
                         </div>
                         
@@ -227,7 +226,7 @@
                 <i class="fas fa-star text-yellow-400 mr-2"></i> Avaliações
             </h2>
             
-            <!-- Média (exemplo) -->
+            <!-- Média de avaliações -->
             <div class="flex items-center gap-3 mb-6 p-4 bg-yellow-50 rounded-xl">
                 <span class="text-3xl font-bold text-yellow-500">4.5</span>
                 <div>
@@ -284,37 +283,94 @@
     </footer>
 
     <!-- WhatsApp flutuante -->
-    <a href="https://wa.me/5565999999999?text=Olá! Vi o perfil da Padaria do Centro no Compre Diamantino" target="_blank" class="whatsapp-float bg-green-500 text-white w-14 h-14 rounded-full flex items-center justify-center shadow-lg">
+    <a id="empWhatsFloat" href="#" target="_blank" class="whatsapp-float bg-green-500 text-white w-14 h-14 rounded-full flex items-center justify-center shadow-lg">
         <i class="fab fa-whatsapp text-3xl"></i>
     </a>
 
-    <!-- Sistema de Avaliações -->
+    <script src="empresas-dados.js"></script>
     <script src="avaliacoes.js"></script>
     <script>
-        // ID da empresa (depois vem da URL ou Firebase)
-        const empresaId = new URLSearchParams(window.location.search).get('id') || '1';
-        
-        // Renderiza o formulário de avaliação
-        document.addEventListener('DOMContentLoaded', () => {
+        const empresaId = new URLSearchParams(window.location.search).get('id') || '';
+        let EMPRESA_LAT = -14.4089;
+        let EMPRESA_LNG = -56.4458;
+        let EMPRESA_NOME = 'Empresa';
+
+        const CAT_LABEL = {
+            alimentacao: 'Alimentação', moda: 'Moda e Vestuário', casa: 'Casa e Construção',
+            automotivo: 'Automotivo', saude: 'Saúde e Beleza', servicos: 'Serviços',
+            agro: 'Agro e Pet', outros: 'Outros', 'servicos-publicos': 'Serviços públicos'
+        };
+
+        function carregarEmpresa() {
+            let emp = null;
+            if (window.EmpresasDados && empresaId) {
+                const lista = EmpresasDados.seedSeVazio ? EmpresasDados.seedSeVazio() : [];
+                emp = lista.find(e => String(e.id) === String(empresaId));
+                // Também busca nos lojistas admin (cadastro real)
+                if (!emp) {
+                    try {
+                        const lj = JSON.parse(localStorage.getItem('cd_lojistas_admin') || '[]');
+                        emp = lj.find(e => String(e.id) === String(empresaId));
+                    } catch (_) {}
+                }
+            }
+            if (!emp) {
+                document.getElementById('empNome').textContent = 'Empresa não encontrada';
+                document.getElementById('empDesc').textContent = 'Este perfil não está disponível ou ainda não foi liberado.';
+                return;
+            }
+            EMPRESA_NOME = emp.nome || 'Empresa';
+            EMPRESA_LAT = typeof emp.lat === 'number' ? emp.lat : EMPRESA_LAT;
+            EMPRESA_LNG = typeof emp.lng === 'number' ? emp.lng : EMPRESA_LNG;
+
+            document.getElementById('empNome').textContent = EMPRESA_NOME;
+            document.getElementById('empLogo').textContent = (EMPRESA_NOME.charAt(0) || 'E').toUpperCase();
+            document.title = EMPRESA_NOME + ' — Compre Diamantino';
+
+            const cat = CAT_LABEL[emp.categoria] || emp.categoria || '';
+            document.getElementById('empCat').innerHTML = cat ? '<i class="fas fa-tag text-primary mr-1"></i> ' + cat : '';
+
+            const desc = emp.descricao || emp.endereco || '';
+            document.getElementById('empDesc').textContent = desc;
+
+            const selo = document.getElementById('empSelo');
+            if (emp.plano === 'premium') {
+                selo.textContent = 'Premium';
+                selo.className = 'selo-premium text-xs font-bold px-2.5 py-1 rounded-full';
+                selo.classList.remove('hidden');
+            } else if (emp.plano === 'destaque') {
+                selo.textContent = 'Destaque';
+                selo.className = 'bg-yellow-100 text-yellow-800 text-xs font-bold px-2.5 py-1 rounded-full';
+                selo.classList.remove('hidden');
+            }
+
+            const wa = (emp.whatsapp || '').replace(/\D/g, '');
+            if (wa) {
+                const link = 'https://wa.me/55' + wa + '?text=' + encodeURIComponent('Olá! Vi o perfil de ' + EMPRESA_NOME + ' no Compre Diamantino');
+                const w1 = document.getElementById('empWhats');
+                w1.href = link;
+                w1.classList.remove('hidden');
+                const wf = document.getElementById('empWhatsFloat');
+                if (wf) { wf.href = link; wf.classList.remove('hidden'); }
+            }
+
+            const maps = document.getElementById('empMaps');
+            if (emp.mapsLink) {
+                maps.href = emp.mapsLink;
+            } else {
+                maps.href = 'https://www.google.com/maps/dir/?api=1&destination=' + EMPRESA_LAT + ',' + EMPRESA_LNG;
+            }
+
             if (window.Avaliacoes) {
                 Avaliacoes.renderEstrelasAvaliacao('boxAvaliacao', empresaId);
             }
-        });
-    </script>
+        }
 
-
-    <!-- Google Maps API - Compre Diamantino -->
-    <script>
-        // Coordenadas exemplo: Centro de Diamantino-MT
-        // Depois vem do Firebase (lat/lng de cada empresa)
-        const EMPRESA_LAT = -14.4089;
-        const EMPRESA_LNG = -56.4458;
-        const EMPRESA_NOME = 'Padaria do Centro';
+        document.addEventListener('DOMContentLoaded', carregarEmpresa);
 
         function initMapaEmpresa() {
             const el = document.getElementById('mapa');
             if (!el || typeof google === 'undefined') return;
-
             const pos = { lat: EMPRESA_LAT, lng: EMPRESA_LNG };
             const map = new google.maps.Map(el, {
                 zoom: 16,
@@ -323,17 +379,20 @@
                 streetViewControl: false,
                 fullscreenControl: true
             });
-
-            new google.maps.Marker({
-                position: pos,
-                map: map,
-                title: EMPRESA_NOME
-            });
+            new google.maps.Marker({ position: pos, map: map, title: EMPRESA_NOME });
         }
+        window.initMapaEmpresa = initMapaEmpresa;
     </script>
     <script async defer
         src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAyI5024_D8FRdrr8TAj2XUciWjkKwmZwg&callback=initMapaEmpresa&language=pt-BR">
     </script>
 
+    <script src="auth-utils.js"></script>
+    <script src="auth-utils.js"></script>
+    <script>
+      document.addEventListener('DOMContentLoaded', function () {
+        if (window.AuthUtils && AuthUtils.renderBarraSessao) AuthUtils.renderBarraSessao();
+      });
+    </script>
 </body>
 </html>

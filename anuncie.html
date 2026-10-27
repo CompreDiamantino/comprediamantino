@@ -86,7 +86,7 @@
                 Seu negócio no portal do<br class="hidden md:block"> comércio de Diamantino
             </h1>
             <p class="text-blue-100 text-lg md:text-xl max-w-2xl mx-auto mb-8">
-                Tenha uma vitrine profissional com fotos, mapa, WhatsApp e destaque. Seja encontrado por quem procura na cidade.
+                Tenha uma vitrine profissional com fotos, mapa, WhatsApp e destaque. Seja encontrado por quem procura na cidade. Vale comércio formal e economia informal — CNPJ não é obrigatório.
             </p>
             <a href="#planos" class="inline-flex items-center gap-2 bg-secondary text-primary px-8 py-4 rounded-2xl font-bold text-lg hover:bg-yellow-400 transition shadow-lg">
                 Ver planos <i class="fas fa-arrow-down"></i>
@@ -146,8 +146,8 @@
                     <h3 class="text-lg font-bold text-gray-700 mb-1">Básico</h3>
                     <p class="text-sm text-gray-400 mb-4">3 fotos por dia na vitrine</p>
                     <div class="mb-6">
-                        <span class="text-4xl font-bold text-primary">R$ 80</span>
-                        <span class="text-gray-400">/mês</span>
+                        <span class="text-4xl font-bold text-primary">Consulte</span>
+                        <span class="text-gray-400"></span>
                     </div>
                     <ul class="space-y-3 text-sm text-gray-600 mb-8">
                         <li class="flex items-center gap-2"><i class="fas fa-check text-green-500"></i> Perfil da empresa no portal</li>
@@ -156,7 +156,7 @@
                         <li class="flex items-center gap-2"><i class="fas fa-check text-green-500"></i> Aparece nas categorias</li>
                         <li class="flex items-center gap-2"><i class="fas fa-gift text-secondary"></i> 7 dias grátis no lançamento</li>
                     </ul>
-                    <a href="https://wa.me/5565999999999?text=Olá! Quero o plano Básico (R$80) do Compre Diamantino" target="_blank" class="block w-full text-center bg-gray-100 text-primary font-bold py-3 rounded-xl hover:bg-gray-200 transition">
+                    <a href="https://wa.me/5565999667725?text=Olá! Quero o plano Básico (R$80) do Compre Diamantino" target="_blank" class="block w-full text-center bg-gray-100 text-primary font-bold py-3 rounded-xl hover:bg-gray-200 transition">
                         Quero este plano
                     </a>
                 </div>
@@ -167,8 +167,8 @@
                     <h3 class="text-lg font-bold text-gray-700 mb-1">Plus</h3>
                     <p class="text-sm text-gray-400 mb-4">5 fotos por dia na vitrine</p>
                     <div class="mb-6">
-                        <span class="text-4xl font-bold text-primary">R$ 120</span>
-                        <span class="text-gray-400">/mês</span>
+                        <span class="text-4xl font-bold text-primary">Consulte</span>
+                        <span class="text-gray-400"></span>
                     </div>
                     <ul class="space-y-3 text-sm text-gray-600 mb-8">
                         <li class="flex items-center gap-2"><i class="fas fa-check text-green-500"></i> Tudo do plano Básico</li>
@@ -177,7 +177,7 @@
                         <li class="flex items-center gap-2"><i class="fas fa-check text-green-500"></i> Prioridade no mapa</li>
                         <li class="flex items-center gap-2"><i class="fas fa-gift text-secondary"></i> 7 dias grátis no lançamento</li>
                     </ul>
-                    <a href="https://wa.me/5565999999999?text=Olá! Quero o plano Plus (R$120) do Compre Diamantino" target="_blank" class="block w-full text-center bg-secondary text-primary font-bold py-3 rounded-xl hover:bg-yellow-400 transition">
+                    <a href="https://wa.me/5565999667725?text=Olá! Quero o plano Plus (R$120) do Compre Diamantino" target="_blank" class="block w-full text-center bg-secondary text-primary font-bold py-3 rounded-xl hover:bg-yellow-400 transition">
                         Quero este plano
                     </a>
                 </div>
@@ -226,7 +226,7 @@
             <h2 class="text-2xl md:text-3xl font-bold mb-4">Pronto para aparecer em Diamantino?</h2>
             <p class="text-blue-100 mb-8 max-w-lg mx-auto">Fale conosco agora e tire suas dúvidas. Sem compromisso.</p>
             
-            <a href="https://wa.me/5565999999999?text=Olá! Quero anunciar meu negócio no Compre Diamantino" target="_blank" class="inline-flex items-center gap-3 btn-whatsapp text-white px-8 py-4 rounded-2xl font-bold text-lg shadow-lg">
+            <a href="https://wa.me/5565999667725?text=Olá! Quero anunciar meu negócio no Compre Diamantino" target="_blank" class="inline-flex items-center gap-3 btn-whatsapp text-white px-8 py-4 rounded-2xl font-bold text-lg shadow-lg">
                 <i class="fab fa-whatsapp text-2xl"></i> Falar no WhatsApp agora
             </a>
         </div>
@@ -237,5 +237,12 @@
         <p>© 2026 Compre Diamantino · <a href="index.html" class="hover:text-secondary">Voltar ao início</a></p>
     </footer>
 
+    <script src="auth-utils.js"></script>
+    <script src="auth-utils.js"></script>
+    <script>
+      document.addEventListener('DOMContentLoaded', function () {
+        if (window.AuthUtils && AuthUtils.renderBarraSessao) AuthUtils.renderBarraSessao();
+      });
+    </script>
 </body>
 </html>

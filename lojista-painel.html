@@ -34,7 +34,7 @@
             <div class="flex items-center justify-between h-14">
                 <div class="flex items-center gap-2">
                     <img src="icon-192.png" alt="Logo" class="w-8 h-8 rounded-full">
-                    <span class="font-bold text-sm sm:text-base">Área do Lojista</span>
+                    <span class="font-bold text-sm sm:text-base">Área do Anunciante</span>
                 </div>
                 <div class="flex items-center gap-3">
                     <span id="nomeLojista" class="text-sm hidden sm:block text-blue-200"></span>
@@ -112,7 +112,7 @@
                             <label class="block text-sm font-medium text-gray-700 mb-1">WhatsApp (com DDD) *</label>
                             <input type="tel" id="whatsapp" required
                                 class="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-primary"
-                                placeholder="65999999999">
+                                placeholder="65999667725">
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Instagram (opcional)</label>
@@ -282,6 +282,7 @@
 
     </div>
 
+    <script src="auth-utils.js"></script>
     <script>
         // ========== PROTEÇÃO DE ACESSO ==========
         let lojista = JSON.parse(localStorage.getItem('cd_lojista') || 'null');
@@ -291,14 +292,19 @@
         if (!lojista && !(gestor && gestor.logado)) {
             window.location.href = 'lojista-login.html';
         }
+        // Se gestor, mantém sessão ativa (não pede re-login ao voltar)
+        if (gestor && gestor.logado && typeof AuthUtils !== 'undefined') {
+            AuthUtils.tocarAtividadeGestor();
+            AuthUtils.protegerPaginaGestor({ loginUrl: 'gestor-login.html' });
+        }
         
-        // Se gestor entrou sem escolher lojista, cria sessão demo
+        // Gestor sem lojista escolhido: sessão de visualização (sem empresa fictícia)
         if (!lojista && gestor && gestor.logado) {
             lojista = {
-                email: 'gestor@admin',
+                email: gestor.usuario || 'gestor',
                 nome: 'Gestor',
-                empresaId: 'demo001',
-                plano: 'premium',
+                empresaId: '',
+                plano: '',
                 status: 'ativo',
                 viaGestor: true,
                 logadoEm: new Date().toISOString()
@@ -375,7 +381,7 @@
             document.getElementById('contadorDesc').textContent = e.target.value.length;
         });
         
-        // ========== SALVAR PERFIL (demo local) ==========
+        // ========== SALVAR PERFIL ==========
         document.getElementById('formPerfil').addEventListener('submit', (e) => {
             e.preventDefault();
             const msg = document.getElementById('msgSalvar');
@@ -450,7 +456,7 @@
         document.getElementById('btnSalvarFotos').addEventListener('click', () => {
             const msg = document.getElementById('msgFotos');
             // Depois: upload para Firebase Storage
-            msg.textContent = '✓ Fotos salvas! (demo local)';
+            msg.textContent = '✓ Fotos salvas!';
             msg.className = 'ml-3 text-sm text-green-600 font-medium';
             msg.classList.remove('hidden');
             setTimeout(() => msg.classList.add('hidden'), 3000);

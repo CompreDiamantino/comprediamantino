@@ -120,8 +120,31 @@
                 return n.tipo === 'novo_membro' && n.meta && n.meta.lojistaId === l.id;
             });
             if (!ja) {
-                add('novo_membro', 'Novo membro: ' + (l.nome || 'Loja'),
+                add('novo_membro', 'Novo cadastro: ' + (l.nome || 'Negócio'),
                     (l.categoria || '') + ' · ' + (l.whatsapp || ''),
+                    { lojistaId: l.id });
+            }
+        });
+    }
+
+
+    /** Sincroniza parcelas vencidas → avisos vermelhos */
+    function syncDeVencidos() {
+        let lojistas = [];
+        try { lojistas = JSON.parse(localStorage.getItem('cd_lojistas_admin') || '[]'); } catch (e) {}
+        const existentes = ler();
+        const agora = Date.now();
+        lojistas.forEach(function (l) {
+            if (!l.vencimento) return;
+            if (l.status === 'bloqueado' || l.status === 'pendente') return;
+            const venc = new Date(l.vencimento).getTime();
+            if (isNaN(venc) || venc > agora) return;
+            const ja = existentes.some(function (n) {
+                return n.tipo === 'vencido' && n.meta && n.meta.lojistaId === l.id && !n.lida;
+            });
+            if (!ja) {
+                add('vencido', 'Parcela vencida: ' + (l.nome || 'Anunciante'),
+                    'Venceu em ' + new Date(l.vencimento).toLocaleDateString('pt-BR') + ' · ' + (l.whatsapp || ''),
                     { lojistaId: l.id });
             }
         });
@@ -136,7 +159,8 @@
         naoLidas: naoLidas,
         renderLista: renderLista,
         atualizarBadge: atualizarBadge,
-        syncDeCadastros: syncDeCadastros
+        syncDeCadastros: syncDeCadastros,
+        syncDeVencidos: syncDeVencidos
     };
 
     document.addEventListener('DOMContentLoaded', function () {
