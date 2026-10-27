@@ -1,0 +1,15 @@
+CHAVE GOOGLE MAPS — Compre Diamantino
+=====================================
+1. Google Cloud Console → APIs e serviços → Credenciais
+2. Criar NOVA chave de API
+3. Restringir por referrer HTTP:
+   https://comprediamantino.com.br/*
+   http://comprediamantino.com.br/*
+4. Ativar só o que o site usa (Maps JavaScript API, etc.)
+5. Colar a nova chave em maps-config.js no lugar de COLE_AQUI_A_NOVA_CHAVE_RESTRITA
+6. REVOGAR / apagar a chave antiga (a que o GitHub alertou)
+7. Subir maps-config.js no repositório
+
+NÃO despublique o site e NÃO apague o repositório.
+CNAME não mexer.
+firebase-config.js e maps-config.js ficam no repo (o site precisa); a proteção é restrição de domínio, não ocultar arquivo.

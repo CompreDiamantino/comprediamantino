@@ -1,0 +1,6 @@
+# Proteção de arquivos sensíveis
+.env
+serviceAccountKey.json
+*-chave*.txt
+*.pem
+credentials.json

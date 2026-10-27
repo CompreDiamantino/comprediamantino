@@ -1,0 +1,27 @@
+Compre Diamantino — Nuvem e fotos
+=================================
+
+1) DADOS (quem postou, status, avisos)
+   → Firebase Firestore (projeto compre-diamantino-8faaa)
+   Coleções sugeridas: posts, lojistas, notificacoes, mensagens
+
+2) FOTOS (arquivos grandes)
+   Opção A — Firebase Storage (mais simples, mesmo projeto)
+   Opção B — Cloudflare R2 (barato em tráfego)
+     - Criar bucket R2
+     - Domínio público r2.dev ou custom
+     - CORS liberando comprediamantino.com.br
+     - Token S3 no upload (ideal via Cloud Function depois)
+
+3) FLUXO
+   Lojista posta → grava post no Firestore + URL da foto no R2/Storage
+   → NotifGestor azul "Fotos recebidas"
+   Visitante abre home/categoria → lê posts da nuvem (todos veem)
+
+4) AVISOS GESTOR (cores)
+   Laranja  = novo membro
+   Verde    = pagamento recebido
+   Verde-água = comprovante enviado
+   Azul     = fotos / posts
+   Vermelho = parcela vencida
+   Roxo     = mensagem contato@comprediamantino.com.br
