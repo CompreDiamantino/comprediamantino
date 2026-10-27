@@ -38,67 +38,81 @@
     </header>
 
     <div class="container mx-auto px-4 py-10 max-w-2xl">
-        <div class="text-center mb-10">
+        <div class="text-center mb-8">
             <img src="icon-512.png" alt="Compre Diamantino" class="w-20 h-20 mx-auto rounded-2xl shadow-lg mb-4">
-            <h1 class="text-2xl md:text-3xl font-bold text-primary mb-2">Leve o comércio da cidade no bolso</h1>
-            <p class="text-gray-500">Instale o <strong>Compre Diamantino</strong> no celular e use como um aplicativo — grátis, rápido e sem ocupar a loja de apps.</p>
+            <h1 class="text-2xl md:text-3xl font-bold text-primary mb-2">Instalar o Compre Diamantino</h1>
+            <p class="text-gray-500 text-sm">Atalho na tela inicial, como um app — grátis, sem loja de aplicativos.</p>
+            <p id="osDetectado" class="text-xs text-primary font-semibold mt-2"></p>
         </div>
 
-        <!-- Benefícios -->
-        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-8">
-            <h2 class="font-bold text-primary mb-4"><i class="fas fa-star text-secondary mr-2"></i>Por que instalar?</h2>
-            <ul class="space-y-3 text-sm text-gray-700">
-                <li class="flex gap-3"><span class="text-green-500 font-bold">✓</span> Ícone na tela inicial — abre em 1 toque</li>
-                <li class="flex gap-3"><span class="text-green-500 font-bold">✓</span> Encontre lojas, mapa e WhatsApp sem digitar o site toda vez</li>
-                <li class="flex gap-3"><span class="text-green-500 font-bold">✓</span> Funciona no <strong>Android</strong> e no <strong>iPhone (iOS)</strong></li>
-                <li class="flex gap-3"><span class="text-green-500 font-bold">✓</span> Não precisa baixar na Play Store nem na App Store</li>
-                <li class="flex gap-3"><span class="text-green-500 font-bold">✓</span> Ocupa pouco espaço e é grátis</li>
-                <li class="flex gap-3"><span class="text-green-500 font-bold">✓</span> Ideal para quem mora ou trabalha em Diamantino</li>
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-6">
+            <h2 class="font-bold text-primary mb-3 text-sm"><i class="fas fa-star text-secondary mr-2"></i>Por que instalar?</h2>
+            <ul class="space-y-2 text-sm text-gray-700">
+                <li class="flex gap-2"><span class="text-green-500">✓</span> Ícone na tela inicial — abre em 1 toque</li>
+                <li class="flex gap-2"><span class="text-green-500">✓</span> Mais rápido para achar lojas, mapa e WhatsApp</li>
+                <li class="flex gap-2"><span class="text-green-500">✓</span> Não precisa da Play Store nem da App Store</li>
             </ul>
         </div>
 
-        <!-- Android -->
-        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-6">
-            <div class="flex items-center gap-3 mb-4">
-                <div class="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center">
-                    <i class="fab fa-android text-green-600 text-xl"></i>
-                </div>
-                <h2 class="font-bold text-lg text-gray-900">Android (Chrome)</h2>
-            </div>
-            <ol class="space-y-3 text-sm text-gray-700 list-decimal list-inside">
-                <li>Abra o site <strong>comprediamantino.com.br</strong> no <strong>Chrome</strong></li>
-                <li>Toque no menu <strong>⋮</strong> (três pontinhos) no canto superior</li>
-                <li>Escolha <strong>“Instalar app”</strong> ou <strong>“Adicionar à tela inicial”</strong></li>
-                <li>Confirme em <strong>Instalar</strong></li>
-                <li>Pronto — o ícone aparece na tela do celular</li>
-            </ol>
-            <p class="text-xs text-gray-400 mt-3">Se aparecer um aviso na parte de baixo da tela pedindo para instalar, toque nele.</p>
-        </div>
-
-        <!-- iPhone -->
-        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-6">
+        <!-- Só o bloco do sistema atual é exibido -->
+        <div id="blocoIOS" class="hidden bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-6">
             <div class="flex items-center gap-3 mb-4">
                 <div class="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center">
                     <i class="fab fa-apple text-gray-800 text-xl"></i>
                 </div>
-                <h2 class="font-bold text-lg text-gray-900">iPhone / iPad (Safari)</h2>
+                <h2 class="font-bold text-lg text-gray-900">iPhone / iPad</h2>
             </div>
             <ol class="space-y-3 text-sm text-gray-700 list-decimal list-inside">
-                <li>Abra o site no <strong>Safari</strong> (não use Chrome no iPhone para instalar)</li>
-                <li>Toque no botão de <strong>compartilhar</strong> <i class="fas fa-share-square text-primary"></i> (quadrado com seta para cima)</li>
+                <li>Abra este site no <strong>Safari</strong> (no iPhone, a instalação pelo Chrome não funciona bem)</li>
+                <li>Toque em <strong>Compartilhar</strong> <i class="fas fa-share-square text-primary"></i></li>
                 <li>Role e toque em <strong>“Adicionar à Tela de Início”</strong></li>
-                <li>Confirme o nome <strong>Compre Diamantino</strong> e toque em <strong>Adicionar</strong></li>
-                <li>O ícone fica na tela inicial como um app</li>
+                <li>Confirme <strong>Compre Diamantino</strong> e toque em <strong>Adicionar</strong></li>
             </ol>
+            <p class="text-xs text-gray-500 mt-4">Não use instruções de Android ou Play Store neste aparelho.</p>
         </div>
 
-        <!-- Outros -->
-        <div class="bg-blue-50 border border-blue-100 rounded-2xl p-5 text-sm text-blue-900 mb-8">
-            <p class="font-bold mb-1">Computador (Chrome / Edge)</p>
-            <p>No navegador, clique no ícone de instalação na barra de endereço (ou menu → Instalar Compre Diamantino). Útil para testar no PC.</p>
+        <div id="blocoAndroid" class="hidden bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-6">
+            <div class="flex items-center gap-3 mb-4">
+                <div class="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center">
+                    <i class="fab fa-android text-green-600 text-xl"></i>
+                </div>
+                <h2 class="font-bold text-lg text-gray-900">Android</h2>
+            </div>
+            <ol class="space-y-3 text-sm text-gray-700 list-decimal list-inside">
+                <li>Abra no <strong>Chrome</strong> (ou Edge)</li>
+                <li>Toque no menu <strong>⋮</strong> e escolha <strong>“Instalar app”</strong> / <strong>“Adicionar à tela inicial”</strong></li>
+                <li>Ou toque em <strong>Instalar</strong> se o banner aparecer</li>
+                <li>Confirme — o ícone fica na tela inicial</li>
+            </ol>
+            <button type="button" id="btnInstalarNativo" class="hidden mt-4 w-full bg-primary text-white font-bold py-3 rounded-xl hover:bg-accent transition">
+                <i class="fas fa-download mr-2"></i> Instalar agora
+            </button>
+            <p class="text-xs text-gray-500 mt-4">Instruções de iPhone não se aplicam a este aparelho.</p>
         </div>
 
-        <div class="text-center">
+        <div id="blocoWindows" class="hidden bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-6">
+            <div class="flex items-center gap-3 mb-4">
+                <div class="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center">
+                    <i class="fab fa-windows text-blue-600 text-xl"></i>
+                </div>
+                <h2 class="font-bold text-lg text-gray-900">Windows (computador)</h2>
+            </div>
+            <ol class="space-y-3 text-sm text-gray-700 list-decimal list-inside">
+                <li>Abra no <strong>Chrome</strong> ou <strong>Edge</strong></li>
+                <li>Na barra de endereço, clique no ícone de <strong>instalação</strong> (monitor com seta) ou no menu → <strong>Instalar Compre Diamantino</strong></li>
+                <li>Confirme — abre como janela de aplicativo</li>
+            </ol>
+            <button type="button" id="btnInstalarNativoWin" class="hidden mt-4 w-full bg-primary text-white font-bold py-3 rounded-xl hover:bg-accent transition">
+                <i class="fas fa-download mr-2"></i> Instalar no computador
+            </button>
+        </div>
+
+        <div id="blocoOutro" class="hidden bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-6">
+            <h2 class="font-bold text-lg text-gray-900 mb-2">Seu navegador</h2>
+            <p class="text-sm text-gray-600">Procure no menu a opção <strong>“Instalar app”</strong> ou <strong>“Adicionar à tela inicial”</strong>. No iPhone use o Safari; no Android e no Windows, Chrome ou Edge costumam funcionar melhor.</p>
+        </div>
+
+        <div class="text-center mt-8">
             <a href="index.html" class="inline-flex items-center gap-2 bg-primary text-white font-bold px-8 py-3.5 rounded-2xl hover:bg-accent transition">
                 Ir para o portal <i class="fas fa-arrow-right"></i>
             </a>
@@ -106,9 +120,54 @@
     </div>
 
     <script>
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('sw.js').catch(function () {});
-        }
+        (function () {
+            var ua = navigator.userAgent || '';
+            var isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+            var isAndroid = /Android/i.test(ua);
+            var isWin = /Windows/i.test(ua) && !isAndroid;
+            var isMac = /Macintosh|Mac OS X/i.test(ua) && !isIOS;
+            var label = document.getElementById('osDetectado');
+            var deferred = null;
+
+            function show(id) {
+                var el = document.getElementById(id);
+                if (el) el.classList.remove('hidden');
+            }
+
+            if (isIOS) {
+                show('blocoIOS');
+                if (label) label.textContent = 'Detectamos iPhone/iPad — só as instruções da Apple.';
+            } else if (isAndroid) {
+                show('blocoAndroid');
+                if (label) label.textContent = 'Detectamos Android — só as instruções do Google Chrome.';
+            } else if (isWin || isMac) {
+                show('blocoWindows');
+                if (label) label.textContent = isWin
+                    ? 'Detectamos Windows — instalação pelo Chrome ou Edge.'
+                    : 'Detectamos Mac — use Chrome ou Edge para instalar como app.';
+            } else {
+                show('blocoOutro');
+                if (label) label.textContent = 'Sistema não identificado — veja a dica geral abaixo.';
+            }
+
+            window.addEventListener('beforeinstallprompt', function (e) {
+                e.preventDefault();
+                deferred = e;
+                ['btnInstalarNativo', 'btnInstalarNativoWin'].forEach(function (id) {
+                    var b = document.getElementById(id);
+                    if (!b) return;
+                    b.classList.remove('hidden');
+                    b.onclick = function () {
+                        deferred.prompt();
+                        deferred.userChoice.then(function () { deferred = null; });
+                    };
+                });
+            });
+
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('sw.js').catch(function () {});
+            }
+        })();
     </script>
 </body>
 </html>
