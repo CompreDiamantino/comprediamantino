@@ -26,6 +26,7 @@
         .status-vencido { background: #FEE2E2; color: #991B1B; }
         .status-bloqueado { background: #F3F4F6; color: #4B5563; }
         .status-pendente { background: #DBEAFE; color: #1E40AF; }
+        .status-removido { background: #1F2937; color: #F9FAFB; }
         
         .modal-bg {
             background: rgba(0,0,0,0.5);
@@ -99,6 +100,7 @@
                 <button data-filtro="vencido" class="filtro-btn bg-white text-gray-600 px-3 py-1.5 rounded-lg text-sm font-medium border">Vencidos</button>
                 <button data-filtro="bloqueado" class="filtro-btn bg-white text-gray-600 px-3 py-1.5 rounded-lg text-sm font-medium border">Bloqueados</button>
                 <button data-filtro="pendente" class="filtro-btn bg-white text-gray-600 px-3 py-1.5 rounded-lg text-sm font-medium border">Pendentes</button>
+                <button data-filtro="removido" class="filtro-btn bg-white text-gray-600 px-3 py-1.5 rounded-lg text-sm font-medium border">Removidos</button>
             </div>
             <button id="btnNovoLojista" class="bg-secondary text-primary font-bold px-4 py-2 rounded-xl text-sm hover:bg-yellow-400 transition whitespace-nowrap">
                 <i class="fas fa-plus mr-1"></i> Novo lojista
@@ -194,6 +196,20 @@
                     <div>
                         <label class="block text-sm font-medium mb-1">WhatsApp *</label>
                         <input type="tel" id="ljWhatsapp" required class="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-primary" placeholder="65999667725">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">O que vende / oferece</label>
+                    <textarea id="ljOQueVende" rows="2" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-primary" placeholder="Produtos, serviços, o que anuncia..."></textarea>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Instagram</label>
+                        <input type="text" id="ljInstagram" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-primary" placeholder="@...">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Facebook</label>
+                        <input type="text" id="ljFacebook" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-primary">
                     </div>
                 </div>
                 
@@ -295,6 +311,14 @@
         
         function salvarLojistas(lista) {
             localStorage.setItem(STORAGE_KEY, JSON.stringify(lista));
+            try {
+                if (window.LojistasNuvem) {
+                    LojistasNuvem.salvarLocal(lista);
+                    (lista || []).forEach(function (lj) {
+                        if (lj && lj.id) LojistasNuvem.salvarUm(lj);
+                    });
+                }
+            } catch (e) {}
         }
         
         // Atualiza status automático com base na data de vencimento
@@ -303,7 +327,7 @@
             const limiteAviso = 36 * 60 * 60 * 1000; // 36 horas em ms
             
             lista.forEach(lj => {
-                if (lj.status === 'bloqueado' || lj.status === 'pendente') return;
+                if (lj.status === 'bloqueado' || lj.status === 'pendente' || lj.status === 'removido') return;
                 
                 if (!lj.vencimento) {
                     lj.status = 'vencido';
@@ -372,7 +396,8 @@
                     aviso: 'Vencendo',
                     vencido: 'Vencido',
                     bloqueado: 'Bloqueado',
-                    pendente: 'Pendente'
+                    pendente: 'Pendente',
+                    removido: 'Removido'
                 };
                 
                 const vencTxt = lj.vencimento 
@@ -383,7 +408,9 @@
                 <tr class="border-t border-gray-100 hover:bg-gray-50">
                     <td class="px-4 py-3">
                         <p class="font-semibold text-gray-900">${lj.nome}</p>
-                        <p class="text-xs text-gray-400">${lj.whatsapp || ''} · ${lj.plano}</p>
+                        <p class="text-xs text-gray-400">${lj.whatsapp || ''} · ${lj.plano}${lj.categoria ? ' · ' + lj.categoria : ''}</p>
+                        ${lj.oQueVende ? '<p class="text-xs text-gray-500 mt-0.5 line-clamp-2">' + String(lj.oQueVende).replace(/</g,'') + '</p>' : (lj.descricao ? '<p class="text-xs text-gray-500 mt-0.5 line-clamp-2">' + String(lj.descricao).replace(/</g,'') + '</p>' : '')}
+                        ${lj.instagram || lj.facebook ? '<p class="text-[11px] text-blue-600 mt-0.5">' + [lj.instagram, lj.facebook].filter(Boolean).join(' · ') + '</p>' : ''}
                     </td>
                     <td class="px-4 py-3 capitalize">${lj.plano}</td>
                     <td class="px-4 py-3">
@@ -394,29 +421,39 @@
                     <td class="px-4 py-3 text-gray-600">${vencTxt}</td>
                     <td class="px-4 py-3 text-right">
                         <div class="flex gap-1 justify-end flex-wrap">
-                            ${lj.status !== 'ativo' && lj.status !== 'aviso' ? `
+                            ${lj.status === 'pendente' ? `
+                                <button onclick="aprovarLojista('${lj.id}')" class="text-xs bg-emerald-100 text-emerald-800 font-medium px-2.5 py-1 rounded-lg hover:bg-emerald-200" title="Aprovar e publicar">
+                                    <i class="fas fa-check-circle"></i> Aprovar
+                                </button>
+                            ` : ''}
+                            ${lj.status !== 'removido' && lj.status !== 'ativo' && lj.status !== 'aviso' ? `
                                 <button onclick="abrirModalPago('${lj.id}')" class="text-xs bg-green-100 text-green-700 font-medium px-2.5 py-1 rounded-lg hover:bg-green-200" title="Marcar como pago">
                                     <i class="fas fa-check"></i> Pago
                                 </button>
-                            ` : `
+                            ` : (lj.status === 'ativo' || lj.status === 'aviso' ? `
                                 <button onclick="abrirModalPago('${lj.id}')" class="text-xs bg-blue-100 text-blue-700 font-medium px-2.5 py-1 rounded-lg hover:bg-blue-200" title="Renovar">
                                     <i class="fas fa-sync"></i> Renovar
                                 </button>
-                            `}
+                            ` : '')}
                             
                             ${lj.status === 'bloqueado' ? `
-                                <button onclick="desbloquear('${lj.id}')" class="text-xs bg-gray-100 text-gray-600 font-medium px-2.5 py-1 rounded-lg hover:bg-gray-200">
-                                    <i class="fas fa-unlock"></i>
+                                <button onclick="desbloquear('${lj.id}')" class="text-xs bg-gray-100 text-gray-600 font-medium px-2.5 py-1 rounded-lg hover:bg-gray-200" title="Desbloquear (pode voltar)">
+                                    <i class="fas fa-unlock"></i> Desbloquear
                                 </button>
-                            ` : `
-                                <button onclick="bloquear('${lj.id}')" class="text-xs bg-red-50 text-red-600 font-medium px-2.5 py-1 rounded-lg hover:bg-red-100" title="Bloquear">
+                            ` : (lj.status !== 'removido' ? `
+                                <button onclick="bloquear('${lj.id}')" class="text-xs bg-red-50 text-red-600 font-medium px-2.5 py-1 rounded-lg hover:bg-red-100" title="Bloquear (pode pedir para voltar)">
                                     <i class="fas fa-lock"></i>
                                 </button>
-                            `}
+                            ` : '')}
                             
+                            ${lj.status !== 'removido' ? `
                             <button onclick="editarLojista('${lj.id}')" class="text-xs bg-gray-100 text-gray-600 font-medium px-2.5 py-1 rounded-lg hover:bg-gray-200" title="Editar">
                                 <i class="fas fa-pen"></i>
                             </button>
+                            <button onclick="removerDefinitivo('${lj.id}')" class="text-xs bg-gray-900 text-white font-medium px-2.5 py-1 rounded-lg hover:bg-black" title="Remover definitivo (não volta)">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                            ` : '<span class="text-[10px] text-gray-400">Caixão e vela preta</span>'}
                         </div>
                     </td>
                 </tr>
@@ -435,6 +472,15 @@
                 btn.classList.remove('bg-white', 'text-gray-600', 'border');
                 filtroAtual = btn.dataset.filtro;
                 renderTabela();
+        // Puxa cadastros de outros aparelhos (nuvem)
+        if (window.LojistasNuvem && LojistasNuvem.puxar) {
+            LojistasNuvem.puxar(function () {
+                try { renderTabela(); } catch (e) {}
+            });
+            try {
+                LojistasNuvem.ouvir(function () { try { renderTabela(); } catch (e) {} });
+            } catch (e2) {}
+        }
             });
         });
         
@@ -571,26 +617,79 @@
             alert(`Pagamento confirmado!\n${lista[idx].nome} está ATIVO até ${new Date(vencimento).toLocaleDateString('pt-BR')}`);
         });
         
-        // ========== BLOQUEAR / DESBLOQUEAR ==========
+        // ========== APROVAR / BLOQUEAR / REMOVER ==========
+        function registrarRemovido(lj) {
+            try {
+                const key = 'cd_removidos';
+                let lista = JSON.parse(localStorage.getItem(key) || '[]');
+                lista.push({
+                    id: lj.id,
+                    nome: (lj.nome || '').toLowerCase().trim(),
+                    whatsapp: String(lj.whatsapp || '').replace(/\D/g, ''),
+                    endereco: lj.endereco || '',
+                    lat: lj.lat != null ? parseFloat(lj.lat) : null,
+                    lng: lj.lng != null ? parseFloat(lj.lng) : null,
+                    removidoEm: new Date().toISOString()
+                });
+                localStorage.setItem(key, JSON.stringify(lista));
+            } catch (e) {}
+        }
+
+        window.aprovarLojista = (id) => {
+            if (!confirm('Aprovar e publicar este anúncio no portal?')) return;
+            const lista = getLojistas();
+            const idx = lista.findIndex(l => l.id === id);
+            if (idx === -1) return;
+            lista[idx].status = 'ativo';
+            if (!lista[idx].vencimento) {
+                const d = new Date();
+                d.setDate(d.getDate() + 7);
+                lista[idx].vencimento = d.toISOString().slice(0, 10);
+            }
+            lista[idx].aprovadoEm = new Date().toISOString();
+            salvarLojistas(lista);
+            if (window.EmpresasDados) EmpresasDados.atualizarStatus(id, 'ativo');
+            renderTabela();
+            alert('Anúncio aprovado e publicado.');
+        };
+
         window.bloquear = (id) => {
-            if (!confirm('Bloquear este lojista? Os posts dele sumirão do site.')) return;
+            if (!confirm('Bloquear este anunciante?\n\nSome do site. Ele pode pedir para voltar e você desbloqueia.')) return;
             const lista = getLojistas();
             const idx = lista.findIndex(l => l.id === id);
             if (idx === -1) return;
             lista[idx].status = 'bloqueado';
+            lista[idx].bloqueadoEm = new Date().toISOString();
             salvarLojistas(lista);
             if (window.EmpresasDados) EmpresasDados.atualizarStatus(id, 'bloqueado');
             renderTabela();
         };
         
         window.desbloquear = (id) => {
+            if (!confirm('Desbloquear? Volta como ativo (ou pendente se ainda não pagou).')) return;
             const lista = getLojistas();
             const idx = lista.findIndex(l => l.id === id);
             if (idx === -1) return;
-            // Volta para o status baseado na data
-            lista[idx].status = 'ativo';
+            lista[idx].status = lista[idx].vencimento ? 'ativo' : 'pendente';
             salvarLojistas(lista);
+            if (window.EmpresasDados) EmpresasDados.atualizarStatus(id, lista[idx].status);
             renderTabela();
+        };
+
+        window.removerDefinitivo = (id) => {
+            const lista = getLojistas();
+            const idx = lista.findIndex(l => l.id === id);
+            if (idx === -1) return;
+            const lj = lista[idx];
+            if (!confirm('REMOVER DEFINITIVO: ' + (lj.nome || id) + '?\n\nCaixão e vela preta.\nNome, telefone e localização ficam na lista negra.\nNão entra mais. Novo cadastro no mesmo GPS será barrado.')) return;
+            if (!confirm('Confirma mesmo a remoção permanente?')) return;
+            registrarRemovido(lj);
+            lista[idx].status = 'removido';
+            lista[idx].removidoEm = new Date().toISOString();
+            salvarLojistas(lista);
+            if (window.EmpresasDados) EmpresasDados.atualizarStatus(id, 'removido');
+            renderTabela();
+            alert('Removido permanentemente. Referência salva (nome, telefone, GPS).');
         };
         
         // ========== NOVO / EDITAR LOJISTA ==========
@@ -616,6 +715,9 @@
             document.getElementById('editId').value = lj.id;
             document.getElementById('ljNome').value = lj.nome;
             document.getElementById('ljWhatsapp').value = lj.whatsapp || '';
+            const oqv = document.getElementById('ljOQueVende'); if (oqv) oqv.value = lj.oQueVende || lj.descricao || '';
+            const ig = document.getElementById('ljInstagram'); if (ig) ig.value = lj.instagram || '';
+            const fb = document.getElementById('ljFacebook'); if (fb) fb.value = lj.facebook || '';
             document.getElementById('ljEmail').value = lj.email || '';
             document.getElementById('ljPlano').value = lj.plano || 'basico';
             document.getElementById('ljCategoria').value = lj.categoria || 'outros';
@@ -645,6 +747,9 @@
             const dados = {
                 nome: document.getElementById('ljNome').value.trim(),
                 whatsapp: document.getElementById('ljWhatsapp').value.trim(),
+                oQueVende: (document.getElementById('ljOQueVende') || {}).value || '',
+                instagram: (document.getElementById('ljInstagram') || {}).value || '',
+                facebook: (document.getElementById('ljFacebook') || {}).value || '',
                 email: document.getElementById('ljEmail').value.trim(),
                 plano: document.getElementById('ljPlano').value,
                 categoria: document.getElementById('ljCategoria').value
@@ -704,6 +809,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
     <script src="firebase-config.js"></script>
     <script src="firebase-init.js"></script>
+    <script src="lojistas-nuvem.js"></script>
 
 
     <script src="notificacoes-gestor.js"></script>

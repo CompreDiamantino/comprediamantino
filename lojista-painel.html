@@ -382,45 +382,125 @@
         });
         
         // ========== SALVAR PERFIL ==========
+        function sincronizarPerfilComGestor(dados) {
+            try {
+                let lista = JSON.parse(localStorage.getItem('cd_lojistas_admin') || '[]');
+                const id = lojista.empresaId;
+                const ix = lista.findIndex(l => String(l.id) === String(id));
+                const patch = {
+                    nome: dados.nomeFantasia || (ix >= 0 ? lista[ix].nome : ''),
+                    categoria: dados.categoria,
+                    descricao: dados.descricao,
+                    oQueVende: dados.oQueVende,
+                    whatsapp: dados.whatsapp,
+                    instagram: dados.instagram,
+                    facebook: dados.facebook,
+                    grupoWhatsapp: dados.grupoWhatsapp,
+                    endereco: dados.endereco,
+                    referencia: dados.referencia,
+                    horario: dados.horario,
+                    mapsLink: dados.mapsLink,
+                    perfilAtualizadoEm: new Date().toISOString()
+                };
+                if (ix >= 0) {
+                    lista[ix] = Object.assign({}, lista[ix], patch);
+                } else if (id) {
+                    lista.push(Object.assign({ id: id, status: lojista.status || 'pendente', plano: lojista.plano || 'basico' }, patch));
+                }
+                localStorage.setItem('cd_lojistas_admin', JSON.stringify(lista));
+                // Aviso para o gestor
+                if (window.NotifGestor && NotifGestor.add) {
+                    NotifGestor.add('fotos', 'Perfil atualizado: ' + (patch.nome || 'Anunciante'),
+                        (patch.oQueVende || patch.descricao || '').substring(0, 100),
+                        { lojistaId: id });
+                }
+            } catch (err) { console.warn(err); }
+            try {
+                if (window.EmpresasDados && EmpresasDados.upsertEmpresa) {
+                    EmpresasDados.upsertEmpresa({
+                        id: lojista.empresaId,
+                        nome: dados.nomeFantasia,
+                        categoria: dados.categoria,
+                        whatsapp: dados.whatsapp,
+                        endereco: dados.endereco,
+                        mapsLink: dados.mapsLink,
+                        descricao: dados.descricao,
+                        oQueVende: dados.oQueVende,
+                        instagram: dados.instagram,
+                        facebook: dados.facebook
+                    });
+                }
+            } catch (e2) {}
+        }
+
         document.getElementById('formPerfil').addEventListener('submit', (e) => {
             e.preventDefault();
             const msg = document.getElementById('msgSalvar');
             
-            // Aqui depois salva no Firebase
             const dados = {
-                nomeFantasia: document.getElementById('nomeFantasia').value,
+                nomeFantasia: document.getElementById('nomeFantasia').value.trim(),
                 categoria: document.getElementById('categoria').value,
-                descricao: document.getElementById('descricao').value,
-                whatsapp: document.getElementById('whatsapp').value,
-                instagram: document.getElementById('instagram').value,
-                endereco: document.getElementById('endereco').value,
-                referencia: document.getElementById('referencia').value,
-                horario: document.getElementById('horario').value,
-                mapsLink: document.getElementById('mapsLink').value
+                descricao: document.getElementById('descricao').value.trim(),
+                oQueVende: (document.getElementById('oQueVende') || {}).value || '',
+                entrega: (document.getElementById('fazEntrega') || {}).value || 'nao',
+                whatsapp: document.getElementById('whatsapp').value.trim(),
+                instagram: document.getElementById('instagram').value.trim(),
+                facebook: (document.getElementById('facebook') || {}).value || '',
+                grupoWhatsapp: (document.getElementById('grupoWhatsapp') || {}).value || '',
+                endereco: document.getElementById('endereco').value.trim(),
+                referencia: document.getElementById('referencia').value.trim(),
+                horario: document.getElementById('horario').value.trim(),
+                mapsLink: document.getElementById('mapsLink').value.trim(),
+                salvoEm: new Date().toISOString()
             };
             
             localStorage.setItem('cd_perfil_' + lojista.empresaId, JSON.stringify(dados));
+            sincronizarPerfilComGestor(dados);
             
-            msg.textContent = '✓ Salvo com sucesso!';
+            msg.textContent = '✓ Dados enviados! A gestão já pode ver seu perfil.';
             msg.className = 'ml-3 text-sm text-green-600 font-medium';
             msg.classList.remove('hidden');
-            setTimeout(() => msg.classList.add('hidden'), 3000);
+            setTimeout(() => msg.classList.add('hidden'), 4000);
         });
         
-        // Carrega dados salvos
-        const perfilSalvo = JSON.parse(localStorage.getItem('cd_perfil_' + lojista.empresaId) || '{}');
-        if (perfilSalvo.nomeFantasia) {
-            document.getElementById('nomeFantasia').value = perfilSalvo.nomeFantasia || '';
-            document.getElementById('categoria').value = perfilSalvo.categoria || '';
-            document.getElementById('descricao').value = perfilSalvo.descricao || '';
-            document.getElementById('whatsapp').value = perfilSalvo.whatsapp || '';
-            document.getElementById('instagram').value = perfilSalvo.instagram || '';
-            document.getElementById('endereco').value = perfilSalvo.endereco || '';
-            document.getElementById('referencia').value = perfilSalvo.referencia || '';
-            document.getElementById('horario').value = perfilSalvo.horario || '';
-            document.getElementById('mapsLink').value = perfilSalvo.mapsLink || '';
-            document.getElementById('contadorDesc').textContent = (perfilSalvo.descricao || '').length;
-        }
+        // Carrega dados salvos + dados do cadastro inicial
+        (function carregarPerfil() {
+            let perfilSalvo = {};
+            try { perfilSalvo = JSON.parse(localStorage.getItem('cd_perfil_' + lojista.empresaId) || '{}'); } catch(e) {}
+            // preenche a partir da fila do gestor se perfil ainda vazio
+            if (!perfilSalvo.nomeFantasia) {
+                try {
+                    const lista = JSON.parse(localStorage.getItem('cd_lojistas_admin') || '[]');
+                    const row = lista.find(l => String(l.id) === String(lojista.empresaId));
+                    if (row) {
+                        perfilSalvo = Object.assign({
+                            nomeFantasia: row.nome,
+                            whatsapp: row.whatsapp,
+                            endereco: row.endereco,
+                            categoria: row.categoria,
+                            descricao: row.descricao,
+                            oQueVende: row.oQueVende
+                        }, perfilSalvo);
+                    }
+                } catch(e) {}
+            }
+            const set = (id, v) => { const el = document.getElementById(id); if (el && v != null) el.value = v; };
+            set('nomeFantasia', perfilSalvo.nomeFantasia || lojista.nome || '');
+            set('categoria', perfilSalvo.categoria || '');
+            set('descricao', perfilSalvo.descricao || '');
+            set('oQueVende', perfilSalvo.oQueVende || '');
+            set('fazEntrega', perfilSalvo.entrega || 'nao');
+            set('whatsapp', perfilSalvo.whatsapp || lojista.telefone || '');
+            set('instagram', perfilSalvo.instagram || '');
+            set('facebook', perfilSalvo.facebook || '');
+            set('grupoWhatsapp', perfilSalvo.grupoWhatsapp || '');
+            set('endereco', perfilSalvo.endereco || '');
+            set('referencia', perfilSalvo.referencia || '');
+            set('horario', perfilSalvo.horario || '');
+            set('mapsLink', perfilSalvo.mapsLink || '');
+            const cd = document.getElementById('contadorDesc');
+            if (cd) cd.textContent = (perfilSalvo.descricao || '').length;
+        })();
         
         // ========== FOTOS (preview local) ==========
         let fotosSelecionadas = [];
@@ -456,7 +536,7 @@
         document.getElementById('btnSalvarFotos').addEventListener('click', () => {
             const msg = document.getElementById('msgFotos');
             // Depois: upload para Firebase Storage
-            msg.textContent = '✓ Fotos salvas!';
+            msg.textContent = '✓ Fotos enviadas! A gestão também recebe o aviso.';
             msg.className = 'ml-3 text-sm text-green-600 font-medium';
             msg.classList.remove('hidden');
             setTimeout(() => msg.classList.add('hidden'), 3000);

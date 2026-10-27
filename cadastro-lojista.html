@@ -165,6 +165,21 @@
                 <p class="text-[11px] text-gray-400 mt-1">Dias 1 a 28 (evita problema em meses curtos). A gestão usa este dia no boleto/aviso de renovação.</p>
             </div>
 
+            <div class="border border-gray-200 rounded-xl p-4">
+                <p class="text-sm font-medium text-gray-800 mb-2">Faz entrega? *</p>
+                <div class="flex flex-wrap gap-4 text-sm">
+                    <label class="inline-flex items-center gap-2 cursor-pointer">
+                        <input type="radio" name="entrega" value="sim" class="accent-primary"> Sim
+                    </label>
+                    <label class="inline-flex items-center gap-2 cursor-pointer">
+                        <input type="radio" name="entrega" value="nao" class="accent-primary" checked> Não
+                    </label>
+                    <label class="inline-flex items-center gap-2 cursor-pointer">
+                        <input type="radio" name="entrega" value="combinar" class="accent-primary"> A combinar
+                    </label>
+                </div>
+            </div>
+
             <div class="bg-amber-50 border border-amber-100 rounded-xl p-4 text-sm text-amber-950 space-y-2">
                 <p class="font-bold"><i class="fas fa-info-circle text-amber-600"></i> Custo de manutenção do site</p>
                 <p>Os valores (R$ 80 ou R$ 120) servem para <strong>manutenção do portal</strong> (hospedagem, mapa, atualizações). Não é “aluguel de vitrine” comercial à parte — é o custo de manter o Compre Diamantino no ar para a cidade.</p>
@@ -185,7 +200,7 @@
             
             <div class="bg-blue-50 border border-blue-100 rounded-xl p-4 text-sm text-blue-900">
                 <p class="font-bold mb-1">Aprovação da gestão</p>
-                <p>Seu cadastro fica <strong>pendente</strong> até o gestor do portal analisar e liberar (como no IBN). Depois da aprovação você recebe acesso para postar fotos e promoções. Os primeiros <strong>7 dias são grátis</strong>.</p>
+                <p>Seu cadastro é enviado à gestão. Você <strong>já pode entrar</strong> na área do anunciante para completar perfil, fotos e o que vende; a publicação no site público vem após a confirmação (como no IBN). Depois da aprovação você recebe acesso para postar fotos e promoções. Os primeiros <strong>7 dias são grátis</strong>.</p>
             </div>
 
             <label class="flex items-start gap-2 text-sm text-gray-600">
@@ -212,6 +227,33 @@
 
     <script>
         let passo = 1;
+
+        function lerRemovidos() {
+            try { return JSON.parse(localStorage.getItem('cd_removidos') || '[]'); } catch(e) { return []; }
+        }
+        function distMetros(lat1, lng1, lat2, lng2) {
+            if (lat1 == null || lng1 == null || lat2 == null || lng2 == null) return 999999;
+            var R = 6371000;
+            var toRad = function(d){ return d * Math.PI / 180; };
+            var dLat = toRad(lat2 - lat1), dLng = toRad(lng2 - lng1);
+            var a = Math.sin(dLat/2)*Math.sin(dLat/2) + Math.cos(toRad(lat1))*Math.cos(toRad(lat2))*Math.sin(dLng/2)*Math.sin(dLng/2);
+            return 2 * R * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        }
+        function conflitoRemovido(nome, tel, lat, lng) {
+            var cel = String(tel||'').replace(/\D/g,'');
+            var n = String(nome||'').toLowerCase().trim();
+            var lista = lerRemovidos();
+            for (var i=0;i<lista.length;i++) {
+                var r = lista[i];
+                if (cel && r.whatsapp && cel === r.whatsapp) return r;
+                if (n && r.nome && n === r.nome) return r;
+                if (lat != null && lng != null && r.lat != null && r.lng != null) {
+                    if (distMetros(lat, lng, r.lat, r.lng) < 40) return r; // ~mesmo ponto GPS
+                }
+            }
+            return null;
+        }
+
 
         document.getElementById('btnAbrirMaps') && document.getElementById('btnAbrirMaps').addEventListener('click', function () {
             var end = (document.getElementById('endereco').value || '').trim();
@@ -302,7 +344,28 @@
 
         document.getElementById('btnEnviar').addEventListener('click', () => {
             const msg = document.getElementById('msgErro');
-            if (!document.getElementById('aceite').checked) {
+            
+                const latC = parseFloat((document.getElementById('coordLat')||{}).value) || null;
+                const lngC = parseFloat((document.getElementById('coordLng')||{}).value) || null;
+                const conf = conflitoRemovido(
+                    document.getElementById('nomeLoja').value,
+                    document.getElementById('whatsapp').value,
+                    latC, lngC
+                );
+                if (conf) {
+                    const modal = document.getElementById('modalEnderecoRemovido');
+                    if (modal) {
+                        modal.classList.remove('hidden');
+                        modal.classList.add('flex');
+                        document.getElementById('claimNome').value = document.getElementById('nomeLoja').value;
+                        document.getElementById('claimTel').value = document.getElementById('whatsapp').value;
+                    } else {
+                        alert('Já tem anúncio neste endereço (ou telefone/nome removido). Entre em contato pelo suporte.');
+                    }
+                    return;
+                }
+
+                if (!document.getElementById('aceite').checked) {
                 msg.textContent = 'Marque o aceite para enviar.';
                 msg.classList.remove('hidden');
                 return;
@@ -371,6 +434,10 @@
         });
     </script>
     <script src="empresas-dados.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+    <script src="firebase-config.js"></script>
+    <script src="lojistas-nuvem.js"></script>
     <script src="notificacoes-gestor.js"></script>
     <script src="auth-utils.js"></script>
     <script src="auth-utils.js"></script>
@@ -378,7 +445,66 @@
       document.addEventListener('DOMContentLoaded', function () {
         if (window.AuthUtils && AuthUtils.renderBarraSessao) AuthUtils.renderBarraSessao();
       });
-    </script>
+    
+        document.getElementById('btnClaimCancel') && document.getElementById('btnClaimCancel').addEventListener('click', function(){
+            var m = document.getElementById('modalEnderecoRemovido');
+            if (m) { m.classList.add('hidden'); m.classList.remove('flex'); }
+        });
+        document.getElementById('btnClaimEnviar') && document.getElementById('btnClaimEnviar').addEventListener('click', function(){
+            var nome = (document.getElementById('claimNome').value||'').trim();
+            var tel = (document.getElementById('claimTel').value||'').trim();
+            var oque = (document.getElementById('claimOQue').value||'').trim();
+            var entrega = (document.getElementById('claimEntrega').value||'nao');
+            var obs = (document.getElementById('claimObs').value||'').trim();
+            if (!nome || !tel || !oque) { alert('Preencha nome, telefone e o que vende.'); return; }
+            try {
+                var lista = JSON.parse(localStorage.getItem('cd_reivindicacoes') || '[]');
+                lista.push({
+                    id: 'claim-' + Date.now(),
+                    nome: nome,
+                    whatsapp: tel,
+                    oQueVende: oque,
+                    entrega: entrega,
+                    obs: obs,
+                    lat: parseFloat((document.getElementById('coordLat')||{}).value)||null,
+                    lng: parseFloat((document.getElementById('coordLng')||{}).value)||null,
+                    endereco: (document.getElementById('endereco').value||'') + ' — Diamantino-MT',
+                    status: 'pendente',
+                    criadoEm: new Date().toISOString()
+                });
+                localStorage.setItem('cd_reivindicacoes', JSON.stringify(lista));
+                if (window.NotifGestor && NotifGestor.add) {
+                    NotifGestor.add('novo_membro', 'Reivindicação de endereço: ' + nome, oque, {});
+                }
+            } catch(e) {}
+            alert('Pedido enviado à gestão. Aguarde análise.');
+            var m = document.getElementById('modalEnderecoRemovido');
+            if (m) { m.classList.add('hidden'); m.classList.remove('flex'); }
+        });
+
+</script>
+
+    <!-- Modal: endereço já teve anúncio removido -->
+    <div id="modalEnderecoRemovido" class="fixed inset-0 bg-black/50 z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl space-y-3">
+            <h3 class="font-bold text-primary text-lg">Já tem anúncio neste endereço</h3>
+            <p class="text-sm text-gray-600">Este local (ou dados próximos) já foi usado por um anúncio <strong>removido</strong> do portal. Se for <strong>outra empresa</strong>, preencha o formulário abaixo para a gestão analisar.</p>
+            <input type="text" id="claimNome" class="w-full border rounded-xl px-3 py-2 text-sm" placeholder="Nome da empresa / o que anuncia *">
+            <input type="tel" id="claimTel" class="w-full border rounded-xl px-3 py-2 text-sm" placeholder="Telefone *">
+            <textarea id="claimOQue" rows="2" class="w-full border rounded-xl px-3 py-2 text-sm" placeholder="O que faz / o que vende *"></textarea>
+            <select id="claimEntrega" class="w-full border rounded-xl px-3 py-2 text-sm">
+                <option value="nao">Faz entrega? Não</option>
+                <option value="sim">Faz entrega? Sim</option>
+                <option value="combinar">Faz entrega? A combinar</option>
+            </select>
+            <textarea id="claimObs" rows="2" class="w-full border rounded-xl px-3 py-2 text-sm" placeholder="Por que é outra empresa? (opcional)"></textarea>
+            <div class="flex gap-2">
+                <button type="button" id="btnClaimCancel" class="flex-1 bg-gray-100 py-2.5 rounded-xl text-sm font-bold">Cancelar</button>
+                <button type="button" id="btnClaimEnviar" class="flex-1 bg-primary text-white py-2.5 rounded-xl text-sm font-bold">Enviar à gestão</button>
+            </div>
+        </div>
+    </div>
+
 </body>
 </html>
             if (n === 4) {
