@@ -103,8 +103,14 @@
         }).join('');
         el.querySelectorAll('.notif-item').forEach(function (btn) {
             btn.addEventListener('click', function () {
-                marcarLida(btn.getAttribute('data-nid'));
+                var nid = btn.getAttribute('data-nid');
+                var item = ler().find(function (n) { return n.id === nid; });
+                marcarLida(nid);
                 renderLista(containerId);
+                // Novo cadastro → leva ao painel de aprovação
+                if (item && (item.tipo === 'novo_membro') && !/admin-painel/i.test(location.pathname || '')) {
+                    location.href = 'admin-painel.html';
+                }
             });
         });
     }

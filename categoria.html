@@ -73,7 +73,7 @@
                 box.innerHTML = '<div class="col-span-full text-center py-12">' +
                     '<p class="text-gray-500 mb-2">Ainda não há empresas ativas nesta categoria.</p>' +
                     '<p class="text-sm text-gray-400 mb-4">Quando o gestor aprovar um cadastro deste ramo, ele aparece aqui.</p>' +
-                    '<a href="cadastro-lojista.html" class="inline-block bg-primary text-white font-bold px-5 py-2.5 rounded-xl">Cadastrar meu negócio</a>' +
+                    '<a href="cadastro-lojista.html?cat=' + encodeURIComponent(cat) + '" class="inline-block bg-primary text-white font-bold px-5 py-2.5 rounded-xl">Cadastrar meu negócio</a>' +
                     '</div>';
                 return;
             }
@@ -88,11 +88,13 @@
                     '<a href="empresa.html?id=' + encodeURIComponent(e.id) + '" class="flex-1 text-center bg-primary text-white text-sm font-bold py-2 rounded-xl">Ver perfil</a>' +
                     (wa ? '<a href="' + wa + '" target="_blank" class="bg-green-500 text-white w-11 flex items-center justify-center rounded-xl"><i class="fab fa-whatsapp"></i></a>' : '') +
                     '</div></div>';
-            }).join('');
+            }).join('') +
+            '<div class="col-span-full text-center pt-6 border-t border-gray-100 mt-2">' +
+            '<a href="cadastro-lojista.html?cat=' + encodeURIComponent(cat) + '" class="inline-block bg-primary text-white font-bold px-5 py-2.5 rounded-xl">Cadastrar meu negócio</a>' +
+            '</div>';
         }
         render();
     </script>
-    <script src="auth-utils.js"></script>
     <script src="auth-utils.js"></script>
     <script>
       document.addEventListener('DOMContentLoaded', function () {

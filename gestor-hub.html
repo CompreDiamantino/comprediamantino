@@ -98,12 +98,14 @@
         <h2 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 px-1">Gestão e controle</h2>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
             
-            <a href="admin-painel.html" class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md hover:border-primary transition group">
-                <div class="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center mb-4 group-hover:bg-primary transition">
+            <a href="admin-painel.html" id="cardPainelGestao" class="relative bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md hover:border-primary transition group">
+                <span id="badgePendentesGestao" class="hidden absolute -top-2 -right-2 min-w-[26px] h-[26px] px-1.5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center shadow-lg" style="animation: notif-pulse 1.4s ease-in-out infinite; box-shadow: 0 0 0 0 rgba(239,68,68,0.7);">0</span>
+                <div class="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center mb-4 group-hover:bg-primary transition relative">
                     <i class="fas fa-cog text-xl text-primary group-hover:text-white"></i>
                 </div>
                 <h3 class="font-bold text-lg text-gray-900 mb-1">Painel de Gestão</h3>
                 <p class="text-sm text-gray-500">Pagamentos, status, bloquear, renovar, cadastrar anunciantes</p>
+                <p id="txtPendentesGestao" class="hidden mt-2 text-xs font-bold text-orange-600"><i class="fas fa-circle text-[8px] mr-1 animate-pulse"></i> <span id="numPendentesGestao">0</span> cadastro(s) aguardando aprovação</p>
             </a>
             
             <a href="#" id="btnEntrarComoLojista" class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md hover:border-green-600 transition group">
@@ -276,12 +278,36 @@
     <script src="posts-nuvem.js"></script>
     <script>
       document.addEventListener('DOMContentLoaded', function () {
+        function atualizarSinalPendentes() {
+          var n = 0;
+          try {
+            var lista = JSON.parse(localStorage.getItem('cd_lojistas_admin') || '[]');
+            n = (lista || []).filter(function (l) { return l && l.status === 'pendente'; }).length;
+          } catch (e) { n = 0; }
+          var badge = document.getElementById('badgePendentesGestao');
+          var txt = document.getElementById('txtPendentesGestao');
+          var num = document.getElementById('numPendentesGestao');
+          var card = document.getElementById('cardPainelGestao');
+          if (num) num.textContent = String(n);
+          if (n > 0) {
+            if (badge) { badge.textContent = n > 99 ? '99+' : String(n); badge.classList.remove('hidden'); }
+            if (txt) txt.classList.remove('hidden');
+            if (card) { card.classList.add('border-orange-400', 'ring-2', 'ring-orange-300'); }
+          } else {
+            if (badge) badge.classList.add('hidden');
+            if (txt) txt.classList.add('hidden');
+            if (card) { card.classList.remove('border-orange-400', 'ring-2', 'ring-orange-300'); }
+          }
+        }
         if (window.NotifGestor) {
           NotifGestor.syncDeCadastros();
           NotifGestor.syncDeVencidos && NotifGestor.syncDeVencidos();
           NotifGestor.renderLista('listaNotifGestor');
           NotifGestor.atualizarBadge();
         }
+        atualizarSinalPendentes();
+        // Revisa a cada 8s (outro aparelho / outra aba)
+        setInterval(atualizarSinalPendentes, 8000);
         var btn = document.getElementById('btnMarcarLidas');
         if (btn) btn.addEventListener('click', function () {
           NotifGestor.marcarTodasLidas();

@@ -114,12 +114,26 @@ function setupToggleSenha(inputId, btnId) {
     const btn = document.getElementById(btnId);
     if (!input || !btn) return;
 
-    btn.addEventListener('click', () => {
+    // Garante colar senha (Ctrl+V / menu colar) — sem bloqueio
+    input.addEventListener('paste', function (e) {
+        // deixa o navegador colar normalmente
+        e.stopPropagation();
+    });
+    // Alguns teclados móveis: permite seleção e cópia
+    try {
+        input.style.webkitUserSelect = 'text';
+        input.style.userSelect = 'text';
+    } catch (e) {}
+
+    btn.addEventListener('click', function () {
         const isPass = input.type === 'password';
         input.type = isPass ? 'text' : 'password';
         btn.innerHTML = isPass
             ? '<i class="fas fa-eye-slash"></i>'
             : '<i class="fas fa-eye"></i>';
+        btn.setAttribute('title', isPass ? 'Ocultar senha' : 'Mostrar senha');
+        btn.setAttribute('aria-label', isPass ? 'Ocultar senha' : 'Mostrar senha');
+        try { input.focus(); } catch (e2) {}
     });
 }
 
