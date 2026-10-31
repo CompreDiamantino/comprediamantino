@@ -1,27 +1,80 @@
-Compre Diamantino — Nuvem e fotos
-=================================
+Compre Diamantino — Nuvem e fotos (R2)
+======================================
 
-1) DADOS (quem postou, status, avisos)
+1) DADOS (cadastros, status, avisos)
    → Firebase Firestore (projeto compre-diamantino-8faaa)
-   Coleções sugeridas: posts, lojistas, notificacoes, mensagens
 
-2) FOTOS (arquivos grandes)
-   Opção A — Firebase Storage (mais simples, mesmo projeto)
-   Opção B — Cloudflare R2 (barato em tráfego)
-     - Criar bucket R2
-     - Domínio público r2.dev ou custom
-     - CORS liberando comprediamantino.com.br
-     - Token S3 no upload (ideal via Cloud Function depois)
+2) FOTOS (logo, vitrine, posts)
+   → Cloudflare R2 (barato em tráfego) via r2-upload.js
+   Enquanto R2_CONFIG estiver vazio, o site grava data:URL no aparelho (funciona, mas pesa).
 
-3) FLUXO
-   Lojista posta → grava post no Firestore + URL da foto no R2/Storage
-   → NotifGestor azul "Fotos recebidas"
-   Visitante abre home/categoria → lê posts da nuvem (todos veem)
+------------------------------------------------
+Como criar o R2 (passo a passo)
+------------------------------------------------
+A) Conta Cloudflare → R2 → Create bucket
+   Nome sugerido: compre-diamantino-fotos
 
-4) AVISOS GESTOR (cores)
-   Laranja  = novo membro
-   Verde    = pagamento recebido
-   Verde-água = comprovante enviado
-   Azul     = fotos / posts
-   Vermelho = parcela vencida
-   Roxo     = mensagem contato@comprediamantino.com.br
+B) No bucket → Settings → Public access (r2.dev)
+   Ative "Allow Access" e copie a URL pública:
+   https://pub-XXXXXXXX.r2.dev
+
+C) R2 → Manage R2 API Tokens → Create API token
+   Permissão: Object Read & Write no bucket criado
+   Copie Access Key ID e Secret Access Key
+
+D) Account ID: painel Cloudflare → lado direito (ou R2 Overview)
+
+E) Cole em firebase-config.js:
+
+   var R2_CONFIG = {
+       accountId: 'SEU_ACCOUNT_ID',
+       accessKeyId: 'SUA_ACCESS_KEY',
+       secretAccessKey: 'SUA_SECRET_KEY',
+       bucket: 'compre-diamantino-fotos',
+       publicBase: 'https://pub-XXXX.r2.dev',
+       endpoint: ''
+   };
+
+F) CORS no bucket (Settings → CORS), se o navegador reclamar:
+
+   [
+     {
+       "AllowedOrigins": ["https://comprediamantino.com.br", "https://www.comprediamantino.com.br", "http://localhost:5500", "http://127.0.0.1:5500"],
+       "AllowedMethods": ["GET", "PUT", "HEAD"],
+       "AllowedHeaders": ["*"],
+       "ExposeHeaders": ["ETag"],
+       "MaxAgeSeconds": 3600
+     }
+   ]
+
+G) Suba firebase-config.js + r2-upload.js no GitHub e teste um cadastro com foto.
+   No console (F12): CDR2.ativo() deve retornar true.
+
+------------------------------------------------
+Fluxo no site
+------------------------------------------------
+Cadastro / painel lojista
+  → comprime a imagem no celular
+  → se R2 ativo: sobe para lojistas/{id}/... e grava só a URL
+  → se R2 off: grava data:URL (como hoje)
+
+Gestão
+  → vê as URLs (ou data:URL) no botão "Ver"
+
+------------------------------------------------
+Segurança (importante)
+------------------------------------------------
+As chaves R2 no firebase-config.js ficam visíveis no HTML (igual ao pacote IBN).
+Para uso real em produção o ideal depois é:
+  - Worker Cloudflare que assina o upload, OU
+  - token com permissão só de escrita em pasta lojistas/
+
+Não reutilize o token/bucket do IBN neste portal.
+
+------------------------------------------------
+Arquivos
+------------------------------------------------
+r2-upload.js          → CDR2.uploadImagemFlex / uploadListaImagens
+firebase-config.js    → R2_CONFIG
+cadastro-lojista.html → sobe logo/fotos no envio
+lojista-painel.html   → sobe fotos da galeria

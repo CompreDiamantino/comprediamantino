@@ -151,6 +151,36 @@
         </div>
     </div>
 
+    <!-- ========== MODAL: Ver cadastro / fotos ========== -->
+    <div id="modalDetalheLojista" class="fixed inset-0 bg-black/50 z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-6 shadow-xl space-y-3">
+            <div class="flex items-start justify-between gap-2">
+                <h3 class="font-bold text-primary text-lg" id="detNome">Cadastro</h3>
+                <button type="button" id="btnFecharDetalhe" class="text-gray-400 hover:text-gray-700 text-xl leading-none">&times;</button>
+            </div>
+            <div id="detStatus" class="text-xs font-bold"></div>
+            <div id="detInfo" class="text-sm text-gray-700 space-y-1"></div>
+            <div id="detLogoBox" class="hidden">
+                <p class="text-xs font-bold text-gray-500 mb-1">Logo / capa</p>
+                <img id="detLogo" alt="Logo" class="h-24 w-24 object-cover rounded-xl border">
+            </div>
+            <div id="detFotosBox" class="hidden">
+                <p class="text-xs font-bold text-gray-500 mb-1">Fotos enviadas</p>
+                <div id="detFotos" class="flex flex-wrap gap-2"></div>
+            </div>
+            <div id="detRedes" class="text-sm space-y-1"></div>
+            <div class="flex flex-wrap gap-2 pt-2 border-t">
+                <button type="button" id="btnDetAprovar" class="hidden bg-emerald-600 text-white font-bold px-4 py-2 rounded-xl text-sm">
+                    <i class="fas fa-check-circle"></i> Aprovar e publicar
+                </button>
+                <a id="btnDetWhats" href="#" target="_blank" class="bg-green-500 text-white font-bold px-4 py-2 rounded-xl text-sm">
+                    <i class="fab fa-whatsapp"></i> WhatsApp
+                </a>
+                <button type="button" id="btnFecharDetalhe2" class="bg-gray-100 text-gray-700 font-bold px-4 py-2 rounded-xl text-sm">Fechar</button>
+            </div>
+        </div>
+    </div>
+
     <!-- ========== MODAL: Marcar como Pago ========== -->
     <div id="modalPago" class="fixed inset-0 modal-bg z-50 hidden items-center justify-center p-4">
         <div class="bg-white rounded-2xl w-full max-w-md p-6 shadow-2xl">
@@ -442,6 +472,7 @@
                         <p class="text-xs text-gray-400">${lj.whatsapp || ''} · ${lj.plano}${lj.categoria ? ' · ' + lj.categoria : ''}</p>
                         ${lj.oQueVende ? '<p class="text-xs text-gray-500 mt-0.5 line-clamp-2">' + String(lj.oQueVende).replace(/</g,'') + '</p>' : (lj.descricao ? '<p class="text-xs text-gray-500 mt-0.5 line-clamp-2">' + String(lj.descricao).replace(/</g,'') + '</p>' : '')}
                         ${lj.instagram || lj.facebook ? '<p class="text-[11px] text-blue-600 mt-0.5">' + [lj.instagram, lj.facebook].filter(Boolean).join(' · ') + '</p>' : ''}
+                        ${((lj.fotos && lj.fotos.length) || lj.logo) ? '<p class="text-[11px] text-indigo-600 mt-0.5"><i class="fas fa-camera"></i> ' + ((lj.fotos && lj.fotos.length) || 0) + ' foto(s)' + (lj.logo ? ' · logo' : '') + '</p>' : ''}
                     </td>
                     <td class="px-4 py-3 capitalize">${lj.plano}</td>
                     <td class="px-4 py-3">
@@ -452,6 +483,9 @@
                     <td class="px-4 py-3 text-gray-600">${vencTxt}</td>
                     <td class="px-4 py-3 text-right">
                         <div class="flex gap-1 justify-end flex-wrap">
+                            <button onclick="verDetalheLojista('${lj.id}')" class="text-xs bg-indigo-50 text-indigo-700 font-medium px-2.5 py-1 rounded-lg hover:bg-indigo-100" title="Ver fotos, redes e dados">
+                                <i class="fas fa-eye"></i> Ver
+                            </button>
                             ${lj.status === 'pendente' ? `
                                 <button onclick="aprovarLojista('${lj.id}')" class="text-xs bg-emerald-100 text-emerald-800 font-medium px-2.5 py-1 rounded-lg hover:bg-emerald-200" title="Aprovar e publicar">
                                     <i class="fas fa-check-circle"></i> Aprovar
@@ -828,6 +862,108 @@
             renderTabela();
         });
         
+
+        function lerPerfilLojista(id) {
+            try { return JSON.parse(localStorage.getItem('cd_perfil_' + id) || '{}'); } catch (e) { return {}; }
+        }
+
+        window.verDetalheLojista = function (id) {
+            const lista = getLojistas();
+            const lj = lista.find(x => x.id === id);
+            if (!lj) { alert('Cadastro não encontrado.'); return; }
+            const perfil = lerPerfilLojista(id);
+            const logo = lj.logo || perfil.logo || '';
+            const fotos = (lj.fotos && lj.fotos.length) ? lj.fotos : (perfil.fotos || []);
+            const ig = lj.instagram || perfil.instagram || '';
+            const fb = lj.facebook || perfil.facebook || '';
+            const oqv = lj.oQueVende || perfil.oQueVende || '';
+            const desc = lj.descricao || perfil.descricao || '';
+            const hor = lj.horario || perfil.horario || '';
+            const end = lj.endereco || perfil.endereco || '';
+
+            document.getElementById('detNome').textContent = lj.nome || 'Cadastro';
+            document.getElementById('detStatus').innerHTML =
+                '<span class="status-' + (lj.status || 'pendente') + ' text-xs font-bold px-2.5 py-1 rounded-full">' +
+                (lj.status || 'pendente') + '</span> · ' + (lj.plano || '') + ' · ' + (lj.categoria || '');
+
+            document.getElementById('detInfo').innerHTML =
+                '<p><strong>Responsável:</strong> ' + (lj.responsavel || '—') + '</p>' +
+                '<p><strong>WhatsApp:</strong> ' + (lj.whatsapp || '—') + '</p>' +
+                '<p><strong>E-mail:</strong> ' + (lj.email || '—') + '</p>' +
+                '<p><strong>Endereço:</strong> ' + (end || '—') + '</p>' +
+                (hor ? '<p><strong>Horário:</strong> ' + hor + '</p>' : '') +
+                (desc ? '<p><strong>Descrição:</strong> ' + String(desc).replace(/</g,'') + '</p>' : '') +
+                (oqv ? '<p><strong>O que vende:</strong> ' + String(oqv).replace(/</g,'') + '</p>' : '') +
+                '<p class="text-xs text-gray-400">Cadastrado em: ' + (lj.criadoEm ? new Date(lj.criadoEm).toLocaleString('pt-BR') : '—') + '</p>';
+
+            const logoBox = document.getElementById('detLogoBox');
+            const detLogo = document.getElementById('detLogo');
+            if (logo) {
+                logoBox.classList.remove('hidden');
+                detLogo.src = logo;
+            } else {
+                logoBox.classList.add('hidden');
+                detLogo.removeAttribute('src');
+            }
+
+            const fotosBox = document.getElementById('detFotosBox');
+            const detFotos = document.getElementById('detFotos');
+            detFotos.innerHTML = '';
+            if (fotos && fotos.length) {
+                fotosBox.classList.remove('hidden');
+                fotos.forEach(function (src) {
+                    const im = document.createElement('img');
+                    im.src = src;
+                    im.className = 'h-24 w-24 object-cover rounded-xl border cursor-pointer';
+                    im.onclick = function () { window.open(src, '_blank'); };
+                    detFotos.appendChild(im);
+                });
+            } else {
+                fotosBox.classList.add('hidden');
+            }
+
+            let redes = '';
+            if (ig) redes += '<p><i class="fab fa-instagram text-pink-500"></i> ' + String(ig).replace(/</g,'') + '</p>';
+            if (fb) redes += '<p><i class="fab fa-facebook text-blue-600"></i> ' + String(fb).replace(/</g,'') + '</p>';
+            if (lj.mapsLink) redes += '<p><a class="text-primary underline text-xs" href="' + String(lj.mapsLink).replace(/"/g,'') + '" target="_blank">Abrir no Google Maps</a></p>';
+            document.getElementById('detRedes').innerHTML = redes || '<p class="text-xs text-gray-400">Sem redes informadas neste cadastro.</p>';
+
+            const btnAp = document.getElementById('btnDetAprovar');
+            if (lj.status === 'pendente') {
+                btnAp.classList.remove('hidden');
+                btnAp.onclick = function () {
+                    aprovarLojista(id);
+                    document.getElementById('modalDetalheLojista').classList.add('hidden');
+                    document.getElementById('modalDetalheLojista').classList.remove('flex');
+                };
+            } else {
+                btnAp.classList.add('hidden');
+                btnAp.onclick = null;
+            }
+
+            const wa = String(lj.whatsapp || '').replace(/\D/g, '');
+            const btnWa = document.getElementById('btnDetWhats');
+            if (wa) {
+                btnWa.href = 'https://wa.me/55' + wa + '?text=' + encodeURIComponent('Olá! Sobre seu cadastro no Compre Diamantino (' + (lj.nome || '') + ')...');
+                btnWa.classList.remove('hidden');
+            } else {
+                btnWa.classList.add('hidden');
+            }
+
+            const modal = document.getElementById('modalDetalheLojista');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        };
+
+        function fecharDetalhe() {
+            const modal = document.getElementById('modalDetalheLojista');
+            if (!modal) return;
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+        document.getElementById('btnFecharDetalhe') && document.getElementById('btnFecharDetalhe').addEventListener('click', fecharDetalhe);
+        document.getElementById('btnFecharDetalhe2') && document.getElementById('btnFecharDetalhe2').addEventListener('click', fecharDetalhe);
+
         // Inicializa
         renderTabela();
         // Sinal luminoso: se há pendentes, destaca filtro e abre lista de pendentes

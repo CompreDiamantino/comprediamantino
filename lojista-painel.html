@@ -294,7 +294,9 @@
 
     </div>
 
-    <script src="auth-utils.js"></script>
+    <script src="firebase-config.js"></script>
+<script src="r2-upload.js"></script>
+<script src="auth-utils.js"></script>
     <script>
         // ========== PROTEÇÃO DE ACESSO ==========
         let lojista = JSON.parse(localStorage.getItem('cd_lojista') || 'null');
@@ -606,13 +608,53 @@
             });
         });
         
-        document.getElementById('btnSalvarFotos').addEventListener('click', () => {
+        document.getElementById('btnSalvarFotos').addEventListener('click', async () => {
             const msg = document.getElementById('msgFotos');
-            // Depois: upload para Firebase Storage
-            msg.textContent = '✓ Fotos enviadas! A gestão também recebe o aviso.';
-            msg.className = 'ml-3 text-sm text-green-600 font-medium';
             msg.classList.remove('hidden');
-            setTimeout(() => msg.classList.add('hidden'), 3000);
+            msg.className = 'ml-3 text-sm text-gray-600 font-medium';
+            msg.textContent = 'Enviando fotos...';
+            try {
+                var files = fotosSelecionadas || [];
+                var dataUrls = [];
+                for (var i = 0; i < files.length; i++) {
+                    dataUrls.push(await new Promise(function (res) {
+                        var fr = new FileReader();
+                        fr.onload = function () { res(fr.result); };
+                        fr.onerror = function () { res(''); };
+                        fr.readAsDataURL(files[i]);
+                    }));
+                }
+                dataUrls = dataUrls.filter(Boolean).slice(0, 8);
+                var urls = dataUrls;
+                if (window.CDR2 && dataUrls.length) {
+                    urls = await CDR2.uploadListaImagens(dataUrls, 'lojistas/' + (lojista.empresaId || 'x') + '/galeria');
+                }
+                var perfil = {};
+                try { perfil = JSON.parse(localStorage.getItem('cd_perfil_' + lojista.empresaId) || '{}'); } catch (e) {}
+                perfil.fotos = (perfil.fotos || []).concat(urls).slice(-12);
+                perfil.atualizadoEm = new Date().toISOString();
+                localStorage.setItem('cd_perfil_' + lojista.empresaId, JSON.stringify(perfil));
+                // espelha na fila do gestor
+                try {
+                    var lista = JSON.parse(localStorage.getItem('cd_lojistas_admin') || '[]');
+                    var ix = lista.findIndex(function (x) { return x.id === lojista.empresaId; });
+                    if (ix >= 0) {
+                        lista[ix].fotos = perfil.fotos;
+                        localStorage.setItem('cd_lojistas_admin', JSON.stringify(lista));
+                    }
+                } catch (e2) {}
+                if (window.NotifGestor) {
+                    NotifGestor.add('fotos', 'Fotos: ' + (lojista.nome || 'Anunciante'), urls.length + ' nova(s)', { lojistaId: lojista.empresaId });
+                }
+                msg.textContent = window.CDR2 && CDR2.ativo()
+                    ? '✓ Fotos no R2! A gestão já pode ver.'
+                    : '✓ Fotos salvas neste aparelho (configure R2 para nuvem).';
+                msg.className = 'ml-3 text-sm text-green-600 font-medium';
+            } catch (err) {
+                msg.textContent = 'Erro ao enviar: ' + (err.message || err);
+                msg.className = 'ml-3 text-sm text-red-600 font-medium';
+            }
+            setTimeout(function () { msg.classList.add('hidden'); }, 5000);
         });
         
         // ========== PROMOÇÕES ==========

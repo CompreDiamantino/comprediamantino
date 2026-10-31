@@ -119,6 +119,35 @@
                 <label class="block text-sm font-medium mb-1">Descreva em uma frase o que você faz</label>
                 <textarea id="descricao" rows="2" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-primary" placeholder="Ex.: Padaria e confeitaria no centro"></textarea>
             </div>
+            <div>
+                <label class="block text-sm font-medium mb-1">O que vende / serviços (pode listar)</label>
+                <textarea id="oQueVende" rows="2" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-primary" placeholder="Ex.: pães, bolos, salgados, encomendas"></textarea>
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1">Horário de funcionamento</label>
+                <input id="horario" type="text" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-primary" placeholder="Ex.: Seg–Sáb 7h–19h">
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-sm font-medium mb-1"><i class="fab fa-instagram text-pink-500"></i> Instagram</label>
+                    <input id="instagram" type="text" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-primary" placeholder="@sua_loja ou link">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1"><i class="fab fa-facebook text-blue-600"></i> Facebook</label>
+                    <input id="facebook" type="text" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-primary" placeholder="Página ou link">
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1">Logo / foto de capa (opcional)</label>
+                <input id="fileLogo" type="file" accept="image/*" class="w-full text-sm border border-gray-200 rounded-xl px-3 py-2">
+                <div id="prevLogo" class="mt-2 hidden"><img class="h-20 w-20 object-cover rounded-xl border" alt="Logo"></div>
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1">Fotos do comércio (até 3 — vitrine)</label>
+                <input id="fileFotos" type="file" accept="image/*" multiple class="w-full text-sm border border-gray-200 rounded-xl px-3 py-2">
+                <p class="text-[11px] text-gray-400 mt-1">A gestão vê essas fotos na hora de aprovar. Depois você pode trocar no painel do anunciante.</p>
+                <div id="prevFotos" class="mt-2 flex flex-wrap gap-2"></div>
+            </div>
             <div class="flex gap-2">
                 <button type="button" onclick="irPasso(1)" class="flex-1 bg-gray-100 text-gray-700 font-bold py-3 rounded-xl">Voltar</button>
                 <button type="button" onclick="irPasso(3)" class="flex-1 bg-primary text-white font-bold py-3 rounded-xl hover:bg-accent">Continuar</button>
@@ -326,6 +355,79 @@
             });
         });
 
+
+        // --- Fotos / logo no cadastro (comprimidas para localStorage) ---
+        window._cadLogoData = '';
+        window._cadFotosData = [];
+
+        function comprimirImagem(file, maxLado, qualidade) {
+            return new Promise(function (resolve) {
+                if (!file || !file.type || file.type.indexOf('image') !== 0) {
+                    resolve('');
+                    return;
+                }
+                var reader = new FileReader();
+                reader.onload = function () {
+                    var img = new Image();
+                    img.onload = function () {
+                        var w = img.width, h = img.height;
+                        var m = maxLado || 900;
+                        if (w > m || h > m) {
+                            if (w >= h) { h = Math.round(h * m / w); w = m; }
+                            else { w = Math.round(w * m / h); h = m; }
+                        }
+                        var canvas = document.createElement('canvas');
+                        canvas.width = w; canvas.height = h;
+                        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+                        try {
+                            resolve(canvas.toDataURL('image/jpeg', qualidade || 0.72));
+                        } catch (e) {
+                            resolve(String(reader.result || ''));
+                        }
+                    };
+                    img.onerror = function () { resolve(''); };
+                    img.src = reader.result;
+                };
+                reader.onerror = function () { resolve(''); };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        var elLogo = document.getElementById('fileLogo');
+        if (elLogo) {
+            elLogo.addEventListener('change', async function () {
+                var f = elLogo.files && elLogo.files[0];
+                window._cadLogoData = f ? await comprimirImagem(f, 400, 0.75) : '';
+                var box = document.getElementById('prevLogo');
+                if (box) {
+                    if (window._cadLogoData) {
+                        box.classList.remove('hidden');
+                        box.querySelector('img').src = window._cadLogoData;
+                    } else box.classList.add('hidden');
+                }
+            });
+        }
+        var elFotos = document.getElementById('fileFotos');
+        if (elFotos) {
+            elFotos.addEventListener('change', async function () {
+                var files = Array.prototype.slice.call(elFotos.files || [], 0, 3);
+                window._cadFotosData = [];
+                var box = document.getElementById('prevFotos');
+                if (box) box.innerHTML = '';
+                for (var i = 0; i < files.length; i++) {
+                    var data = await comprimirImagem(files[i], 800, 0.7);
+                    if (!data) continue;
+                    window._cadFotosData.push(data);
+                    if (box) {
+                        var im = document.createElement('img');
+                        im.src = data;
+                        im.className = 'h-16 w-16 object-cover rounded-lg border';
+                        box.appendChild(im);
+                    }
+                }
+            });
+        }
+
         // Pré-seleciona categoria vinda da página de setor (?cat=moda)
         (function preselecionarCategoria() {
             try {
@@ -378,6 +480,11 @@
                     '<p><strong>Login:</strong> e-mail ou WhatsApp + senha definida</p>' +
                     '<p><strong>Endereço:</strong> ' + document.getElementById('endereco').value + ' — Diamantino-MT</p>' +
                     '<p><strong>Ramo:</strong> ' + categoria + '</p>' +
+                    ((document.getElementById('oQueVende') || {}).value ? '<p><strong>O que vende:</strong> ' + document.getElementById('oQueVende').value.trim() + '</p>' : '') +
+                    ((document.getElementById('instagram') || {}).value ? '<p><strong>Instagram:</strong> ' + document.getElementById('instagram').value.trim() + '</p>' : '') +
+                    ((document.getElementById('facebook') || {}).value ? '<p><strong>Facebook:</strong> ' + document.getElementById('facebook').value.trim() + '</p>' : '') +
+                    ((window._cadFotosData && window._cadFotosData.length) ? '<p><strong>Fotos:</strong> ' + window._cadFotosData.length + ' enviada(s)</p>' : '') +
+                    ((window._cadLogoData) ? '<p><strong>Logo:</strong> sim</p>' : '') +
                     '<p><strong>Plano:</strong> ' + planoTxt + '</p>' +
                     '<p><strong>Dia de pagamento:</strong> todo dia ' + (document.getElementById('diaPagamento').value || '—') + '</p>' +
                     '<p><strong>7 dias grátis</strong> · depois taxa de manutenção · estrelas podem zerar a mensalidade</p>';
@@ -391,7 +498,7 @@
             passo = n;
         }
 
-        document.getElementById('btnEnviar').addEventListener('click', () => {
+        document.getElementById('btnEnviar').addEventListener('click', async () => {
             const msg = document.getElementById('msgErro');
             
                 const latC = parseFloat((document.getElementById('coordLat')||{}).value) || null;
@@ -433,6 +540,12 @@
                 lng: parseFloat((document.getElementById('coordLng') || {}).value) || null,
                 categoria: categoria,
                 descricao: document.getElementById('descricao').value.trim(),
+                oQueVende: (document.getElementById('oQueVende') || {}).value ? document.getElementById('oQueVende').value.trim() : '',
+                horario: (document.getElementById('horario') || {}).value ? document.getElementById('horario').value.trim() : '',
+                instagram: (document.getElementById('instagram') || {}).value ? document.getElementById('instagram').value.trim() : '',
+                facebook: (document.getElementById('facebook') || {}).value ? document.getElementById('facebook').value.trim() : '',
+                logo: window._cadLogoData || '',
+                fotos: (window._cadFotosData || []).slice(0, 3),
                 plano: plano,
                 diaPagamento: parseInt(document.getElementById('diaPagamento').value, 10) || 10,
                 status: 'pendente',
@@ -451,13 +564,46 @@
                 reg.vencimento = venc.toISOString().slice(0, 10);
             })();
 
+            // Sobe logo/fotos para R2 se configurado (senão mantém data:URL)
+            try {
+                var prefix = 'lojistas/' + reg.id;
+                if (window.CDR2) {
+                    if (reg.logo) {
+                        reg.logo = await CDR2.uploadImagemFlex(reg.logo, prefix + '/logo');
+                    }
+                    if (reg.fotos && reg.fotos.length) {
+                        reg.fotos = await CDR2.uploadListaImagens(reg.fotos, prefix + '/vitrine');
+                    }
+                }
+            } catch (eR2) {
+                console.warn('R2 cadastro', eR2);
+            }
+
             // Fila do gestor (igual pedidos do IBN)
             let lista = [];
             try { lista = JSON.parse(localStorage.getItem('cd_lojistas_admin') || '[]'); } catch (e) {}
             lista.push(reg);
             localStorage.setItem('cd_lojistas_admin', JSON.stringify(lista));
+            // Perfil inicial (gestão e painel do anunciante já veem fotos/redes)
+            try {
+                localStorage.setItem('cd_perfil_' + reg.id, JSON.stringify({
+                    nomeFantasia: reg.nome,
+                    categoria: reg.categoria,
+                    descricao: reg.descricao,
+                    oQueVende: reg.oQueVende,
+                    horario: reg.horario,
+                    instagram: reg.instagram,
+                    facebook: reg.facebook,
+                    whatsapp: reg.whatsapp,
+                    endereco: reg.endereco,
+                    mapsLink: reg.mapsLink || '',
+                    logo: reg.logo || '',
+                    fotos: reg.fotos || [],
+                    atualizadoEm: new Date().toISOString()
+                }));
+            } catch (ePerfil) {}
             if (window.NotifGestor) {
-                NotifGestor.add('novo_membro', 'Novo membro: ' + reg.nome, (reg.categoria || '') + ' · ' + (reg.whatsapp || ''), { lojistaId: reg.id });
+                NotifGestor.add('novo_membro', 'Novo cadastro: ' + reg.nome, (reg.categoria || '') + ' · ' + (reg.whatsapp || '') + (reg.fotos && reg.fotos.length ? ' · ' + reg.fotos.length + ' foto(s)' : ''), { lojistaId: reg.id });
             }
 
             // Também no mapa como pendente (não aparece até ativo)
@@ -482,10 +628,11 @@
             document.getElementById('stepOk').classList.remove('hidden');
         });
     </script>
+    <script src="firebase-config.js"></script>
+    <script src="r2-upload.js"></script>
     <script src="empresas-dados.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-    <script src="firebase-config.js"></script>
     <script src="lojistas-nuvem.js"></script>
     <script src="notificacoes-gestor.js"></script>
     <script src="auth-utils.js"></script>

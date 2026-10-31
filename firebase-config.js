@@ -35,3 +35,18 @@
 
     global.iniciarFirebase = iniciarFirebase;
 })(window);
+
+// ==============================================
+// Cloudflare R2 — fotos do comércio (logo, vitrine, posts)
+// Crie um bucket NOVO para o Compre Diamantino (não use o do IBN).
+// Enquanto accessKeyId estiver vazio, as fotos ficam só no aparelho (data URL).
+// Guia: NUVEM-R2.txt
+// ==============================================
+var R2_CONFIG = {
+    accountId: '',           // Cloudflare → R2 → Overview (Account ID)
+    accessKeyId: '',         // R2 → Manage R2 API Tokens → Access Key ID
+    secretAccessKey: '',     // Secret Access Key (guarde com cuidado)
+    bucket: '',              // ex.: compre-diamantino-fotos
+    publicBase: '',          // ex.: https://pub-xxxx.r2.dev  (R2 → bucket → Settings → Public access)
+    endpoint: ''             // opcional; o upload monta com accountId
+};
