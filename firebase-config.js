@@ -37,16 +37,14 @@
 })(window);
 
 // ==============================================
-// Cloudflare R2 — fotos do comércio (logo, vitrine, posts)
-// Crie um bucket NOVO para o Compre Diamantino (não use o do IBN).
-// Enquanto accessKeyId estiver vazio, as fotos ficam só no aparelho (data URL).
-// Guia: NUVEM-R2.txt
+// Cloudflare R2 — fotos do comércio
+// Bucket: compre-diamantino-fotos
 // ==============================================
 var R2_CONFIG = {
-    accountId: '',           // Cloudflare → R2 → Overview (Account ID)
-    accessKeyId: '',         // R2 → Manage R2 API Tokens → Access Key ID
-    secretAccessKey: '',     // Secret Access Key (guarde com cuidado)
-    bucket: '',              // ex.: compre-diamantino-fotos
-    publicBase: '',          // ex.: https://pub-xxxx.r2.dev  (R2 → bucket → Settings → Public access)
-    endpoint: ''             // opcional; o upload monta com accountId
+    accountId: 'db4914772d06ef519934b86207ce0754',
+    accessKeyId: '86ad98f0a6b4086eb747e39adc2e03e7',
+    secretAccessKey: 'c493608993a6eb95d812633348a8bf42375e5ab79d9956f0313228d8c522a198',
+    bucket: 'compre-diamantino-fotos',
+    publicBase: 'https://pub-de27f61055094a509457476bc5543f5f.r2.dev',
+    endpoint: 'https://db4914772d06ef519934b86207ce0754.r2.cloudflarestorage.com'
 };
