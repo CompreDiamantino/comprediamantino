@@ -590,9 +590,12 @@
             }
             lista.push(reg);
             localStorage.setItem('cd_lojistas_admin', JSON.stringify(lista));
-            // Espelho na nuvem SEM senha em texto puro
-            if (window.LojistasNuvem && LojistasNuvem.salvarUm) {
-                try { await LojistasNuvem.salvarUm(reg); } catch (eN) { console.warn('nuvem cadastro', eN); }
+            // Espelho na nuvem + sinal para o gestor (1 doc) — aparece em segundos no painel
+            if (window.LojistasNuvem) {
+                try {
+                    if (LojistasNuvem.salvarNovoCadastro) await LojistasNuvem.salvarNovoCadastro(reg);
+                    else if (LojistasNuvem.salvarUm) await LojistasNuvem.salvarUm(reg);
+                } catch (eN) { console.warn('nuvem cadastro', eN); }
             }
             // Perfil inicial (gestão e painel do anunciante já veem fotos/redes)
             try {

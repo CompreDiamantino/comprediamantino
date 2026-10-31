@@ -274,6 +274,7 @@
     <script src="firebase-config.js"></script>
     <script src="firebase-init.js"></script>
 
+    <script src="lojistas-nuvem.js"></script>
     <script src="notificacoes-gestor.js"></script>
     <script src="posts-nuvem.js"></script>
     <script>
@@ -306,8 +307,41 @@
           NotifGestor.atualizarBadge();
         }
         atualizarSinalPendentes();
-        // Revisa a cada 8s (outro aparelho / outra aba)
+        // Revisa a cada 8s só o contador local (sem Firebase)
         setInterval(atualizarSinalPendentes, 8000);
+
+        // Cadastro em outro aparelho: 1 listener em 1 doc → puxa só o novo id
+        if (window.LojistasNuvem && LojistasNuvem.ouvirSinais) {
+          var _hubSinalEm = null;
+          LojistasNuvem.ouvirSinais(function (sinal) {
+            if (!sinal || !sinal.em) return;
+            if (_hubSinalEm === sinal.em) return;
+            var primeiro = !_hubSinalEm;
+            _hubSinalEm = sinal.em;
+            if (primeiro && !sinal.lojistaId) return;
+            function refresh() {
+              atualizarSinalPendentes();
+              if (window.NotifGestor) {
+                if (sinal.tipo === 'novo_cadastro' && sinal.lojistaId) {
+                  NotifGestor.add('novo_membro',
+                    'Novo cadastro: ' + (sinal.nome || 'Negócio'),
+                    'Chegou agora · ' + (sinal.status || 'pendente'),
+                    { lojistaId: sinal.lojistaId });
+                }
+                NotifGestor.syncDeCadastros();
+                NotifGestor.renderLista('listaNotifGestor');
+                NotifGestor.atualizarBadge();
+              }
+            }
+            if (sinal.lojistaId && LojistasNuvem.puxarUm) {
+              LojistasNuvem.puxarUm(sinal.lojistaId).then(refresh).catch(refresh);
+            } else if (LojistasNuvem.puxar) {
+              LojistasNuvem.puxar(refresh);
+            } else {
+              refresh();
+            }
+          });
+        }
         var btn = document.getElementById('btnMarcarLidas');
         if (btn) btn.addEventListener('click', function () {
           NotifGestor.marcarTodasLidas();

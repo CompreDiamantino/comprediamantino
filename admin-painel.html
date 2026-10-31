@@ -122,9 +122,14 @@
                 <button data-filtro="pendente" id="btnFiltroPendente" class="filtro-btn relative bg-white text-gray-600 px-3 py-1.5 rounded-lg text-sm font-medium border">Pendentes <span id="badgeFiltroPendente" class="hidden ml-1 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold" style="animation:notif-pulse 1.4s ease-in-out infinite">0</span></button>
                 <button data-filtro="removido" class="filtro-btn bg-white text-gray-600 px-3 py-1.5 rounded-lg text-sm font-medium border">Removidos</button>
             </div>
-            <button id="btnNovoLojista" class="bg-secondary text-primary font-bold px-4 py-2 rounded-xl text-sm hover:bg-yellow-400 transition whitespace-nowrap">
-                <i class="fas fa-plus mr-1"></i> Novo lojista
-            </button>
+            <div class="flex gap-2 flex-wrap">
+                <button id="btnLimparTestes" type="button" class="bg-white text-gray-600 border border-gray-200 font-medium px-3 py-2 rounded-xl text-sm hover:bg-gray-50 transition whitespace-nowrap" title="Remove cadastros de teste (WhatsApp 659999…) e libera exclusão total">
+                    <i class="fas fa-broom mr-1"></i> Limpar testes
+                </button>
+                <button id="btnNovoLojista" class="bg-secondary text-primary font-bold px-4 py-2 rounded-xl text-sm hover:bg-yellow-400 transition whitespace-nowrap">
+                    <i class="fas fa-plus mr-1"></i> Novo lojista
+                </button>
+            </div>
         </div>
 
         <!-- Busca -->
@@ -374,14 +379,19 @@
         }
         
         function salvarLojistas(lista) {
+            // Só local aqui — NÃO reenvia a lista inteira à nuvem (economiza writes).
+            // Quem muda 1 lojista chama LojistasNuvem.salvarUm(esse) à parte.
             localStorage.setItem(STORAGE_KEY, JSON.stringify(lista));
             try {
-                if (window.LojistasNuvem) {
-                    LojistasNuvem.salvarLocal(lista);
-                    (lista || []).forEach(function (lj) {
-                        if (lj && lj.id) LojistasNuvem.salvarUm(lj);
-                    });
-                }
+                if (window.LojistasNuvem) LojistasNuvem.salvarLocal(lista);
+            } catch (e) {}
+        }
+
+        /** Grava 1 lojista no local + nuvem (quando realmente mudou) */
+        function salvarLojistaNuvem(lj) {
+            if (!lj || !lj.id) return;
+            try {
+                if (window.LojistasNuvem && LojistasNuvem.salvarUm) LojistasNuvem.salvarUm(lj);
             } catch (e) {}
         }
         
@@ -561,14 +571,53 @@
                 btn.classList.remove('bg-white', 'text-gray-600', 'border');
                 filtroAtual = btn.dataset.filtro;
                 renderTabela();
-        // Puxa cadastros de outros aparelhos (nuvem)
+        // Nuvem econômico: 1× puxar ao abrir + listener só em _sistema/sinais
+        // (cadastro novo → 1 leitura do sinal + 1 leitura do lojista, não a coleção inteira)
         if (window.LojistasNuvem && LojistasNuvem.puxar) {
             LojistasNuvem.puxar(function () {
-                try { renderTabela(); } catch (e) {}
+                try {
+                    renderTabela();
+                    if (window.NotifGestor) { NotifGestor.syncDeCadastros(); NotifGestor.atualizarBadge(); }
+                } catch (e) {}
             });
             try {
-                LojistasNuvem.ouvir(function () { try { renderTabela(); } catch (e) {} });
-            } catch (e2) {}
+                var _ultimoSinalEm = null;
+                LojistasNuvem.ouvirSinais(function (sinal) {
+                    if (!sinal) return;
+                    // ignora o primeiro snapshot idêntico (só estado inicial)
+                    if (_ultimoSinalEm && sinal.em === _ultimoSinalEm) return;
+                    var eraPrimeiro = !_ultimoSinalEm;
+                    _ultimoSinalEm = sinal.em || null;
+                    if (eraPrimeiro && !sinal.lojistaId) return;
+
+                    function aposPuxar() {
+                        try {
+                            renderTabela();
+                            if (window.NotifGestor) {
+                                if (sinal.tipo === 'novo_cadastro' && sinal.lojistaId) {
+                                    NotifGestor.add('novo_membro',
+                                        'Novo cadastro: ' + (sinal.nome || 'Negócio'),
+                                        'Chegou agora · status ' + (sinal.status || 'pendente'),
+                                        { lojistaId: sinal.lojistaId });
+                                }
+                                NotifGestor.syncDeCadastros();
+                                NotifGestor.atualizarBadge();
+                            }
+                            // destaque visual no filtro Pendentes
+                            var btnP = document.querySelector('.filtro-btn[data-filtro="pendente"]');
+                            if (btnP && sinal.tipo === 'novo_cadastro') {
+                                btnP.classList.add('ring-2', 'ring-orange-400');
+                                setTimeout(function () { btnP.classList.remove('ring-2', 'ring-orange-400'); }, 4000);
+                            }
+                        } catch (e) {}
+                    }
+                    if (sinal.lojistaId && LojistasNuvem.puxarUm) {
+                        LojistasNuvem.puxarUm(sinal.lojistaId).then(aposPuxar).catch(aposPuxar);
+                    } else {
+                        LojistasNuvem.puxar(aposPuxar);
+                    }
+                });
+            } catch (e2) { console.warn(e2); }
         }
             });
         });
@@ -683,6 +732,7 @@
             lista[idx].descontoEm = new Date().toISOString();
             
             salvarLojistas(lista);
+            salvarLojistaNuvem(lista[idx]);
 
             // Libera no mapa imediatamente (como célula ativa no IBN)
             if (window.EmpresasDados) {
@@ -737,6 +787,7 @@
             }
             lista[idx].aprovadoEm = new Date().toISOString();
             salvarLojistas(lista);
+            salvarLojistaNuvem(lista[idx]);
             // Garante no mapa + home (upsert completo, não só status)
             if (window.EmpresasDados) {
                 const lj = lista[idx];
@@ -765,6 +816,7 @@
             lista[idx].status = 'bloqueado';
             lista[idx].bloqueadoEm = new Date().toISOString();
             salvarLojistas(lista);
+            salvarLojistaNuvem(lista[idx]);
             if (window.EmpresasDados) EmpresasDados.atualizarStatus(id, 'bloqueado');
             renderTabela();
         };
@@ -776,6 +828,7 @@
             if (idx === -1) return;
             lista[idx].status = lista[idx].vencimento ? 'ativo' : 'pendente';
             salvarLojistas(lista);
+            salvarLojistaNuvem(lista[idx]);
             if (window.EmpresasDados) EmpresasDados.atualizarStatus(id, lista[idx].status);
             renderTabela();
         };
@@ -791,6 +844,7 @@
             lista[idx].status = 'removido';
             lista[idx].removidoEm = new Date().toISOString();
             salvarLojistas(lista);
+            salvarLojistaNuvem(lista[idx]);
             if (window.EmpresasDados) EmpresasDados.atualizarStatus(id, 'removido');
             renderTabela();
             alert('Removido. Referência salva na lista negra (nome, telefone, GPS).');
@@ -853,6 +907,48 @@
             document.getElementById('formLojista').reset();
             document.getElementById('modalLojista').classList.remove('hidden');
             document.getElementById('modalLojista').classList.add('flex');
+        });
+
+        // Remove cadastros de teste (WhatsApp começando com 659999) — exclusão total liberada
+        document.getElementById('btnLimparTestes').addEventListener('click', () => {
+            const lista = getLojistas();
+            const testes = lista.filter(function (l) {
+                const wa = String(l.whatsapp || '').replace(/\D/g, '');
+                return wa.indexOf('659999') === 0 || wa.indexOf('55659999') === 0
+                    || /teste|demo|padaria do centro|auto peças diamantino|beleza & estilo|casa construir|pet shop amigo/i.test(l.nome || '');
+            });
+            if (!testes.length) {
+                alert('Nenhum cadastro de teste encontrado (WhatsApp 659999… ou nomes de demo).');
+                return;
+            }
+            if (!confirm('Encontrados ' + testes.length + ' cadastro(s) de teste.\n\nSerão APAGADOS de vez (sem lista negra), liberando recadastro.\n\nContinuar?')) return;
+            const ids = {};
+            testes.forEach(function (t) { ids[String(t.id)] = true; });
+            const restam = lista.filter(function (l) { return !ids[String(l.id)]; });
+            salvarLojistas(restam);
+            // limpa lista negra desses
+            try {
+                let negros = JSON.parse(localStorage.getItem('cd_removidos') || '[]');
+                negros = negros.filter(function (r) {
+                    if (!r) return false;
+                    if (r.id && ids[String(r.id)]) return false;
+                    const wa = String(r.whatsapp || '').replace(/\D/g, '');
+                    if (wa.indexOf('659999') === 0) return false;
+                    return true;
+                });
+                localStorage.setItem('cd_removidos', JSON.stringify(negros));
+            } catch (e) {}
+            testes.forEach(function (t) {
+                try {
+                    if (window.LojistasNuvem && LojistasNuvem.apagar) LojistasNuvem.apagar(t.id);
+                    if (window.EmpresasDados && EmpresasDados.lerEmpresas) {
+                        var emp = EmpresasDados.lerEmpresas().filter(function (e) { return String(e.id) !== String(t.id); });
+                        EmpresasDados.salvarEmpresas(emp);
+                    }
+                } catch (e) {}
+            });
+            renderTabela();
+            alert(testes.length + ' teste(s) apagado(s). Pode recadastrar sem restrição.');
         });
         
         document.getElementById('btnFecharModalLojista').addEventListener('click', () => {
@@ -931,6 +1027,8 @@
             }
             
             salvarLojistas(lista);
+            const rowSalvo = lista.find(l => l.id === idFinal);
+            if (rowSalvo) salvarLojistaNuvem(rowSalvo);
 
             // Espelho no mapa (modelo células IBN) — só entra no mapa se ativo/aviso
             if (window.EmpresasDados) {
