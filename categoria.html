@@ -62,13 +62,37 @@
         function render() {
             const box = document.getElementById('lista');
             let lista = [];
+            const ids = {};
+
+            // Fonte 1: lojistas reais (admin) — fase de teste: ativo/aviso ou com foto
+            try {
+                const lj = JSON.parse(localStorage.getItem('cd_lojistas_admin') || '[]');
+                lj.forEach(function (e) {
+                    if (!e || !e.nome) return;
+                    if ((e.categoria || 'outros') !== cat) return;
+                    const st = (e.status || '').toLowerCase();
+                    if (st === 'removido' || st === 'bloqueado') return;
+                    const temFoto = !!(e.logo || (e.fotos && e.fotos.length));
+                    if (st === 'ativo' || st === 'aviso' || temFoto) {
+                        lista.push(e);
+                        ids[String(e.id)] = true;
+                    }
+                });
+            } catch (_) {}
+
+            // Fonte 2: espelho do mapa
             if (window.EmpresasDados) {
-                lista = EmpresasDados.seedSeVazio().filter(function (e) {
-                    return (e.status === 'ativo' || e.status === 'aviso') &&
-                        (e.categoria === cat) &&
-                        !e.publico;
+                EmpresasDados.seedSeVazio().forEach(function (e) {
+                    if (!e || e.publico) return;
+                    if ((e.categoria || 'outros') !== cat) return;
+                    if (ids[String(e.id)]) return;
+                    if (e.status === 'ativo' || e.status === 'aviso') {
+                        lista.push(e);
+                        ids[String(e.id)] = true;
+                    }
                 });
             }
+
             if (!lista.length) {
                 box.innerHTML = '<div class="col-span-full text-center py-12">' +
                     '<p class="text-gray-500 mb-2">Ainda não há empresas ativas nesta categoria.</p>' +
@@ -79,11 +103,16 @@
             }
             box.innerHTML = lista.map(function (e) {
                 const wa = e.whatsapp
-                    ? 'https://wa.me/55' + String(e.whatsapp).replace(/\\D/g, '')
+                    ? 'https://wa.me/55' + String(e.whatsapp).replace(/\D/g, '')
                     : null;
+                const capa = e.logo || (e.fotos && e.fotos[0]) || '';
+                const thumb = capa
+                    ? '<img src="' + String(capa).replace(/"/g, '') + '" alt="" class="w-12 h-12 rounded-xl object-cover flex-shrink-0" loading="lazy">'
+                    : '<div class="w-12 h-12 rounded-xl bg-blue-50 text-primary font-bold flex items-center justify-center flex-shrink-0">' + (e.nome || 'E').charAt(0).toUpperCase() + '</div>';
                 return '<div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex flex-col">' +
-                    '<h3 class="font-bold text-gray-900 text-lg mb-1">' + e.nome + '</h3>' +
-                    '<p class="text-xs text-gray-400 mb-3">' + (e.endereco || 'Diamantino-MT') + '</p>' +
+                    '<div class="flex items-start gap-3 mb-3">' + thumb +
+                    '<div class="min-w-0"><h3 class="font-bold text-gray-900 text-lg mb-0.5 leading-snug">' + e.nome + '</h3>' +
+                    '<p class="text-xs text-gray-400">' + (e.endereco || 'Diamantino-MT') + '</p></div></div>' +
                     '<div class="mt-auto flex gap-2">' +
                     '<a href="empresa.html?id=' + encodeURIComponent(e.id) + '" class="flex-1 text-center bg-primary text-white text-sm font-bold py-2 rounded-xl">Ver perfil</a>' +
                     (wa ? '<a href="' + wa + '" target="_blank" class="bg-green-500 text-white w-11 flex items-center justify-center rounded-xl"><i class="fab fa-whatsapp"></i></a>' : '') +

@@ -36,7 +36,10 @@
                     <img src="icon-192.png" alt="Logo" class="w-8 h-8 rounded-full">
                     <span class="font-bold text-sm sm:text-base">Área do Anunciante</span>
                 </div>
-                <div class="flex items-center gap-3">
+                <div class="flex items-center gap-2 sm:gap-3">
+                    <button type="button" id="btnVoltarLojista" class="text-sm bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg transition" title="Voltar à tela anterior">
+                        <i class="fas fa-arrow-left mr-1"></i> Voltar
+                    </button>
                     <span id="nomeLojista" class="text-sm hidden sm:block text-blue-200"></span>
                     <button id="btnSair" class="text-sm bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg transition">
                         <i class="fas fa-sign-out-alt mr-1"></i> Sair
@@ -389,6 +392,24 @@
                 window.location.href = 'lojista-login.html';
             }
         });
+
+        // Navegação: volta sem perder sessão (gestor ou lojista)
+        (function () {
+            var btn = document.getElementById('btnVoltarLojista');
+            if (!btn) return;
+            btn.addEventListener('click', function () {
+                if (gestor && gestor.logado && typeof AuthUtils !== 'undefined' && AuthUtils.tocarAtividadeGestor) {
+                    AuthUtils.tocarAtividadeGestor();
+                }
+                if (window.history.length > 1) {
+                    window.history.back();
+                } else if (gestor && gestor.logado) {
+                    window.location.href = 'gestor-hub.html';
+                } else {
+                    window.location.href = 'index.html';
+                }
+            });
+        })();
         
         // ========== CONTADOR DESCRIÇÃO ==========
         document.getElementById('descricao').addEventListener('input', (e) => {

@@ -531,6 +531,96 @@
     <script src="empresas-dados.js"></script>
     <script src="ranking.js"></script>
     <script>
+        /** Empresas em Destaque na home — mostra cadastradas (com fotos) mesmo em fase de teste */
+        function carregarDestaquesHome() {
+            var box = document.getElementById('empresasDestaque');
+            if (!box) return;
+
+            var lista = [];
+            try {
+                lista = JSON.parse(localStorage.getItem('cd_lojistas_admin') || '[]');
+            } catch (e) { lista = []; }
+
+            // Une espelho do mapa (EmpresasDados), sem serviços públicos
+            try {
+                if (window.EmpresasDados && EmpresasDados.seedSeVazio) {
+                    var mapa = EmpresasDados.seedSeVazio().filter(function (e) {
+                        return !e.publico && e.id;
+                    });
+                    var ids = {};
+                    lista.forEach(function (l) { if (l && l.id) ids[String(l.id)] = true; });
+                    mapa.forEach(function (e) {
+                        if (!ids[String(e.id)]) lista.push(e);
+                    });
+                }
+            } catch (e) {}
+
+            // Fase de teste: aparece se ativo/aviso OU se tem foto/logo e não está removido/bloqueado
+            var visiveis = lista.filter(function (lj) {
+                if (!lj || !lj.nome) return false;
+                var st = (lj.status || '').toLowerCase();
+                if (st === 'removido' || st === 'bloqueado') return false;
+                if (st === 'ativo' || st === 'aviso') return true;
+                var temFoto = !!(lj.logo || (lj.fotos && lj.fotos.length));
+                return temFoto; // pendente/vencido com foto também aparece em teste
+            });
+
+            var ordemPlano = { premium: 0, destaque: 1, basico: 2 };
+            visiveis.sort(function (a, b) {
+                var pa = ordemPlano[(a.plano || 'basico').toLowerCase()];
+                var pb = ordemPlano[(b.plano || 'basico').toLowerCase()];
+                if (pa == null) pa = 9;
+                if (pb == null) pb = 9;
+                if (pa !== pb) return pa - pb;
+                var fa = (a.logo || (a.fotos && a.fotos[0])) ? 0 : 1;
+                var fb = (b.logo || (b.fotos && b.fotos[0])) ? 0 : 1;
+                if (fa !== fb) return fa - fb;
+                return String(a.nome || '').localeCompare(String(b.nome || ''), 'pt-BR');
+            });
+
+            if (!visiveis.length) return; // mantém empty state do HTML
+
+            var CAT = {
+                alimentacao: 'Alimentação', moda: 'Moda', casa: 'Casa e Construção',
+                automotivo: 'Automotivo', saude: 'Saúde e Beleza', servicos: 'Serviços',
+                agro: 'Agro e Pet', outros: 'Outros'
+            };
+
+            box.innerHTML = visiveis.slice(0, 12).map(function (lj) {
+                var capa = lj.logo || (lj.fotos && lj.fotos[0]) || '';
+                var inicial = (lj.nome || 'E').charAt(0).toUpperCase();
+                var cat = CAT[lj.categoria] || lj.categoria || '';
+                var plano = (lj.plano || 'basico').toLowerCase();
+                var selo = '';
+                if (plano === 'premium') {
+                    selo = '<span class="absolute top-2 right-2 text-[10px] font-bold bg-amber-400 text-primary px-2 py-0.5 rounded-full">Premium</span>';
+                } else if (plano === 'destaque') {
+                    selo = '<span class="absolute top-2 right-2 text-[10px] font-bold bg-primary text-white px-2 py-0.5 rounded-full">Destaque</span>';
+                }
+
+                var imgHtml = capa
+                    ? '<img src="' + String(capa).replace(/"/g, '') + '" alt="" class="w-full h-full object-cover" loading="lazy" onerror="this.style.display=\'none\';this.parentNode.insertAdjacentHTML(\'beforeend\',\'<span class=\\\'text-3xl font-bold text-primary\\\'>' + inicial + '</span>\')">'
+                    : '<span class="text-3xl font-bold text-primary">' + inicial + '</span>';
+
+                var wa = lj.whatsapp ? String(lj.whatsapp).replace(/\D/g, '') : '';
+                var waBtn = wa
+                    ? '<a href="https://wa.me/55' + wa + '" target="_blank" rel="noopener" class="bg-green-500 text-white w-10 flex items-center justify-center rounded-xl hover:bg-green-600" title="WhatsApp"><i class="fab fa-whatsapp"></i></a>'
+                    : '';
+
+                return '<article class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden hover:shadow-md transition flex flex-col">' +
+                    '<div class="relative h-36 bg-gradient-to-br from-blue-50 to-gray-100 flex items-center justify-center overflow-hidden">' +
+                    imgHtml + selo +
+                    '</div>' +
+                    '<div class="p-4 flex flex-col flex-1">' +
+                    '<h3 class="font-bold text-gray-900 text-base leading-snug mb-1 line-clamp-2">' + (lj.nome || '') + '</h3>' +
+                    (cat ? '<p class="text-xs text-gray-400 mb-3"><i class="fas fa-tag mr-1"></i>' + cat + '</p>' : '<p class="mb-3"></p>') +
+                    '<div class="mt-auto flex gap-2">' +
+                    '<a href="empresa.html?id=' + encodeURIComponent(lj.id) + '" class="flex-1 text-center bg-primary text-white text-sm font-bold py-2 rounded-xl hover:bg-accent transition">Ver perfil</a>' +
+                    waBtn +
+                    '</div></div></article>';
+            }).join('');
+        }
+
         function carregarOfertasHome() {
             var el = document.getElementById('ofertasPorSetor');
             if (!el) return;
@@ -542,13 +632,18 @@
             } catch (e) { console.error(e); }
             el.innerHTML = '<p class="text-center text-gray-500 text-sm py-6">Nenhuma oferta ranqueada ainda. Cadastre empresas e avaliações para montar o Top por setor.</p>';
         }
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', carregarOfertasHome);
-        } else {
+        function bootHome() {
+            carregarDestaquesHome();
             carregarOfertasHome();
         }
-        // fallback se script demorar
-        setTimeout(carregarOfertasHome, 600);
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', bootHome);
+        } else {
+            bootHome();
+        }
+        // fallback se scripts/dados demorarem
+        setTimeout(bootHome, 600);
+        setTimeout(carregarDestaquesHome, 1500);
     </script>
     <script src="auth-utils.js"></script>
     <script>
