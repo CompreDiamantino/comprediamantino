@@ -103,7 +103,7 @@
         AuthUtils.preencherUltimosLogins('identificador', 'chipsUltimosLogins', 'listaUltimosLogins');
         AuthUtils.setupToggleSenha('senha', 'btnOlho');
         
-        document.getElementById('formLogin').addEventListener('submit', (e) => {
+        document.getElementById('formLogin').addEventListener('submit', async (e) => {
             e.preventDefault();
             
             const id = document.getElementById('identificador').value.trim();
@@ -111,14 +111,11 @@
             const msg = document.getElementById('msgErro');
             msg.classList.add('hidden');
             const idNorm = AuthUtils.normalizarIdentificador(id);
-            const idLower = id.toLowerCase();
             
             // ——— GESTOR MASTER (acesso total) → hub do gestor ———
-            // Senhas oficiais IBN (também listadas em auth-utils.js)
-            const SENHAS_GESTOR = ['IbnDiamantino@2026', 'IBN-Gestor-2026!'];
             const ehGestor = (typeof AuthUtils !== 'undefined' && AuthUtils.senhaGestorValida)
                 ? AuthUtils.senhaGestorValida(senha)
-                : SENHAS_GESTOR.includes(senha);
+                : false;
             
             if (ehGestor) {
                 if (typeof AuthUtils !== 'undefined' && AuthUtils.loginGestor) {
@@ -138,9 +135,17 @@
                 return;
             }
             
-            // ——— LOJISTA: busca por e-mail OU telefone + senha cadastrada ———
+            // ——— LOJISTA: busca por e-mail OU telefone + senha (texto legado ou hash) ———
             const lojistaCad = AuthUtils.buscarLojistaPorIdentificador(id);
-            if (lojistaCad && AuthUtils.validarSenhaLojista(lojistaCad, senha)) {
+            let senhaOk = false;
+            if (lojistaCad) {
+                if (AuthUtils.validarSenhaLojistaAsync) {
+                    senhaOk = await AuthUtils.validarSenhaLojistaAsync(lojistaCad, senha);
+                } else {
+                    senhaOk = AuthUtils.validarSenhaLojista(lojistaCad, senha);
+                }
+            }
+            if (lojistaCad && senhaOk) {
                 AuthUtils.salvarUltimoLogin(id);
                 localStorage.setItem('cd_lojista', JSON.stringify({
                     email: lojistaCad.email || (id.includes('@') ? id : ''),
@@ -160,7 +165,6 @@
             const chaveTemp = 'cd_temp_login_' + idNorm;
             const senhaTemp = localStorage.getItem(chaveTemp);
             if (senhaTemp && senha === senhaTemp) {
-                // Tenta achar lojista real; se achar, usa os dados dele
                 const ljTemp = AuthUtils.buscarLojistaPorIdentificador(id);
                 AuthUtils.salvarUltimoLogin(id);
                 localStorage.setItem('cd_lojista', JSON.stringify({

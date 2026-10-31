@@ -582,8 +582,18 @@
             // Fila do gestor (igual pedidos do IBN)
             let lista = [];
             try { lista = JSON.parse(localStorage.getItem('cd_lojistas_admin') || '[]'); } catch (e) {}
+            // Gera hash da senha e remove texto puro antes de espelhar na nuvem
+            if (reg.senha && window.AuthUtils && AuthUtils.hashSenha) {
+                try {
+                    reg.senhaHash = await AuthUtils.hashSenha(reg.senha);
+                } catch (eH) {}
+            }
             lista.push(reg);
             localStorage.setItem('cd_lojistas_admin', JSON.stringify(lista));
+            // Espelho na nuvem SEM senha em texto puro
+            if (window.LojistasNuvem && LojistasNuvem.salvarUm) {
+                try { await LojistasNuvem.salvarUm(reg); } catch (eN) { console.warn('nuvem cadastro', eN); }
+            }
             // Perfil inicial (gestão e painel do anunciante já veem fotos/redes)
             try {
                 localStorage.setItem('cd_perfil_' + reg.id, JSON.stringify({

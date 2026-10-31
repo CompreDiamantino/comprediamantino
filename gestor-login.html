@@ -96,11 +96,10 @@
             const senha = document.getElementById('senhaGestor').value.trim();
             const msg = document.getElementById('msgErro');
             
-            // Aceita senhas padrão IBN (login completo)
-            const SENHAS_GESTOR = ['IbnDiamantino@2026', 'IBN-Gestor-2026!'];
+            // Senhas do gestor ficam só em auth-utils.js
             const ok = (typeof AuthUtils !== 'undefined' && AuthUtils.senhaGestorValida)
                 ? AuthUtils.senhaGestorValida(senha)
-                : SENHAS_GESTOR.includes(senha);
+                : false;
             if (ok) {
                 AuthUtils.loginGestor(usuario || 'gestor');
                 window.location.href = 'gestor-hub.html';

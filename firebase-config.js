@@ -42,8 +42,8 @@
 // ==============================================
 var R2_CONFIG = {
     accountId: 'db4914772d06ef519934b86207ce0754',
-    accessKeyId: '86ad98f0a6b4086eb747e39adc2e03e7',
-    secretAccessKey: 'c493608993a6eb95d812633348a8bf42375e5ab79d9956f0313228d8c522a198',
+    accessKeyId: '3246bef85a7ad6f39aeecee2662f1b14',
+    secretAccessKey: '4ae094e5c5f62830684cd5688b30b77c3002f573cbdedc0b53bd5ae46d7b5361',
     bucket: 'compre-diamantino-fotos',
     publicBase: 'https://pub-de27f61055094a509457476bc5543f5f.r2.dev',
     endpoint: 'https://db4914772d06ef519934b86207ce0754.r2.cloudflarestorage.com'

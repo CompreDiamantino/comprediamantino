@@ -24,7 +24,8 @@
     return String(lj.id || ('lj-' + Date.now()));
   }
 
-  /** Grava um anunciante na nuvem + mescla no local */
+  /** Grava um anunciante na nuvem + mescla no local.
+   *  Na nuvem NUNCA grava senha em texto puro — só senhaHash. */
   function salvarUm(lj) {
     if (!lj || !lj.id) return Promise.resolve({ sucesso: false });
     var lista = lerLocal();
@@ -36,14 +37,25 @@
     var fire = db();
     if (!fire) return Promise.resolve({ sucesso: true, soLocal: true });
 
-    return fire.collection(COL).doc(docId(lj)).set(Object.assign({}, lj, {
-      atualizadoEm: new Date().toISOString()
-    }), { merge: true }).then(function () {
-      return { sucesso: true, nuvem: true };
-    }).catch(function (err) {
-      console.warn('lojistas nuvem', err);
-      return { sucesso: true, soLocal: true, erro: (err && err.message) || String(err) };
-    });
+    function gravarNuvem(payload) {
+      return fire.collection(COL).doc(docId(lj)).set(Object.assign({}, payload, {
+        atualizadoEm: new Date().toISOString()
+      }), { merge: true }).then(function () {
+        return { sucesso: true, nuvem: true };
+      }).catch(function (err) {
+        console.warn('lojistas nuvem', err);
+        return { sucesso: true, soLocal: true, erro: (err && err.message) || String(err) };
+      });
+    }
+
+    // Prefere AuthUtils.prepararLojistaParaNuvem (remove senha, gera hash)
+    if (window.AuthUtils && AuthUtils.prepararLojistaParaNuvem) {
+      return AuthUtils.prepararLojistaParaNuvem(lj).then(gravarNuvem);
+    }
+    // fallback: só remove o campo senha
+    var limpo = Object.assign({}, lj);
+    delete limpo.senha;
+    return gravarNuvem(limpo);
   }
 
   /** Puxa todos da nuvem e mescla com local (nuvem ganha se mais recente) */

@@ -12,12 +12,12 @@ const INACTIVITY_MS = 60 * 1000; // 1 minuto
 
 /** Senhas de LOGIN completo do gestor (iguais ao padrão IBN) */
 const SENHAS_GESTOR_LOGIN = [
-    'IbnDiamantino@2026',
-    'IBN-Gestor-2026!'
+    'Cd#Gestor2026!Diamantino',
+    'Portal@Diamantino#2026'
 ];
 
 /** Senha curta só para DESBLOQUEIO após inatividade (não é login completo) */
-const SENHA_DESBLOQUEIO = 'com1234';
+const SENHA_DESBLOQUEIO = '@dicolog29';
 
 /** Usuários aceitos no login do gestor */
 const USUARIOS_GESTOR = [
@@ -275,7 +275,7 @@ function mostrarModalBloqueioGestor(usuario) {
             </div>
             <p style="font-size:12px;color:#9CA3AF;margin-bottom:8px;">Usuário: <strong style="color:#374151;">${(usuario || 'gestor').replace(/</g, '')}</strong></p>
             <div style="position:relative;margin-bottom:12px;">
-                <input type="password" id="senhaDesbloqueioGestor" placeholder="Senha rápida (com1234)"
+                <input type="password" id="senhaDesbloqueioGestor" placeholder="Senha rápida (@dicolog29)"
                     style="width:100%;border:1px solid #E5E7EB;border-radius:12px;padding:12px 40px 12px 14px;font-size:15px;outline:none;box-sizing:border-box;"
                     autocomplete="current-password">
                 <button type="button" id="btnOlhoBloqueio" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);border:none;background:none;color:#9CA3AF;cursor:pointer;">
@@ -367,13 +367,62 @@ function buscarLojistaPorIdentificador(identificador) {
     }) || null;
 }
 
+/** Hash SHA-256 em hex (navegador) — senha nunca vai em texto puro para a nuvem */
+async function hashSenha(senha) {
+    const enc = new TextEncoder();
+    const buf = await crypto.subtle.digest('SHA-256', enc.encode('cd|' + String(senha || '')));
+    return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+function hashSenhaSyncFallback(senha) {
+    // fallback fraco só se crypto.subtle indisponível (não deve ocorrer em https/localhost)
+    let h = 0;
+    const s = 'cd|' + String(senha || '');
+    for (let i = 0; i < s.length; i++) h = ((h << 5) - h) + s.charCodeAt(i) | 0;
+    return 'fb_' + (h >>> 0).toString(16);
+}
+
 function validarSenhaLojista(lojista, senha) {
     if (!lojista || !senha) return false;
+    // legado: senha em texto (cadastros antigos)
     if (lojista.senha && lojista.senha === senha) return true;
+    // novo: compara hash se já estiver sincronizado de forma síncrona no objeto
+    if (lojista.senhaHash && lojista._senhaHashCheck === senha) return true;
     const idNorm = normalizarIdentificador(lojista.email || lojista.whatsapp || '');
     const temp = localStorage.getItem('cd_temp_login_' + idNorm);
     if (temp && temp === senha) return true;
     return false;
+}
+
+/** Versão async — preferir no login quando houver senhaHash */
+async function validarSenhaLojistaAsync(lojista, senha) {
+    if (!lojista || !senha) return false;
+    if (lojista.senha && lojista.senha === senha) return true;
+    if (lojista.senhaHash) {
+        try {
+            const h = await hashSenha(senha);
+            if (h === lojista.senhaHash) return true;
+        } catch (e) {
+            if (hashSenhaSyncFallback(senha) === lojista.senhaHash) return true;
+        }
+    }
+    const idNorm = normalizarIdentificador(lojista.email || lojista.whatsapp || '');
+    const temp = localStorage.getItem('cd_temp_login_' + idNorm);
+    if (temp && temp === senha) return true;
+    return false;
+}
+
+/** Prepara objeto para gravar na nuvem: remove senha em texto, mantém só hash */
+async function prepararLojistaParaNuvem(lj) {
+    if (!lj) return lj;
+    const out = Object.assign({}, lj);
+    if (out.senha && !out.senhaHash) {
+        try { out.senhaHash = await hashSenha(out.senha); }
+        catch (e) { out.senhaHash = hashSenhaSyncFallback(out.senha); }
+    }
+    delete out.senha;
+    delete out._senhaHashCheck;
+    return out;
 }
 
 
@@ -494,6 +543,9 @@ window.AuthUtils = {
     senhaDesbloqueioValida,
     buscarLojistaPorIdentificador,
     validarSenhaLojista,
+    validarSenhaLojistaAsync,
+    hashSenha,
+    prepararLojistaParaNuvem,
     getSessaoAtual,
     renderBarraSessao
 };
