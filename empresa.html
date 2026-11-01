@@ -119,26 +119,15 @@
     </section>
 
     <!-- ==================== GALERIA ==================== -->
-    <section class="py-8 bg-gray-50">
+    <section id="secGaleria" class="py-8 bg-gray-50">
         <div class="container mx-auto px-4">
             <h2 class="text-xl font-bold text-primary mb-4">
                 <i class="fas fa-images mr-2"></i> Fotos
             </h2>
-            
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <div class="gallery-img aspect-square bg-gray-200 rounded-xl overflow-hidden">
-                    <div class="w-full h-full bg-gradient-to-br from-amber-100 to-orange-100 flex items-center justify-center text-4xl">🥖</div>
-                </div>
-                <div class="gallery-img aspect-square bg-gray-200 rounded-xl overflow-hidden">
-                    <div class="w-full h-full bg-gradient-to-br from-yellow-100 to-amber-100 flex items-center justify-center text-4xl">🥐</div>
-                </div>
-                <div class="gallery-img aspect-square bg-gray-200 rounded-xl overflow-hidden">
-                    <div class="w-full h-full bg-gradient-to-br from-orange-100 to-red-100 flex items-center justify-center text-4xl">☕</div>
-                </div>
-                <div class="gallery-img aspect-square bg-gray-200 rounded-xl overflow-hidden">
-                    <div class="w-full h-full bg-gradient-to-br from-pink-100 to-rose-100 flex items-center justify-center text-4xl">🍰</div>
-                </div>
+            <div id="empGaleria" class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <!-- preenchido pelo JS com as fotos reais do lojista -->
             </div>
+            <p id="empGaleriaVazia" class="text-sm text-gray-500 hidden">Este comércio ainda não enviou fotos.</p>
         </div>
     </section>
 
@@ -287,6 +276,9 @@
         <i class="fab fa-whatsapp text-3xl"></i>
     </a>
 
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+    <script src="firebase-config.js"></script>
     <script src="empresas-dados.js"></script>
     <script src="avaliacoes.js"></script>
     <script>
@@ -301,31 +293,84 @@
             agro: 'Agro e Pet', outros: 'Outros', 'servicos-publicos': 'Serviços públicos'
         };
 
-        function carregarEmpresa() {
+        function buscarLocal(id) {
+            if (!id) return null;
             let emp = null;
-            if (window.EmpresasDados && empresaId) {
+            if (window.EmpresasDados) {
                 const lista = EmpresasDados.seedSeVazio ? EmpresasDados.seedSeVazio() : [];
-                emp = lista.find(e => String(e.id) === String(empresaId));
-                // Também busca nos lojistas admin (cadastro real)
-                if (!emp) {
-                    try {
-                        const lj = JSON.parse(localStorage.getItem('cd_lojistas_admin') || '[]');
-                        emp = lj.find(e => String(e.id) === String(empresaId));
-                    } catch (_) {}
-                }
+                emp = lista.find(e => String(e.id) === String(id)) || null;
             }
+            if (!emp) {
+                try {
+                    const lj = JSON.parse(localStorage.getItem('cd_lojistas_admin') || '[]');
+                    emp = lj.find(e => String(e.id) === String(id)) || null;
+                } catch (_) {}
+            }
+            // Completa com perfil do anunciante (logo/fotos/descrição)
+            try {
+                const perfil = JSON.parse(localStorage.getItem('cd_perfil_' + id) || '{}');
+                if (perfil && Object.keys(perfil).length) {
+                    emp = Object.assign({}, emp || {}, perfil, {
+                        id: id,
+                        nome: (emp && emp.nome) || perfil.nomeFantasia || perfil.nome || '',
+                        logo: (emp && emp.logo) || perfil.logo || '',
+                        fotos: (emp && emp.fotos && emp.fotos.length) ? emp.fotos : (perfil.fotos || [])
+                    });
+                }
+            } catch (_) {}
+            return emp;
+        }
+
+        function renderLogo(emp) {
+            const el = document.getElementById('empLogo');
+            if (!el) return;
+            const src = emp.logo || (emp.fotos && emp.fotos[0]) || '';
+            if (src) {
+                el.className = 'w-28 h-28 md:w-32 md:h-32 rounded-2xl shadow-md flex-shrink-0 overflow-hidden bg-white border border-gray-100';
+                el.innerHTML = '<img src="' + src + '" alt="Logo" class="w-full h-full object-cover">';
+            } else {
+                el.className = 'w-28 h-28 md:w-32 md:h-32 bg-gradient-to-br from-blue-100 to-blue-50 rounded-2xl shadow-md flex items-center justify-center text-4xl font-bold text-primary flex-shrink-0';
+                el.textContent = ((emp.nome || 'E').charAt(0) || 'E').toUpperCase();
+            }
+        }
+
+        function renderGaleria(emp) {
+            const box = document.getElementById('empGaleria');
+            const vazia = document.getElementById('empGaleriaVazia');
+            if (!box) return;
+            const fotos = Array.isArray(emp.fotos) ? emp.fotos.filter(Boolean) : [];
+            // Se logo for diferente das fotos da vitrine, não duplicar como item da galeria
+            box.innerHTML = '';
+            if (!fotos.length) {
+                if (vazia) vazia.classList.remove('hidden');
+                return;
+            }
+            if (vazia) vazia.classList.add('hidden');
+            fotos.forEach(function (src) {
+                const div = document.createElement('div');
+                div.className = 'gallery-img aspect-square bg-gray-200 rounded-xl overflow-hidden';
+                div.innerHTML = '<img src="' + src + '" alt="Foto do comércio" class="w-full h-full object-cover" loading="lazy">';
+                div.addEventListener('click', function () {
+                    window.open(src, '_blank');
+                });
+                box.appendChild(div);
+            });
+        }
+
+        function aplicarEmpresa(emp) {
             if (!emp) {
                 document.getElementById('empNome').textContent = 'Empresa não encontrada';
                 document.getElementById('empDesc').textContent = 'Este perfil não está disponível ou ainda não foi liberado.';
                 return;
             }
-            EMPRESA_NOME = emp.nome || 'Empresa';
+            EMPRESA_NOME = emp.nome || emp.nomeFantasia || 'Empresa';
             EMPRESA_LAT = typeof emp.lat === 'number' ? emp.lat : EMPRESA_LAT;
             EMPRESA_LNG = typeof emp.lng === 'number' ? emp.lng : EMPRESA_LNG;
 
             document.getElementById('empNome').textContent = EMPRESA_NOME;
-            document.getElementById('empLogo').textContent = (EMPRESA_NOME.charAt(0) || 'E').toUpperCase();
             document.title = EMPRESA_NOME + ' — Compre Diamantino';
+            renderLogo(emp);
+            renderGaleria(emp);
 
             const cat = CAT_LABEL[emp.categoria] || emp.categoria || '';
             document.getElementById('empCat').innerHTML = cat ? '<i class="fas fa-tag text-primary mr-1"></i> ' + cat : '';
@@ -334,8 +379,8 @@
             document.getElementById('empDesc').textContent = desc;
 
             const selo = document.getElementById('empSelo');
-            if (emp.plano === 'premium') {
-                selo.textContent = 'Premium';
+            if (emp.plano === 'premium' || emp.plano === 'plus') {
+                selo.textContent = emp.plano === 'plus' ? 'Plus' : 'Premium';
                 selo.className = 'selo-premium text-xs font-bold px-2.5 py-1 rounded-full';
                 selo.classList.remove('hidden');
             } else if (emp.plano === 'destaque') {
@@ -363,6 +408,32 @@
 
             if (window.Avaliacoes) {
                 Avaliacoes.renderEstrelasAvaliacao('boxAvaliacao', empresaId);
+            }
+        }
+
+        function carregarEmpresa() {
+            const local = buscarLocal(empresaId);
+            if (local) aplicarEmpresa(local);
+
+            // Busca na nuvem (Firestore) para visitantes em qualquer aparelho
+            try {
+                if (window.iniciarFirebase) iniciarFirebase();
+                if (window.cdDb && empresaId) {
+                    cdDb.collection('lojistas').doc(String(empresaId)).get().then(function (snap) {
+                        if (!snap.exists) return;
+                        const cloud = snap.data() || {};
+                        cloud.id = cloud.id || snap.id;
+                        const merged = Object.assign({}, local || {}, cloud);
+                        // Prefere fotos/logo da nuvem se existirem
+                        if (cloud.fotos && cloud.fotos.length) merged.fotos = cloud.fotos;
+                        if (cloud.logo) merged.logo = cloud.logo;
+                        aplicarEmpresa(merged);
+                    }).catch(function () { /* silencioso: fica o local */ });
+                }
+            } catch (_) {}
+
+            if (!local && !(window.cdDb && empresaId)) {
+                aplicarEmpresa(null);
             }
         }
 

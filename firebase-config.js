@@ -23,10 +23,16 @@
         if (!firebase.apps.length) {
             firebase.initializeApp(firebaseConfig);
         }
-        global.cdAuth = firebase.auth();
+        // Auth e Storage só se o SDK correspondente estiver na página
+        // (ex.: Área do Anunciante carrega só app + firestore)
+        try {
+            global.cdAuth = (typeof firebase.auth === 'function') ? firebase.auth() : null;
+        } catch (e) {
+            global.cdAuth = null;
+        }
         global.cdDb = firebase.firestore();
         try {
-            global.cdStorage = firebase.storage();
+            global.cdStorage = (typeof firebase.storage === 'function') ? firebase.storage() : null;
         } catch (e) {
             global.cdStorage = null;
         }

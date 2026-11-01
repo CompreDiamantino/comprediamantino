@@ -695,25 +695,81 @@
             if (cd) cd.textContent = (perfilSalvo.descricao || '').length;
         })();
         
-        // ========== FOTOS (preview local) ==========
+        // ========== FOTOS (logo + vitrine → R2 + perfil + nuvem) ==========
         let fotosSelecionadas = [];
-        
+        let logoSelecionado = null;
+
+        function lerPerfilFotos() {
+            try { return JSON.parse(localStorage.getItem('cd_perfil_' + lojista.empresaId) || '{}'); }
+            catch (e) { return {}; }
+        }
+
+        function renderGaleriaSalva() {
+            const galeria = document.getElementById('galeriaPreview');
+            if (!galeria) return;
+            const perfil = lerPerfilFotos();
+            const fotos = Array.isArray(perfil.fotos) ? perfil.fotos.filter(Boolean) : [];
+            if (fotosSelecionadas.length) return;
+            galeria.innerHTML = '';
+            fotos.forEach(function (src, idx) {
+                const div = document.createElement('div');
+                div.className = 'relative aspect-square rounded-xl overflow-hidden border border-gray-200 group';
+                div.innerHTML =
+                    '<img src="' + src + '" class="w-full h-full object-cover" alt="Foto ' + (idx + 1) + '">' +
+                    '<button type="button" data-foto-idx="' + idx + '" class="btn-rm-foto absolute top-1 right-1 bg-red-500 text-white w-7 h-7 rounded-full text-xs opacity-90 hover:opacity-100" title="Remover">&times;</button>';
+                galeria.appendChild(div);
+            });
+            galeria.querySelectorAll('.btn-rm-foto').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    const i = parseInt(btn.getAttribute('data-foto-idx'), 10);
+                    const p = lerPerfilFotos();
+                    p.fotos = (p.fotos || []).filter(function (_, j) { return j !== i; });
+                    p.atualizadoEm = new Date().toISOString();
+                    localStorage.setItem('cd_perfil_' + lojista.empresaId, JSON.stringify(p));
+                    try {
+                        var lista = JSON.parse(localStorage.getItem('cd_lojistas_admin') || '[]');
+                        var ix = lista.findIndex(function (x) { return String(x.id) === String(lojista.empresaId); });
+                        if (ix >= 0) {
+                            lista[ix].fotos = p.fotos;
+                            lista[ix].logo = p.logo || lista[ix].logo;
+                            localStorage.setItem('cd_lojistas_admin', JSON.stringify(lista));
+                        }
+                    } catch (e2) {}
+                    if (window.LojistasNuvem && LojistasNuvem.salvarUm) {
+                        var reg = Object.assign({}, lojista, { id: lojista.empresaId || lojista.id, fotos: p.fotos, logo: p.logo || '' });
+                        LojistasNuvem.salvarUm(reg).catch(function () {});
+                    }
+                    renderGaleriaSalva();
+                });
+            });
+            if (perfil.logo) {
+                document.getElementById('previewLogo').innerHTML = '<img src="' + perfil.logo + '" class="w-full h-full object-cover">';
+            }
+        }
+
+        document.querySelectorAll('[data-tab="fotos"]').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                setTimeout(renderGaleriaSalva, 50);
+            });
+        });
+        setTimeout(renderGaleriaSalva, 300);
+
         document.getElementById('inputLogo').addEventListener('change', (e) => {
             const file = e.target.files[0];
             if (!file) return;
+            logoSelecionado = file;
             const reader = new FileReader();
             reader.onload = (ev) => {
                 document.getElementById('previewLogo').innerHTML = `<img src="${ev.target.result}" class="w-full h-full object-cover">`;
             };
             reader.readAsDataURL(file);
         });
-        
+
         document.getElementById('inputFotos').addEventListener('change', (e) => {
             const files = Array.from(e.target.files).slice(0, 5);
             fotosSelecionadas = files;
             const galeria = document.getElementById('galeriaPreview');
             galeria.innerHTML = '';
-            
             files.forEach(file => {
                 const reader = new FileReader();
                 reader.onload = (ev) => {
@@ -725,13 +781,31 @@
                 reader.readAsDataURL(file);
             });
         });
-        
+
         document.getElementById('btnSalvarFotos').addEventListener('click', async () => {
             const msg = document.getElementById('msgFotos');
             msg.classList.remove('hidden');
             msg.className = 'ml-3 text-sm text-gray-600 font-medium';
             msg.textContent = 'Enviando fotos...';
             try {
+                var id = lojista.empresaId || lojista.id || 'x';
+                var prefix = 'lojistas/' + id;
+                var perfil = lerPerfilFotos();
+
+                if (logoSelecionado) {
+                    var logoData = await new Promise(function (res) {
+                        var fr = new FileReader();
+                        fr.onload = function () { res(fr.result); };
+                        fr.onerror = function () { res(''); };
+                        fr.readAsDataURL(logoSelecionado);
+                    });
+                    if (logoData && window.CDR2) {
+                        perfil.logo = await CDR2.uploadImagemFlex(logoData, prefix + '/logo');
+                    } else if (logoData) {
+                        perfil.logo = logoData;
+                    }
+                }
+
                 var files = fotosSelecionadas || [];
                 var dataUrls = [];
                 for (var i = 0; i < files.length; i++) {
@@ -745,34 +819,67 @@
                 dataUrls = dataUrls.filter(Boolean).slice(0, 8);
                 var urls = dataUrls;
                 if (window.CDR2 && dataUrls.length) {
-                    urls = await CDR2.uploadListaImagens(dataUrls, 'lojistas/' + (lojista.empresaId || 'x') + '/galeria');
+                    urls = await CDR2.uploadListaImagens(dataUrls, prefix + '/vitrine');
                 }
-                var perfil = {};
-                try { perfil = JSON.parse(localStorage.getItem('cd_perfil_' + lojista.empresaId) || '{}'); } catch (e) {}
-                perfil.fotos = (perfil.fotos || []).concat(urls).slice(-12);
+                if (urls.length) {
+                    perfil.fotos = (perfil.fotos || []).concat(urls).slice(-12);
+                }
                 perfil.atualizadoEm = new Date().toISOString();
-                localStorage.setItem('cd_perfil_' + lojista.empresaId, JSON.stringify(perfil));
-                // espelha na fila do gestor
+                localStorage.setItem('cd_perfil_' + id, JSON.stringify(perfil));
+
                 try {
                     var lista = JSON.parse(localStorage.getItem('cd_lojistas_admin') || '[]');
-                    var ix = lista.findIndex(function (x) { return x.id === lojista.empresaId; });
+                    var ix = lista.findIndex(function (x) { return String(x.id) === String(id); });
                     if (ix >= 0) {
-                        lista[ix].fotos = perfil.fotos;
+                        lista[ix].fotos = perfil.fotos || [];
+                        if (perfil.logo) lista[ix].logo = perfil.logo;
+                        lista[ix].atualizadoEm = perfil.atualizadoEm;
                         localStorage.setItem('cd_lojistas_admin', JSON.stringify(lista));
                     }
                 } catch (e2) {}
-                if (window.NotifGestor) {
-                    NotifGestor.add('fotos', 'Fotos: ' + (lojista.nome || 'Anunciante'), urls.length + ' nova(s)', { lojistaId: lojista.empresaId });
+
+                if (window.LojistasNuvem && LojistasNuvem.salvarUm) {
+                    var reg = {
+                        id: id,
+                        nome: lojista.nome || perfil.nomeFantasia || '',
+                        email: lojista.email || '',
+                        whatsapp: lojista.whatsapp || perfil.whatsapp || '',
+                        plano: lojista.plano || 'basico',
+                        status: lojista.status || 'pendente',
+                        categoria: perfil.categoria || lojista.categoria || '',
+                        endereco: perfil.endereco || '',
+                        mapsLink: perfil.mapsLink || '',
+                        logo: perfil.logo || '',
+                        fotos: perfil.fotos || [],
+                        descricao: perfil.descricao || '',
+                        atualizadoEm: perfil.atualizadoEm
+                    };
+                    await LojistasNuvem.salvarUm(reg);
+                    if (LojistasNuvem.sinalizar) {
+                        LojistasNuvem.sinalizar('atualizacao', { lojistaId: id, nome: reg.nome, status: reg.status });
+                    }
                 }
+
+                if (window.NotifGestor) {
+                    NotifGestor.add('fotos', 'Fotos: ' + (lojista.nome || 'Anunciante'),
+                        (urls.length ? urls.length + ' nova(s)' : 'logo atualizada'), { lojistaId: id });
+                }
+
+                fotosSelecionadas = [];
+                logoSelecionado = null;
+                document.getElementById('inputFotos').value = '';
+                document.getElementById('inputLogo').value = '';
+                renderGaleriaSalva();
+
                 msg.textContent = window.CDR2 && CDR2.ativo()
-                    ? '✓ Fotos no R2! A gestão já pode ver.'
-                    : '✓ Fotos salvas neste aparelho (configure R2 para nuvem).';
+                    ? '✓ Fotos no R2 e perfil atualizado! Já aparecem para o cliente.'
+                    : '✓ Fotos salvas neste aparelho.';
                 msg.className = 'ml-3 text-sm text-green-600 font-medium';
             } catch (err) {
                 msg.textContent = 'Erro ao enviar: ' + (err.message || err);
                 msg.className = 'ml-3 text-sm text-red-600 font-medium';
             }
-            setTimeout(function () { msg.classList.add('hidden'); }, 5000);
+            setTimeout(function () { msg.classList.add('hidden'); }, 6000);
         });
         
         // ========== PROMOÇÕES ==========
