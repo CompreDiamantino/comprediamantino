@@ -191,8 +191,23 @@
         // Expõe callback global para a API do Google
         window.initMapaGeral = initMapaGeral;
     </script>
-    <script async defer
-        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAyI5024_D8FRdrr8TAj2XUciWjkKwmZwg&callback=initMapaGeral&language=pt-BR">
+    <script>
+      (function () {
+        var key = (window.CD_MAPS_KEY || '').trim();
+        if (!key) {
+          console.warn('CD_MAPS_KEY ausente em maps-config.js');
+          return;
+        }
+        var s = document.createElement('script');
+        s.async = true;
+        s.defer = true;
+        s.src = 'https://maps.googleapis.com/maps/api/js?key=' + encodeURIComponent(key) +
+          '&callback=initMapaGeral&language=pt-BR';
+        s.onerror = function () {
+          console.error('Falha ao carregar Google Maps JS API');
+        };
+        document.head.appendChild(s);
+      })();
     </script>
     <script src="auth-utils.js"></script>
     <script>

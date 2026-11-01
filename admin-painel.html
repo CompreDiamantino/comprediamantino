@@ -1054,11 +1054,8 @@
             try { return JSON.parse(localStorage.getItem('cd_perfil_' + id) || '{}'); } catch (e) { return {}; }
         }
 
-        window.verDetalheLojista = function (id) {
-            const lista = getLojistas();
-            const lj = lista.find(x => x.id === id);
-            if (!lj) { alert('Cadastro não encontrado.'); return; }
-            const perfil = lerPerfilLojista(id);
+        function preencherDetalheLojista(lj, perfil) {
+            perfil = perfil || {};
             const logo = lj.logo || perfil.logo || '';
             const fotos = (lj.fotos && lj.fotos.length) ? lj.fotos : (perfil.fotos || []);
             const ig = lj.instagram || perfil.instagram || '';
@@ -1081,7 +1078,10 @@
                 (hor ? '<p><strong>Horário:</strong> ' + hor + '</p>' : '') +
                 (desc ? '<p><strong>Descrição:</strong> ' + String(desc).replace(/</g,'') + '</p>' : '') +
                 (oqv ? '<p><strong>O que vende:</strong> ' + String(oqv).replace(/</g,'') + '</p>' : '') +
-                '<p class="text-xs text-gray-400">Cadastrado em: ' + (lj.criadoEm ? new Date(lj.criadoEm).toLocaleString('pt-BR') : '—') + '</p>';
+                '<p class="text-xs text-gray-400">Cadastrado em: ' + (lj.criadoEm ? new Date(lj.criadoEm).toLocaleString('pt-BR') : '—') + '</p>' +
+                ((fotos && fotos.length) || logo
+                    ? '<p class="text-xs text-indigo-600 mt-1"><i class="fas fa-camera"></i> ' + (fotos ? fotos.length : 0) + ' foto(s)' + (logo ? ' · logo' : '') + '</p>'
+                    : '<p class="text-xs text-amber-600 mt-1"><i class="fas fa-exclamation-circle"></i> Sem fotos neste cadastro ainda.</p>');
 
             const logoBox = document.getElementById('detLogoBox');
             const detLogo = document.getElementById('detLogo');
@@ -1101,6 +1101,7 @@
                 fotos.forEach(function (src) {
                     const im = document.createElement('img');
                     im.src = src;
+                    im.alt = 'Foto do comércio';
                     im.className = 'h-24 w-24 object-cover rounded-xl border cursor-pointer';
                     im.onclick = function () { window.open(src, '_blank'); };
                     detFotos.appendChild(im);
@@ -1119,7 +1120,7 @@
             if (lj.status === 'pendente') {
                 btnAp.classList.remove('hidden');
                 btnAp.onclick = function () {
-                    aprovarLojista(id);
+                    aprovarLojista(lj.id);
                     document.getElementById('modalDetalheLojista').classList.add('hidden');
                     document.getElementById('modalDetalheLojista').classList.remove('flex');
                 };
@@ -1136,6 +1137,17 @@
             } else {
                 btnWa.classList.add('hidden');
             }
+        }
+
+        window.verDetalheLojista = function (id) {
+            // Só memória/local — sem get extra no Firestore (economiza cota).
+            // Fotos já vieram no puxar() ao abrir o painel ou no sinal de atualização.
+            // Fluxo: lojista publica → aparece no site; se o gestor não gostar, edita/remove depois.
+            const lista = getLojistas();
+            let lj = lista.find(x => String(x.id) === String(id));
+            if (!lj) { alert('Cadastro não encontrado.'); return; }
+            const perfil = lerPerfilLojista(id);
+            preencherDetalheLojista(lj, perfil);
 
             const modal = document.getElementById('modalDetalheLojista');
             modal.classList.remove('hidden');
