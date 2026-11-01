@@ -25,27 +25,58 @@ function salvarAvaliacoesLocais(dados) {
     localStorage.setItem(AVALIACOES_KEY, JSON.stringify(dados));
 }
 
-/** Sessão de anunciante logado (não conta gestor master como “conta de loja” para voto extra). */
+/** Celular lembrado do visitante (último voto) — preenche automático */
+function getCelularSalvo() {
+    try {
+        var c = normalizarCelular(localStorage.getItem('cd_cel_avaliacao') || '');
+        return c.length >= 10 ? c : '';
+    } catch { return ''; }
+}
+
+function salvarCelularAvaliacao(tel) {
+    var c = normalizarCelular(tel);
+    if (c.length >= 10) {
+        try { localStorage.setItem('cd_cel_avaliacao', c); } catch (e) {}
+    }
+}
+
+/** Sessão de anunciante / número já conhecido — não pedir celular na mão. */
 function getAnuncianteLogado() {
     try {
         const lj = JSON.parse(localStorage.getItem('cd_lojista') || 'null');
-        if (!lj) return null;
-        // Gestor entrando “como lojista” ainda é conta de teste — usa id da empresa
-        const id =
-            lj.email ||
-            lj.identificador ||
-            lj.telefone ||
-            lj.empresaId ||
-            null;
-        if (!id) return null;
-        return {
-            id: String(id).toLowerCase().trim(),
-            nome: lj.nome || 'Anunciante',
-            viaGestor: !!lj.viaGestor
-        };
-    } catch {
-        return null;
-    }
+        if (lj) {
+            const id =
+                lj.email ||
+                lj.identificador ||
+                lj.telefone ||
+                lj.whatsapp ||
+                lj.empresaId ||
+                null;
+            if (id) {
+                return {
+                    id: String(id).toLowerCase().trim(),
+                    nome: lj.nome || lj.nomeFantasia || 'Anunciante',
+                    celular: normalizarCelular(lj.whatsapp || lj.telefone || ''),
+                    viaGestor: !!lj.viaGestor
+                };
+            }
+        }
+    } catch (_) {}
+    // Sessão alternativa (auth-utils / gestor como lojista)
+    try {
+        if (window.AuthUtils && AuthUtils.getSessao) {
+            var s = AuthUtils.getSessao();
+            if (s && (s.email || s.telefone || s.empresaId)) {
+                return {
+                    id: String(s.email || s.telefone || s.empresaId).toLowerCase().trim(),
+                    nome: s.nome || 'Anunciante',
+                    celular: normalizarCelular(s.whatsapp || s.telefone || ''),
+                    viaGestor: !!s.viaGestor
+                };
+            }
+        }
+    } catch (_) {}
+    return null;
 }
 
 /**
@@ -58,7 +89,15 @@ function identidadeVoto(celularOpcional) {
     if (an && an.id) {
         return { tipo: 'login', chave: 'login:' + an.id, label: an.nome };
     }
-    const cel = normalizarCelular(celularOpcional);
+    // Ordem: digitado → salvo no aparelho → perfil local
+    var cel = normalizarCelular(celularOpcional);
+    if (cel.length < 10) cel = getCelularSalvo();
+    if (cel.length < 10) {
+        try {
+            var p = JSON.parse(localStorage.getItem('cd_perfil_' + (localStorage.getItem('cd_ultima_empresa') || '')) || '{}');
+            cel = normalizarCelular(p.whatsapp || '');
+        } catch (_) {}
+    }
     if (cel.length >= 10) {
         return { tipo: 'celular', chave: 'cel:' + cel, label: cel };
     }
@@ -172,18 +211,24 @@ function renderEstrelasAvaliacao(containerId, empresaId) {
         }
     }
 
-    const campoCelular = logado ? '' : `
+    const celSalvo = getCelularSalvo();
+    const temCelAuto = !!(logado || (celSalvo && celSalvo.length >= 10));
+    // Não pede celular se logado OU se já votou antes neste aparelho (número lembrado)
+    const campoCelular = temCelAuto ? '' : `
             <div class="mb-3">
                 <label class="block text-sm font-medium text-gray-700 mb-1">Seu celular (WhatsApp)</label>
-                <input type="tel" id="celAvaliacao" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary" placeholder="65 9xxxx-xxxx" inputmode="numeric">
-                <p class="text-[11px] text-gray-400 mt-1">Visitante: 1 voto por mês por celular, nesta loja.</p>
+                <input type="tel" id="celAvaliacao" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary" placeholder="65 9xxxx-xxxx" inputmode="numeric" value="">
+                <p class="text-[11px] text-gray-400 mt-1">Só na primeira vez neste aparelho. Depois o número fica lembrado.</p>
             </div>`;
 
     const avisoLogado = logado ? `
             <p class="text-xs text-green-700 bg-green-50 border border-green-100 rounded-lg px-3 py-2 mb-3">
                 <i class="fas fa-user-check mr-1"></i> Logado como <strong>${(logado.nome || 'anunciante').replace(/</g,'')}</strong> —
-                seu voto conta 1 vez no mês nesta loja (vale em todos os aparelhos da mesma conta).
-            </p>` : '';
+                voto automático com sua conta (1 vez no mês nesta loja).
+            </p>` : (celSalvo ? `
+            <p class="text-xs text-blue-700 bg-blue-50 border border-blue-100 rounded-lg px-3 py-2 mb-3">
+                <i class="fas fa-mobile-alt mr-1"></i> Celular lembrado neste aparelho: <strong>${celSalvo.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3')}</strong>
+            </p>` : '');
 
     container.innerHTML = `
         <div class="bg-white border border-gray-200 rounded-xl p-5">
@@ -231,12 +276,16 @@ function renderEstrelasAvaliacao(containerId, empresaId) {
 
     btnEnviar.addEventListener('click', () => {
         const celEl = document.getElementById('celAvaliacao');
-        const celular = celEl ? celEl.value : '';
+        // Logado → não precisa; senão campo ou número já salvo no aparelho
+        let celular = celEl ? celEl.value : '';
+        if (!normalizarCelular(celular) && logado && logado.celular) celular = logado.celular;
+        if (!normalizarCelular(celular)) celular = getCelularSalvo();
         const comentario = document.getElementById('comentarioAvaliacao').value;
         const resultado = registrarAvaliacao(empresaId, notaSelecionada, comentario, celular);
 
         msg.classList.remove('hidden');
         if (resultado.sucesso) {
+            if (celular) salvarCelularAvaliacao(celular);
             msg.className = 'text-sm mt-2 text-center text-green-600 font-medium';
             msg.textContent = resultado.mensagem;
             setTimeout(() => {

@@ -109,8 +109,7 @@
   window.addEventListener('beforeinstallprompt', function (e) {
     e.preventDefault();
     deferredPrompt = e;
-    // Só em Android/desktop — iOS não usa este evento
-    if (detectOS() !== 'ios') setTimeout(createBanner, 2500);
+    if (detectOS() !== 'ios') setTimeout(createBanner, 1500);
   });
 
   window.addEventListener('load', function () {
@@ -118,10 +117,19 @@
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('sw.js').catch(function () {});
     }
+    // Banner sempre (se não fechou nos últimos 7 dias) — não depende só do evento do Chrome
     setTimeout(function () {
       if (!document.getElementById('installBanner') && !wasDismissed()) {
         createBanner();
       }
-    }, 4000);
+    }, 2500);
   });
+
+  // Permite reabrir o convite: localStorage.removeItem('cd_install_dismiss')
+  window.CD_mostrarInstalar = function () {
+    try { localStorage.removeItem(DISMISS_KEY); } catch (e) {}
+    const el = document.getElementById('installBanner');
+    if (el) el.remove();
+    createBanner();
+  };
 })();

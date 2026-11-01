@@ -60,31 +60,38 @@
         document.getElementById('introCat').textContent = meta.d;
         document.title = meta.t + ' — Compre Diamantino';
 
+        function isDemo(e) {
+            if (!e) return true;
+            var id = String(e.id || '').toLowerCase();
+            if (/^(lj00[1-5]|demo|teste)/i.test(id)) return true;
+            var nome = String(e.nome || '').toLowerCase();
+            if (/padaria do centro|pet shop amigo|restaurante do zezito|lanchonete central|casa do pastel/i.test(nome)) return true;
+            return false;
+        }
+
         function render() {
             const box = document.getElementById('lista');
             let lista = [];
             const ids = {};
 
-            // Fonte 1: lojistas reais (admin) — fase de teste: ativo/aviso ou com foto
+            // Só cadastros reais ativos (sem demo de teste)
             try {
                 const lj = JSON.parse(localStorage.getItem('cd_lojistas_admin') || '[]');
                 lj.forEach(function (e) {
-                    if (!e || !e.nome) return;
+                    if (!e || !e.nome || isDemo(e)) return;
                     if ((e.categoria || 'outros') !== cat) return;
                     const st = (e.status || '').toLowerCase();
-                    if (st === 'removido' || st === 'bloqueado') return;
-                    const temFoto = !!(e.logo || (e.fotos && e.fotos.length));
-                    if (st === 'ativo' || st === 'aviso' || temFoto) {
+                    if (st === 'removido' || st === 'bloqueado' || st === 'pendente') return;
+                    if (st === 'ativo' || st === 'aviso' || st === 'pago' || st === 'aprovado' || st === 'publicado') {
                         lista.push(e);
                         ids[String(e.id)] = true;
                     }
                 });
             } catch (_) {}
 
-            // Fonte 2: espelho do mapa
             if (window.EmpresasDados) {
                 EmpresasDados.seedSeVazio().forEach(function (e) {
-                    if (!e || e.publico) return;
+                    if (!e || e.publico || isDemo(e)) return;
                     if ((e.categoria || 'outros') !== cat) return;
                     if (ids[String(e.id)]) return;
                     if (e.status === 'ativo' || e.status === 'aviso') {

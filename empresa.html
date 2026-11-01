@@ -171,18 +171,12 @@
                 <i class="fas fa-star text-yellow-400 mr-2"></i> Avaliações
             </h2>
             
-            <!-- Média de avaliações -->
-            <div class="flex items-center gap-3 mb-6 p-4 bg-yellow-50 rounded-xl">
-                <span class="text-3xl font-bold text-yellow-500">4.5</span>
+            <!-- Média de avaliações (preenchida pelo JS — sem número fake) -->
+            <div id="empMediaBox" class="flex items-center gap-3 mb-6 p-4 bg-yellow-50 rounded-xl">
+                <span id="empMediaNum" class="text-3xl font-bold text-yellow-500">—</span>
                 <div>
-                    <div class="flex gap-0.5 text-yellow-400">
-                        <i class="fas fa-star"></i>
-                        <i class="fas fa-star"></i>
-                        <i class="fas fa-star"></i>
-                        <i class="fas fa-star"></i>
-                        <i class="fas fa-star-half-alt"></i>
-                    </div>
-                    <p class="text-sm text-gray-500">12 avaliações</p>
+                    <div id="empMediaStars" class="flex gap-0.5 text-yellow-400"></div>
+                    <p id="empMediaTxt" class="text-sm text-gray-500">Sem avaliações ainda</p>
                 </div>
             </div>
             
@@ -191,34 +185,11 @@
         </div>
     </section>
 
-    <!-- ==================== EMPRESAS DA MESMA CATEGORIA ==================== -->
-    <section class="py-10 bg-gray-50 border-t">
+    <!-- ==================== EMPRESAS DA MESMA CATEGORIA (só cadastros reais) ==================== -->
+    <section id="secMesmaCat" class="py-10 bg-gray-50 border-t hidden">
         <div class="container mx-auto px-4">
-            <h2 class="text-xl font-bold text-primary mb-6">Outras em Alimentação</h2>
-            
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                <a href="empresa.html?id=5" class="bg-white rounded-xl p-4 flex items-center gap-4 shadow-sm hover:shadow-md transition border border-gray-100">
-                    <div class="w-14 h-14 bg-orange-100 rounded-xl flex items-center justify-center text-xl font-bold text-orange-600">R</div>
-                    <div>
-                        <h3 class="font-semibold">Restaurante do Zezito</h3>
-                        <p class="text-xs text-gray-500">Alimentação</p>
-                    </div>
-                </a>
-                <a href="empresa.html?id=6" class="bg-white rounded-xl p-4 flex items-center gap-4 shadow-sm hover:shadow-md transition border border-gray-100">
-                    <div class="w-14 h-14 bg-yellow-100 rounded-xl flex items-center justify-center text-xl font-bold text-yellow-600">L</div>
-                    <div>
-                        <h3 class="font-semibold">Lanchonete Central</h3>
-                        <p class="text-xs text-gray-500">Alimentação</p>
-                    </div>
-                </a>
-                <a href="empresa.html?id=7" class="bg-white rounded-xl p-4 flex items-center gap-4 shadow-sm hover:shadow-md transition border border-gray-100">
-                    <div class="w-14 h-14 bg-red-100 rounded-xl flex items-center justify-center text-xl font-bold text-red-600">C</div>
-                    <div>
-                        <h3 class="font-semibold">Casa do Pastel</h3>
-                        <p class="text-xs text-gray-500">Alimentação</p>
-                    </div>
-                </a>
-            </div>
+            <h2 id="titMesmaCat" class="text-xl font-bold text-primary mb-6">Outras na mesma categoria</h2>
+            <div id="listaMesmaCat" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
         </div>
     </section>
 
@@ -418,6 +389,79 @@
             box.innerHTML = html || '<p class="text-sm text-gray-500">Dados de contato ainda não informados.</p>';
         }
 
+        function isDemoLojista(lj) {
+            if (!lj) return true;
+            var id = String(lj.id || '').toLowerCase();
+            if (/^(lj00[1-5]|demo|teste)/i.test(id)) return true;
+            var nome = String(lj.nome || lj.nomeFantasia || '').toLowerCase();
+            if (/padaria do centro|pet shop amigo|restaurante do zezito|lanchonete central|casa do pastel|auto pe[cç]as diamantino|beleza\s*&\s*estilo|casa construir/i.test(nome)) return true;
+            var wa = String(lj.whatsapp || '').replace(/\D/g, '');
+            if (/^659999/.test(wa)) return true;
+            return false;
+        }
+
+        function listarReais() {
+            var mapa = {};
+            try {
+                if (window.EmpresasDados && EmpresasDados.seedSeVazio) {
+                    EmpresasDados.seedSeVazio().forEach(function (e) {
+                        if (e && e.id && !e.publico && !String(e.id).startsWith('pub-') && !isDemoLojista(e)) mapa[String(e.id)] = e;
+                    });
+                }
+            } catch (_) {}
+            try {
+                JSON.parse(localStorage.getItem('cd_lojistas_admin') || '[]').forEach(function (e) {
+                    if (e && e.id && !isDemoLojista(e)) mapa[String(e.id)] = Object.assign({}, mapa[String(e.id)] || {}, e);
+                });
+            } catch (_) {}
+            return Object.keys(mapa).map(function (k) { return mapa[k]; });
+        }
+
+        function renderMesmaCategoria(emp) {
+            var sec = document.getElementById('secMesmaCat');
+            var box = document.getElementById('listaMesmaCat');
+            var tit = document.getElementById('titMesmaCat');
+            if (!sec || !box || !emp) return;
+            var cat = emp.categoria || '';
+            var label = CAT_LABEL[cat] || cat || 'categoria';
+            if (tit) tit.textContent = 'Outras em ' + label;
+            var cores = ['orange', 'yellow', 'red', 'blue', 'green', 'purple', 'pink'];
+            var outros = listarReais().filter(function (e) {
+                if (!e || String(e.id) === String(emp.id) || String(e.id) === String(empresaId)) return false;
+                if (cat && e.categoria !== cat) return false;
+                var st = (e.status || '').toLowerCase();
+                // só publicados / ativos (não pendente, bloqueado, removido)
+                if (st && st !== 'ativo' && st !== 'pago' && st !== 'aprovado' && st !== 'publicado') {
+                    // se tem logo/fotos e não está bloqueado, ainda pode aparecer em fase de teste
+                    if (st === 'pendente' || st === 'bloqueado' || st === 'removido') return false;
+                }
+                return true;
+            }).slice(0, 6);
+            box.innerHTML = '';
+            if (!outros.length) {
+                sec.classList.add('hidden');
+                return;
+            }
+            sec.classList.remove('hidden');
+            outros.forEach(function (e, i) {
+                var cor = cores[i % cores.length];
+                var nome = e.nome || e.nomeFantasia || 'Comércio';
+                var ini = (nome.charAt(0) || '?').toUpperCase();
+                var capa = e.logo || (e.fotos && e.fotos[0]) || '';
+                var a = document.createElement('a');
+                a.href = 'empresa.html?id=' + encodeURIComponent(e.id);
+                a.className = 'bg-white rounded-xl p-4 flex items-center gap-4 shadow-sm hover:shadow-md transition border border-gray-100';
+                if (capa) {
+                    a.innerHTML = '<div class="w-14 h-14 rounded-xl overflow-hidden flex-shrink-0 bg-gray-100"><img src="' + String(capa).replace(/"/g, '') + '" class="w-full h-full object-cover" alt=""></div>' +
+                        '<div class="min-w-0"><h3 class="font-semibold truncate">' + esc(nome) + '</h3><p class="text-xs text-gray-500">' + esc(label) + '</p></div>';
+                } else {
+                    a.innerHTML = '<div class="w-14 h-14 bg-' + cor + '-100 rounded-xl flex items-center justify-center text-xl font-bold text-' + cor + '-600">' + esc(ini) + '</div>' +
+                        '<div class="min-w-0"><h3 class="font-semibold truncate">' + esc(nome) + '</h3><p class="text-xs text-gray-500">' + esc(label) + '</p></div>';
+                }
+                box.appendChild(a);
+            });
+        }
+
         function aplicarEmpresa(emp) {
             if (!emp) {
                 document.getElementById('empNome').textContent = 'Empresa não encontrada';
@@ -433,6 +477,7 @@
             renderLogo(emp);
             renderGaleria(emp);
             renderInfoCards(emp);
+            renderMesmaCategoria(emp);
 
             const cat = CAT_LABEL[emp.categoria] || emp.categoria || '';
             document.getElementById('empCat').innerHTML = cat ? '<i class="fas fa-tag text-primary mr-1"></i> ' + cat : '';
@@ -470,6 +515,23 @@
 
             if (window.Avaliacoes) {
                 Avaliacoes.renderEstrelasAvaliacao('boxAvaliacao', empresaId);
+                try {
+                    var m = Avaliacoes.mediaEmpresa(empresaId);
+                    var num = document.getElementById('empMediaNum');
+                    var stars = document.getElementById('empMediaStars');
+                    var txt = document.getElementById('empMediaTxt');
+                    if (m && m.total > 0) {
+                        if (num) num.textContent = (Math.round(m.media * 10) / 10).toFixed(1);
+                        if (txt) txt.textContent = m.total + (m.total === 1 ? ' avaliação' : ' avaliações');
+                        if (stars && Avaliacoes.renderMediaEstrelas) {
+                            stars.innerHTML = Avaliacoes.renderMediaEstrelas(m.media, m.total);
+                        }
+                    } else {
+                        if (num) num.textContent = '—';
+                        if (txt) txt.textContent = 'Sem avaliações ainda';
+                        if (stars) stars.innerHTML = '';
+                    }
+                } catch (e) {}
             }
         }
 
@@ -477,7 +539,7 @@
             const local = buscarLocal(empresaId);
             if (local) aplicarEmpresa(local);
 
-            // Busca na nuvem (Firestore) para visitantes em qualquer aparelho
+            // Nuvem manda no perfil público (mesmo dado em todos os navegadores)
             try {
                 if (window.iniciarFirebase) iniciarFirebase();
                 if (window.cdDb && empresaId) {
@@ -485,10 +547,15 @@
                         if (!snap.exists) return;
                         const cloud = snap.data() || {};
                         cloud.id = cloud.id || snap.id;
-                        const merged = Object.assign({}, local || {}, cloud);
-                        // Prefere fotos/logo da nuvem se existirem
-                        if (cloud.fotos && cloud.fotos.length) merged.fotos = cloud.fotos;
-                        if (cloud.logo) merged.logo = cloud.logo;
+                        // Campos da nuvem sobrescrevem local quando preenchidos
+                        const merged = Object.assign({}, local || {});
+                        Object.keys(cloud).forEach(function (k) {
+                            var v = cloud[k];
+                            if (v === undefined || v === null || v === '') return;
+                            if (Array.isArray(v) && !v.length) return;
+                            merged[k] = v;
+                        });
+                        if (!merged.nome && merged.nomeFantasia) merged.nome = merged.nomeFantasia;
                         aplicarEmpresa(merged);
                     }).catch(function () { /* silencioso: fica o local */ });
                 }
