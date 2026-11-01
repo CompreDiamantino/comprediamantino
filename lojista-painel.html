@@ -95,6 +95,7 @@
                                 <option value="casa">Casa e Construção</option>
                                 <option value="automotivo">Automotivo</option>
                                 <option value="saude">Saúde e Beleza</option>
+                                <option value="tecnologia">Tecnologia e Informática</option>
                                 <option value="servicos">Serviços</option>
                                 <option value="agro">Agro e Pet</option>
                                 <option value="outros">Outros</option>
@@ -118,18 +119,63 @@
                                 placeholder="65999667725">
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Instagram (opcional)</label>
-                            <input type="text" id="instagram"
-                                class="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-primary"
-                                placeholder="@seunegocio">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Como atende</label>
+                            <select id="tipoAtendimento"
+                                class="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-primary">
+                                <option value="loja">Loja física / balcão</option>
+                                <option value="delivery">Só delivery / sob encomenda</option>
+                                <option value="ambos">Loja + delivery</option>
+                                <option value="agendamento">Com hora marcada / sob demanda</option>
+                                <option value="online">Atendimento online / redes</option>
+                            </select>
                         </div>
+                    </div>
+
+                    <!-- Canais e redes (cada um preenche o que tiver) -->
+                    <div class="border border-gray-100 rounded-2xl p-4 bg-gray-50/80 space-y-4">
+                        <p class="text-sm font-bold text-primary"><i class="fas fa-share-alt mr-1"></i> Redes e canais <span class="font-normal text-gray-500">(opcional — preencha só o que usar)</span></p>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 mb-1"><i class="fab fa-instagram text-pink-500 mr-1"></i> Instagram <span class="text-gray-400 font-normal">(um por linha se tiver mais de um)</span></label>
+                                <textarea id="instagram" rows="2" class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-primary" placeholder="@loja&#10;@promocoes"></textarea>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 mb-1"><i class="fab fa-facebook text-blue-600 mr-1"></i> Facebook <span class="text-gray-400 font-normal">(um por linha)</span></label>
+                                <textarea id="facebook" rows="2" class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-primary" placeholder="pagina1&#10;https://facebook.com/..."></textarea>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 mb-1"><i class="fab fa-x-twitter text-gray-800 mr-1"></i> X (Twitter)</label>
+                                <input type="text" id="twitter" class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-primary" placeholder="@seunegocio">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 mb-1"><i class="fab fa-linkedin text-blue-700 mr-1"></i> LinkedIn</label>
+                                <input type="text" id="linkedin" class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-primary" placeholder="empresa ou perfil">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 mb-1"><i class="fab fa-tiktok mr-1"></i> TikTok</label>
+                                <input type="text" id="tiktok" class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-primary" placeholder="@seunegocio">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 mb-1"><i class="fas fa-globe text-primary mr-1"></i> Site / link</label>
+                                <input type="url" id="site" class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-primary" placeholder="https://...">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 mb-1"><i class="fab fa-whatsapp text-green-600 mr-1"></i> Grupos / canais WhatsApp <span class="text-gray-400 font-normal">(links, um por linha)</span></label>
+                                <textarea id="grupoWhatsapp" rows="2" class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-primary" placeholder="https://chat.whatsapp.com/...&#10;https://whatsapp.com/channel/..."></textarea>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 mb-1"><i class="fab fa-telegram text-sky-500 mr-1"></i> Telegram <span class="text-gray-400 font-normal">(user, grupo ou canal — um por linha)</span></label>
+                                <textarea id="telegram" rows="2" class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-primary" placeholder="@canal&#10;https://t.me/grupo&#10;https://t.me/outro"></textarea>
+                            </div>
+                        </div>
+                        <p class="text-[11px] text-gray-400">O WhatsApp com DDD acima continua sendo o principal para “Falar no WhatsApp”. Aqui entram grupos/canais e contas extras.</p>
                     </div>
                     
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Endereço completo *</label>
                         <input type="text" id="endereco" required
                             class="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-primary"
-                            placeholder="Rua, número, bairro">
+                            placeholder="Rua, número, bairro (ou “atendo sob demanda / delivery”)">
                     </div>
                     
                     <div>
@@ -141,10 +187,11 @@
                     
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Horário de funcionamento</label>
-                            <input type="text" id="horario"
-                                class="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-primary"
-                                placeholder="Seg a Sáb: 08h–18h">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Horário / disponibilidade</label>
+                            <textarea id="horario" rows="3"
+                                class="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-primary text-sm"
+                                placeholder="Ex.: Seg a Sex 8h–18h · Sáb 8h–12h · Dom fechado&#10;Ou: Delivery sob encomenda pelo WhatsApp&#10;Ou: Só aos sábados e feriados"></textarea>
+                            <p class="text-[11px] text-gray-400 mt-1">Livre: cada negócio descreve do seu jeito (dias fixos, feriados, sob demanda…).</p>
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Link do Google Maps (opcional)</label>
@@ -515,10 +562,16 @@
                     categoria: dados.categoria,
                     descricao: dados.descricao,
                     oQueVende: dados.oQueVende,
+                    tipoAtendimento: dados.tipoAtendimento,
                     whatsapp: dados.whatsapp,
                     instagram: dados.instagram,
                     facebook: dados.facebook,
+                    twitter: dados.twitter,
+                    linkedin: dados.linkedin,
+                    tiktok: dados.tiktok,
+                    site: dados.site,
                     grupoWhatsapp: dados.grupoWhatsapp,
+                    telegram: dados.telegram,
                     endereco: dados.endereco,
                     referencia: dados.referencia,
                     horario: dados.horario,
@@ -558,8 +611,16 @@
                         mapsLink: dados.mapsLink,
                         descricao: dados.descricao,
                         oQueVende: dados.oQueVende,
+                        tipoAtendimento: dados.tipoAtendimento,
+                        horario: dados.horario,
                         instagram: dados.instagram,
-                        facebook: dados.facebook
+                        facebook: dados.facebook,
+                        twitter: dados.twitter,
+                        linkedin: dados.linkedin,
+                        tiktok: dados.tiktok,
+                        site: dados.site,
+                        grupoWhatsapp: dados.grupoWhatsapp,
+                        telegram: dados.telegram
                     });
                 }
             } catch (e2) {}
@@ -628,22 +689,32 @@
             e.preventDefault();
             const msg = document.getElementById('msgSalvar');
             
+            function val(id) {
+                var el = document.getElementById(id);
+                return el ? String(el.value || '').trim() : '';
+            }
             const dados = {
-                nomeFantasia: document.getElementById('nomeFantasia').value.trim(),
-                categoria: document.getElementById('categoria').value,
-                descricao: document.getElementById('descricao').value.trim(),
-                oQueVende: (document.getElementById('oQueVende') || {}).value || '',
-                entrega: (document.getElementById('fazEntrega') || {}).value || 'nao',
-                whatsapp: document.getElementById('whatsapp').value.trim(),
-                instagram: document.getElementById('instagram').value.trim(),
-                facebook: (document.getElementById('facebook') || {}).value || '',
-                grupoWhatsapp: (document.getElementById('grupoWhatsapp') || {}).value || '',
-                endereco: document.getElementById('endereco').value.trim(),
-                referencia: document.getElementById('referencia').value.trim(),
-                horario: document.getElementById('horario').value.trim(),
-                mapsLink: document.getElementById('mapsLink').value.trim(),
-                lat: parseFloat((document.getElementById('coordLat') || {}).value) || null,
-                lng: parseFloat((document.getElementById('coordLng') || {}).value) || null,
+                nomeFantasia: val('nomeFantasia'),
+                categoria: val('categoria'),
+                descricao: val('descricao'),
+                oQueVende: val('oQueVende'),
+                entrega: val('fazEntrega') || 'nao',
+                tipoAtendimento: val('tipoAtendimento') || 'loja',
+                whatsapp: val('whatsapp'),
+                instagram: val('instagram'),
+                facebook: val('facebook'),
+                twitter: val('twitter'),
+                linkedin: val('linkedin'),
+                tiktok: val('tiktok'),
+                site: val('site'),
+                grupoWhatsapp: val('grupoWhatsapp'),
+                telegram: val('telegram'),
+                endereco: val('endereco'),
+                referencia: val('referencia'),
+                horario: val('horario'),
+                mapsLink: val('mapsLink'),
+                lat: parseFloat(val('coordLat')) || null,
+                lng: parseFloat(val('coordLng')) || null,
                 salvoEm: new Date().toISOString()
             };
             
@@ -683,10 +754,16 @@
             set('descricao', perfilSalvo.descricao || '');
             set('oQueVende', perfilSalvo.oQueVende || '');
             set('fazEntrega', perfilSalvo.entrega || 'nao');
+            set('tipoAtendimento', perfilSalvo.tipoAtendimento || 'loja');
             set('whatsapp', perfilSalvo.whatsapp || lojista.telefone || '');
             set('instagram', perfilSalvo.instagram || '');
             set('facebook', perfilSalvo.facebook || '');
+            set('twitter', perfilSalvo.twitter || '');
+            set('linkedin', perfilSalvo.linkedin || '');
+            set('tiktok', perfilSalvo.tiktok || '');
+            set('site', perfilSalvo.site || '');
             set('grupoWhatsapp', perfilSalvo.grupoWhatsapp || '');
+            set('telegram', perfilSalvo.telegram || '');
             set('endereco', perfilSalvo.endereco || '');
             set('referencia', perfilSalvo.referencia || '');
             set('horario', perfilSalvo.horario || '');

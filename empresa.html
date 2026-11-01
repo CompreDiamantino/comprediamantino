@@ -142,52 +142,8 @@
                         <i class="fas fa-info-circle mr-2"></i> Informações
                     </h2>
                     
-                    <div class="space-y-4">
-                        <!-- Endereço -->
-                        <div class="flex gap-4 p-4 bg-gray-50 rounded-xl">
-                            <div class="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
-                                <i class="fas fa-map-marker-alt text-red-500"></i>
-                            </div>
-                            <div>
-                                <p class="font-semibold text-gray-900">Endereço</p>
-                                <p class="text-gray-600 text-sm">Rua das Flores, 123 - Centro</p>
-                                <p class="text-gray-500 text-xs mt-1">Ponto de referência: Em frente à praça</p>
-                            </div>
-                        </div>
-                        
-                        <!-- Horário -->
-                        <div class="flex gap-4 p-4 bg-gray-50 rounded-xl">
-                            <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
-                                <i class="fas fa-clock text-blue-500"></i>
-                            </div>
-                            <div>
-                                <p class="font-semibold text-gray-900">Horário de funcionamento</p>
-                                <p class="text-gray-600 text-sm">Seg a Sáb: 06:00 – 20:00</p>
-                                <p class="text-gray-600 text-sm">Domingo: 07:00 – 12:00</p>
-                            </div>
-                        </div>
-                        
-                        <!-- WhatsApp -->
-                        <div class="flex gap-4 p-4 bg-gray-50 rounded-xl">
-                            <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
-                                <i class="fab fa-whatsapp text-green-500"></i>
-                            </div>
-                            <div>
-                                <p class="font-semibold text-gray-900">WhatsApp</p>
-                                <a href="https://wa.me/5565999667725" class="text-green-600 text-sm font-medium hover:underline">(65) 99966-7725</a>
-                            </div>
-                        </div>
-                        
-                        <!-- Instagram -->
-                        <div class="flex gap-4 p-4 bg-gray-50 rounded-xl">
-                            <div class="w-10 h-10 bg-pink-100 rounded-full flex items-center justify-center flex-shrink-0">
-                                <i class="fab fa-instagram text-pink-500"></i>
-                            </div>
-                            <div>
-                                <p class="font-semibold text-gray-900">Instagram</p>
-                                <a href="#" class="text-pink-600 text-sm font-medium hover:underline">@padariadocentro</a>
-                            </div>
-                        </div>
+                    <div id="empInfoCards" class="space-y-4">
+                        <!-- preenchido pelo JS com endereço, horário e canais reais -->
                     </div>
                 </div>
                 
@@ -289,8 +245,9 @@
 
         const CAT_LABEL = {
             alimentacao: 'Alimentação', moda: 'Moda e Vestuário', casa: 'Casa e Construção',
-            automotivo: 'Automotivo', saude: 'Saúde e Beleza', servicos: 'Serviços',
-            agro: 'Agro e Pet', outros: 'Outros', 'servicos-publicos': 'Serviços públicos'
+            automotivo: 'Automotivo', saude: 'Saúde e Beleza', tecnologia: 'Tecnologia e Informática',
+            servicos: 'Serviços', agro: 'Agro e Pet', outros: 'Outros',
+            'servicos-publicos': 'Serviços públicos'
         };
 
         function buscarLocal(id) {
@@ -339,7 +296,6 @@
             const vazia = document.getElementById('empGaleriaVazia');
             if (!box) return;
             const fotos = Array.isArray(emp.fotos) ? emp.fotos.filter(Boolean) : [];
-            // Se logo for diferente das fotos da vitrine, não duplicar como item da galeria
             box.innerHTML = '';
             if (!fotos.length) {
                 if (vazia) vazia.classList.remove('hidden');
@@ -357,6 +313,111 @@
             });
         }
 
+        function esc(s) {
+            return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
+        }
+
+        function linkSocial(tipo, valor) {
+            if (!valor) return null;
+            var v = String(valor).trim();
+            if (!v) return null;
+            if (/^https?:\/\//i.test(v)) return v;
+            if (tipo === 'instagram' || tipo === 'tiktok' || tipo === 'twitter') {
+                v = v.replace(/^@/, '');
+                if (tipo === 'instagram') return 'https://instagram.com/' + encodeURIComponent(v);
+                if (tipo === 'tiktok') return 'https://www.tiktok.com/@' + encodeURIComponent(v);
+                return 'https://x.com/' + encodeURIComponent(v);
+            }
+            if (tipo === 'facebook') {
+                if (v.indexOf('facebook.com') >= 0) return v.indexOf('http') === 0 ? v : 'https://' + v;
+                return 'https://facebook.com/' + encodeURIComponent(v.replace(/^@/, ''));
+            }
+            if (tipo === 'linkedin') {
+                if (v.indexOf('linkedin.com') >= 0) return v.indexOf('http') === 0 ? v : 'https://' + v;
+                return 'https://www.linkedin.com/search/results/all/?keywords=' + encodeURIComponent(v);
+            }
+            if (tipo === 'telegram') {
+                if (/^https?:\/\//i.test(v) || v.indexOf('t.me/') >= 0) return v.indexOf('http') === 0 ? v : 'https://' + v.replace(/^\/\//, '');
+                return 'https://t.me/' + encodeURIComponent(v.replace(/^@/, ''));
+            }
+            if (tipo === 'site') return v.indexOf('http') === 0 ? v : 'https://' + v;
+            return v;
+        }
+
+        function cardInfo(iconBg, iconClass, titulo, corpoHtml) {
+            return '<div class="flex gap-4 p-4 bg-gray-50 rounded-xl">' +
+                '<div class="w-10 h-10 ' + iconBg + ' rounded-full flex items-center justify-center flex-shrink-0">' +
+                '<i class="' + iconClass + '"></i></div>' +
+                '<div class="min-w-0"><p class="font-semibold text-gray-900">' + esc(titulo) + '</p>' +
+                corpoHtml + '</div></div>';
+        }
+
+        function renderInfoCards(emp) {
+            const box = document.getElementById('empInfoCards');
+            if (!box) return;
+            var html = '';
+            if (emp.endereco) {
+                html += cardInfo('bg-red-100', 'fas fa-map-marker-alt text-red-500', 'Endereço',
+                    '<p class="text-gray-600 text-sm">' + esc(emp.endereco) + '</p>' +
+                    (emp.referencia ? '<p class="text-gray-500 text-xs mt-1">Ref.: ' + esc(emp.referencia) + '</p>' : ''));
+            }
+            var tipoLabel = {
+                loja: 'Loja física / balcão',
+                delivery: 'Só delivery / sob encomenda',
+                ambos: 'Loja + delivery',
+                agendamento: 'Com hora marcada / sob demanda',
+                online: 'Atendimento online / redes'
+            };
+            if (emp.tipoAtendimento && tipoLabel[emp.tipoAtendimento]) {
+                html += cardInfo('bg-violet-100', 'fas fa-store text-violet-600', 'Como atende',
+                    '<p class="text-gray-600 text-sm">' + esc(tipoLabel[emp.tipoAtendimento]) + '</p>');
+            }
+            if (emp.horario) {
+                var linhas = String(emp.horario).split(/\n+/).filter(Boolean);
+                html += cardInfo('bg-blue-100', 'fas fa-clock text-blue-500', 'Horário / disponibilidade',
+                    linhas.map(function (l) { return '<p class="text-gray-600 text-sm whitespace-pre-wrap">' + esc(l) + '</p>'; }).join(''));
+            }
+            var wa = (emp.whatsapp || '').replace(/\D/g, '');
+            if (wa) {
+                var waFmt = wa.length >= 11 ? '(' + wa.slice(0, 2) + ') ' + wa.slice(2, 7) + '-' + wa.slice(7) : wa;
+                html += cardInfo('bg-green-100', 'fab fa-whatsapp text-green-500', 'WhatsApp',
+                    '<a href="https://wa.me/55' + wa + '" target="_blank" rel="noopener" class="text-green-600 text-sm font-medium hover:underline">' + esc(waFmt) + '</a>');
+            }
+            function linhasCampo(valor) {
+                if (!valor) return [];
+                if (Array.isArray(valor)) return valor.map(String).map(function (s) { return s.trim(); }).filter(Boolean);
+                return String(valor).split(/\n+/).map(function (s) { return s.trim(); }).filter(Boolean);
+            }
+            function addSocialMulti(tipo, label, iconBg, iconClass, valor) {
+                var itens = linhasCampo(valor);
+                if (!itens.length) return;
+                var links = itens.map(function (texto) {
+                    var href = linkSocial(tipo, texto);
+                    if (!href) return '';
+                    return '<a href="' + esc(href) + '" target="_blank" rel="noopener" class="block text-primary text-sm font-medium hover:underline break-all">' + esc(texto) + '</a>';
+                }).filter(Boolean).join('');
+                if (!links) return;
+                html += cardInfo(iconBg, iconClass, label, links);
+            }
+            addSocialMulti('instagram', 'Instagram', 'bg-pink-100', 'fab fa-instagram text-pink-500', emp.instagram);
+            addSocialMulti('facebook', 'Facebook', 'bg-blue-100', 'fab fa-facebook text-blue-600', emp.facebook);
+            addSocialMulti('twitter', 'X (Twitter)', 'bg-gray-200', 'fab fa-x-twitter text-gray-800', emp.twitter);
+            addSocialMulti('linkedin', 'LinkedIn', 'bg-sky-100', 'fab fa-linkedin text-blue-700', emp.linkedin);
+            addSocialMulti('tiktok', 'TikTok', 'bg-gray-900', 'fab fa-tiktok text-white', emp.tiktok);
+            addSocialMulti('site', 'Site', 'bg-indigo-100', 'fas fa-globe text-indigo-600', emp.site);
+            (function () {
+                var grupos = linhasCampo(emp.grupoWhatsapp);
+                if (!grupos.length) return;
+                var links = grupos.map(function (g, i) {
+                    var href = /^https?:\/\//i.test(g) ? g : g;
+                    return '<a href="' + esc(href) + '" target="_blank" rel="noopener" class="block text-green-700 text-sm font-medium hover:underline">Grupo / canal ' + (grupos.length > 1 ? (i + 1) : '') + '</a>';
+                }).join('');
+                html += cardInfo('bg-green-100', 'fab fa-whatsapp text-green-600', 'Grupos / canais WhatsApp', links);
+            })();
+            addSocialMulti('telegram', 'Telegram', 'bg-sky-100', 'fab fa-telegram text-sky-500', emp.telegram);
+            box.innerHTML = html || '<p class="text-sm text-gray-500">Dados de contato ainda não informados.</p>';
+        }
+
         function aplicarEmpresa(emp) {
             if (!emp) {
                 document.getElementById('empNome').textContent = 'Empresa não encontrada';
@@ -371,6 +432,7 @@
             document.title = EMPRESA_NOME + ' — Compre Diamantino';
             renderLogo(emp);
             renderGaleria(emp);
+            renderInfoCards(emp);
 
             const cat = CAT_LABEL[emp.categoria] || emp.categoria || '';
             document.getElementById('empCat').innerHTML = cat ? '<i class="fas fa-tag text-primary mr-1"></i> ' + cat : '';
