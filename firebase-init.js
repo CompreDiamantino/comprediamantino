@@ -32,7 +32,13 @@
             }, { merge: true }).then(function () {
                 setStatus(true, '<i class="fas fa-check-circle"></i> <strong>Nuvem conectada</strong> — projeto <code>compre-diamantino-8faaa</code>. Banco pronto para o gestor.');
             }).catch(function (err) {
-                setStatus(false, '<i class="fas fa-exclamation-triangle"></i> Config ok, mas Firestore ainda não liberou gravação. Crie o banco no console (modo teste) e regras abertas. <br><small>' + (err.message || err) + '</small>');
+                var msg = (err && err.message) || String(err);
+                var quota = /resource-exhausted|quota|Quota exceeded/i.test(msg + ' ' + ((err && err.code) || ''));
+                if (quota) {
+                    setStatus(false, '<i class="fas fa-exclamation-triangle"></i> <strong>Cota do Firebase esgotada hoje.</strong> Dados e leituras excedidos. Tente mais tarde ou amanhã (renova à meia-noite).');
+                } else {
+                    setStatus(false, '<i class="fas fa-exclamation-triangle"></i> Config ok, mas Firestore ainda não liberou gravação. Crie o banco no console (modo teste) e regras abertas. <br><small>' + msg + '</small>');
+                }
             });
         } catch (e) {
             setStatus(false, 'Erro: ' + e.message);

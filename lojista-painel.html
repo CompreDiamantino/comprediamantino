@@ -297,9 +297,14 @@
 
     </div>
 
+        <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
     <script src="firebase-config.js"></script>
-<script src="r2-upload.js"></script>
-<script src="auth-utils.js"></script>
+    <script src="firebase-init.js"></script>
+    <script src="lojistas-nuvem.js"></script>
+    <script src="r2-upload.js"></script>
+    <script src="auth-utils.js"></script>
+    <script src="notificacoes-gestor.js"></script>
     <script>
         // ========== PROTEÇÃO DE ACESSO ==========
         let lojista = JSON.parse(localStorage.getItem('cd_lojista') || 'null');
@@ -357,16 +362,99 @@
                 </div>
             `;
         } else {
-            statusBox.className = 'mb-6 rounded-xl p-4 flex items-center gap-3 bg-yellow-50 border border-yellow-200';
+            statusBox.className = 'mb-6 rounded-xl p-4 bg-yellow-50 border border-yellow-200';
             statusBox.innerHTML = `
-                <div class="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center">
-                    <i class="fas fa-clock text-yellow-600"></i>
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center flex-shrink-0">
+                        <i class="fas fa-clock text-yellow-600"></i>
+                    </div>
+                    <div class="min-w-0 flex-1">
+                        <p class="font-bold text-yellow-800">Aguardando liberação</p>
+                        <p class="text-sm text-yellow-600">Seu perfil será liberado após a confirmação do pagamento</p>
+                    </div>
                 </div>
-                <div>
-                    <p class="font-bold text-yellow-800">Aguardando liberação</p>
-                    <p class="text-sm text-yellow-600">Seu perfil será liberado após a confirmação do pagamento</p>
+                <div class="mt-3 pt-3 border-t border-yellow-200">
+                    <p class="text-xs text-yellow-700 mb-2">Se o gestor ainda não recebeu seu cadastro, force o envio para a nuvem:</p>
+                    <button type="button" id="btnForcarNuvem" class="w-full sm:w-auto bg-primary text-white text-sm font-bold px-4 py-2.5 rounded-xl hover:bg-accent transition">
+                        <i class="fas fa-cloud-upload-alt mr-1"></i> Enviar à gestão agora
+                    </button>
+                    <p id="msgForcarNuvem" class="text-xs mt-2 hidden"></p>
                 </div>
             `;
+            setTimeout(function () {
+                var btn = document.getElementById('btnForcarNuvem');
+                if (!btn) return;
+                btn.addEventListener('click', function () {
+                    var msg = document.getElementById('msgForcarNuvem');
+                    function show(t, ok, quota) {
+                        if (!msg) return;
+                        msg.classList.remove('hidden');
+                        msg.className = 'text-xs mt-2 ' + (ok ? 'text-green-700' : (quota ? 'text-amber-800' : 'text-red-600'));
+                        msg.textContent = t;
+                    }
+                    btn.disabled = true;
+                    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Enviando...';
+                    try {
+                        if (window.iniciarFirebase) iniciarFirebase();
+                        var id = lojista.empresaId || lojista.id;
+                        var lista = [];
+                        try { lista = JSON.parse(localStorage.getItem('cd_lojistas_admin') || '[]'); } catch (e) {}
+                        var reg = lista.find(function (l) { return String(l.id) === String(id); });
+                        if (!reg) {
+                            // monta a partir da sessão + perfil
+                            var perfil = {};
+                            try { perfil = JSON.parse(localStorage.getItem('cd_perfil_' + id) || '{}'); } catch (e) {}
+                            reg = {
+                                id: id,
+                                nome: lojista.nome || perfil.nomeFantasia || 'Loja',
+                                email: lojista.email || '',
+                                whatsapp: lojista.whatsapp || perfil.whatsapp || '',
+                                plano: lojista.plano || 'basico',
+                                status: lojista.status || 'pendente',
+                                categoria: perfil.categoria || '',
+                                endereco: perfil.endereco || '',
+                                mapsLink: perfil.mapsLink || '',
+                                logo: perfil.logo || '',
+                                fotos: perfil.fotos || [],
+                                descricao: perfil.descricao || '',
+                                atualizadoEm: new Date().toISOString()
+                            };
+                        }
+                        if (!reg.id) {
+                            show('Não achei o ID do cadastro neste aparelho. Faça o cadastro de novo.', false);
+                            btn.disabled = false;
+                            btn.innerHTML = '<i class="fas fa-cloud-upload-alt mr-1"></i> Enviar à gestão agora';
+                            return;
+                        }
+                        if (!window.LojistasNuvem || !LojistasNuvem.forcarEnvio) {
+                            show('Módulo da nuvem não carregou. Atualize a página (Ctrl+F5) e tente de novo.', false);
+                            btn.disabled = false;
+                            btn.innerHTML = '<i class="fas fa-cloud-upload-alt mr-1"></i> Enviar à gestão agora';
+                            return;
+                        }
+                        LojistasNuvem.forcarEnvio(reg).then(function (r) {
+                            btn.disabled = false;
+                            btn.innerHTML = '<i class="fas fa-cloud-upload-alt mr-1"></i> Enviar à gestão agora';
+                            if (r && r.sucesso) {
+                                show('Enviado! Peça ao gestor para atualizar o painel (ou aguardar alguns segundos).', true);
+                            } else if (r && r.quota) {
+                                show(r.erro || 'Cota do Firebase esgotada hoje. Tente mais tarde ou amanhã.', false, true);
+                            } else {
+                                show((r && r.erro) || 'Não foi possível enviar. Verifique a internet e tente de novo.', false);
+                            }
+                        }).catch(function (err) {
+                            btn.disabled = false;
+                            btn.innerHTML = '<i class="fas fa-cloud-upload-alt mr-1"></i> Enviar à gestão agora';
+                            var q = LojistasNuvem.isQuotaError && LojistasNuvem.isQuotaError(err);
+                            show(q ? LojistasNuvem.mensagemQuota() : ((err && err.message) || String(err)), false, q);
+                        });
+                    } catch (e) {
+                        btn.disabled = false;
+                        btn.innerHTML = '<i class="fas fa-cloud-upload-alt mr-1"></i> Enviar à gestão agora';
+                        show(String(e), false);
+                    }
+                });
+            }, 0);
         }
         
         // ========== TABS ==========
@@ -443,6 +531,15 @@
                     lista.push(Object.assign({ id: id, status: lojista.status || 'pendente', plano: lojista.plano || 'basico' }, patch));
                 }
                 localStorage.setItem('cd_lojistas_admin', JSON.stringify(lista));
+                // Espelha na nuvem (1 doc) para o gestor em outro aparelho
+                try {
+                    var row = lista.find(function (l) { return String(l.id) === String(id); });
+                    if (row && window.LojistasNuvem && LojistasNuvem.salvarUm) {
+                        LojistasNuvem.salvarUm(row).then(function (r) {
+                            if (r && r.quota) console.warn('quota ao sincronizar perfil');
+                        });
+                    }
+                } catch (eN) {}
                 // Aviso para o gestor
                 if (window.NotifGestor && NotifGestor.add) {
                     NotifGestor.add('fotos', 'Perfil atualizado: ' + (patch.nome || 'Anunciante'),

@@ -262,8 +262,12 @@
         <div id="stepOk" class="hidden bg-white rounded-2xl shadow-sm border border-green-100 p-8 text-center">
             <div class="text-4xl text-green-500 mb-3"><i class="fas fa-check-circle"></i></div>
             <h2 class="text-xl font-bold text-primary mb-2">Cadastro enviado!</h2>
-            <p class="text-gray-600 text-sm mb-6">Aguarde a aprovação do gestor. Você será contactado no WhatsApp informado.</p>
-            <a href="index.html" class="inline-block bg-primary text-white font-bold px-6 py-3 rounded-xl">Voltar ao site</a>
+            <p class="text-gray-600 text-sm mb-3">Aguarde a aprovação do gestor. Você será contactado no WhatsApp informado.</p>
+            <p id="msgNuvemCadastro" class="text-sm mb-4 hidden"></p>
+            <div class="flex flex-col sm:flex-row gap-2 justify-center">
+                <a href="lojista-login.html" class="inline-block bg-primary text-white font-bold px-6 py-3 rounded-xl">Entrar na área do anunciante</a>
+                <a href="index.html" class="inline-block bg-gray-100 text-gray-700 font-bold px-6 py-3 rounded-xl">Voltar ao site</a>
+            </div>
         </div>
     </div>
 
@@ -591,12 +595,47 @@
             lista.push(reg);
             localStorage.setItem('cd_lojistas_admin', JSON.stringify(lista));
             // Espelho na nuvem + sinal para o gestor (1 doc) — aparece em segundos no painel
+            var resultadoNuvem = { ok: false, msg: '' };
             if (window.LojistasNuvem) {
                 try {
-                    if (LojistasNuvem.salvarNovoCadastro) await LojistasNuvem.salvarNovoCadastro(reg);
-                    else if (LojistasNuvem.salvarUm) await LojistasNuvem.salvarUm(reg);
-                } catch (eN) { console.warn('nuvem cadastro', eN); }
+                    var resN = LojistasNuvem.salvarNovoCadastro
+                        ? await LojistasNuvem.salvarNovoCadastro(reg)
+                        : (LojistasNuvem.salvarUm ? await LojistasNuvem.salvarUm(reg) : null);
+                    if (resN && resN.quota) {
+                        resultadoNuvem = { ok: false, quota: true, msg: resN.erro || (LojistasNuvem.mensagemQuota && LojistasNuvem.mensagemQuota()) };
+                    } else if (resN && resN.nuvem) {
+                        resultadoNuvem = { ok: true, msg: 'Enviado à gestão na nuvem. O gestor verá em instantes.' };
+                    } else if (resN && resN.soLocal) {
+                        resultadoNuvem = { ok: false, msg: 'Salvo neste aparelho, mas a nuvem não confirmou. Entre na área do anunciante e toque em "Enviar à gestão".' };
+                    } else {
+                        resultadoNuvem = { ok: true, msg: 'Cadastro registrado.' };
+                    }
+                } catch (eN) {
+                    console.warn('nuvem cadastro', eN);
+                    var q = window.LojistasNuvem && LojistasNuvem.isQuotaError && LojistasNuvem.isQuotaError(eN);
+                    resultadoNuvem = {
+                        ok: false,
+                        quota: !!q,
+                        msg: q
+                            ? (LojistasNuvem.mensagemQuota && LojistasNuvem.mensagemQuota())
+                            : ('Falha ao enviar à nuvem: ' + ((eN && eN.message) || eN) + '. Use "Enviar à gestão" na área do anunciante.')
+                    };
+                }
+            } else {
+                resultadoNuvem = { ok: false, msg: 'Salvo só neste aparelho (módulo da nuvem não carregou). Entre na área do anunciante e tente "Enviar à gestão".' };
             }
+            // Sessão do lojista neste aparelho
+            try {
+                localStorage.setItem('cd_lojista', JSON.stringify({
+                    email: reg.email || reg.whatsapp,
+                    nome: reg.nome,
+                    empresaId: reg.id,
+                    plano: reg.plano,
+                    status: 'pendente',
+                    whatsapp: reg.whatsapp,
+                    logadoEm: new Date().toISOString()
+                }));
+            } catch (eS) {}
             // Perfil inicial (gestão e painel do anunciante já veem fotos/redes)
             try {
                 localStorage.setItem('cd_perfil_' + reg.id, JSON.stringify({
@@ -639,6 +678,18 @@
 
             document.getElementById('step4').classList.add('hidden');
             document.getElementById('stepOk').classList.remove('hidden');
+            var elN = document.getElementById('msgNuvemCadastro');
+            if (elN && resultadoNuvem) {
+                elN.classList.remove('hidden');
+                if (resultadoNuvem.ok) {
+                    elN.className = 'text-sm mb-4 text-green-700 bg-green-50 border border-green-100 rounded-xl px-3 py-2';
+                } else if (resultadoNuvem.quota) {
+                    elN.className = 'text-sm mb-4 text-amber-900 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2';
+                } else {
+                    elN.className = 'text-sm mb-4 text-orange-800 bg-orange-50 border border-orange-200 rounded-xl px-3 py-2';
+                }
+                elN.textContent = resultadoNuvem.msg || '';
+            }
         });
     </script>
     <script src="firebase-config.js"></script>

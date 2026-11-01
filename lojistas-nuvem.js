@@ -59,7 +59,19 @@
         return { sucesso: true, nuvem: true };
       }).catch(function (err) {
         console.warn('lojistas nuvem', err);
-        return { sucesso: true, soLocal: true, erro: (err && err.message) || String(err) };
+        var quota = false;
+        try {
+          var code = ((err && err.code) || '') + ' ' + ((err && err.message) || '');
+          quota = /resource-exhausted|quota|Quota exceeded/i.test(code);
+        } catch (e) {}
+        return {
+          sucesso: !quota,
+          soLocal: true,
+          quota: quota,
+          erro: quota
+            ? 'Dados e leituras do Firebase excedidos para o dia. Tente mais tarde ou amanhã.'
+            : ((err && err.message) || String(err))
+        };
       });
     }
 
@@ -229,6 +241,45 @@
     });
   }
 
+  function isQuotaError(err) {
+    if (!err) return false;
+    var code = (err.code || err.name || '') + '';
+    var msg = (err.message || err + '') + '';
+    return /resource-exhausted|quota|Quota exceeded|exceeded/i.test(code + ' ' + msg);
+  }
+
+  function mensagemQuota() {
+    return 'Dados e leituras do Firebase excedidos para o dia. Tente mais tarde ou amanhã (a cota grátis renova à meia-noite).';
+  }
+
+  /**
+   * Força reenvio do cadastro local do lojista para a nuvem + sinal ao gestor.
+   * Usar quando o painel do gestor não recebeu a inscrição.
+   */
+  function forcarEnvio(lj) {
+    if (!lj || !lj.id) {
+      return Promise.resolve({ sucesso: false, erro: 'Cadastro local não encontrado.' });
+    }
+    return salvarNovoCadastro(lj).then(function (res) {
+      if (res && res.erro && isQuotaError({ message: res.erro })) {
+        return { sucesso: false, quota: true, erro: mensagemQuota() };
+      }
+      if (res && res.soLocal) {
+        return { sucesso: false, soLocal: true, erro: res.erro || 'Não foi possível gravar na nuvem. Verifique a internet.' };
+      }
+      return { sucesso: true, nuvem: !!(res && res.nuvem), res: res };
+    }).catch(function (err) {
+      if (isQuotaError(err)) {
+        return { sucesso: false, quota: true, erro: mensagemQuota() };
+      }
+      return { sucesso: false, erro: (err && err.message) || String(err) };
+    });
+  }
+
+  // Enrich salvarUm catch to flag quota
+  var _salvarUmOrig = salvarUm;
+  // already has catch that returns soLocal - ok
+
   global.LojistasNuvem = {
     KEY: KEY,
     lerLocal: lerLocal,
@@ -241,6 +292,9 @@
     puxarUm: puxarUm,
     ouvir: ouvir,
     ouvirSinais: ouvirSinais,
-    apagar: apagar
+    apagar: apagar,
+    forcarEnvio: forcarEnvio,
+    isQuotaError: isQuotaError,
+    mensagemQuota: mensagemQuota
   };
 })(window);
