@@ -1,0 +1,14 @@
+# Compre Diamantino — https://comprediamantino.com.br
+User-agent: *
+Allow: /
+
+# Painéis internos / login — não precisa indexar
+Disallow: /admin-painel.html
+Disallow: /gestor-hub.html
+Disallow: /gestor-login.html
+Disallow: /lojista-painel.html
+Disallow: /lojista-login.html
+Disallow: /recuperar-senha.html
+Disallow: /anuncie-acesso.html
+
+Sitemap: https://comprediamantino.com.br/sitemap.xml
