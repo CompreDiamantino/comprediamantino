@@ -199,6 +199,19 @@
             <p class="text-sm text-gray-500 mb-5" id="modalPagoNome">Empresa</p>
             
             <div class="mb-4">
+                <label class="block text-sm font-medium mb-2">Plano (fotos na vitrine)</label>
+                <div class="grid grid-cols-2 gap-2" id="planoPagoBtns">
+                    <button type="button" data-plano="basico" class="plano-pago-btn border-2 border-primary bg-primary text-white rounded-xl py-3 font-bold text-sm">
+                        Básico<br><span class="text-xs font-normal opacity-90">3 fotos · R$ 80</span>
+                    </button>
+                    <button type="button" data-plano="plus" class="plano-pago-btn border-2 border-gray-200 rounded-xl py-3 font-bold text-sm hover:border-primary">
+                        Plus<br><span class="text-xs font-normal opacity-90">5 fotos · R$ 120</span>
+                    </button>
+                </div>
+                <p class="text-xs text-gray-400 mt-1">Pode mudar o plano na renovação ou a qualquer momento.</p>
+            </div>
+
+            <div class="mb-4">
                 <label class="block text-sm font-medium mb-2">Duração do plano</label>
                 <div class="grid grid-cols-2 gap-2">
                     <button type="button" data-dias="30" class="dias-btn border-2 border-primary bg-primary text-white rounded-xl py-3 font-bold text-sm">30 dias</button>
@@ -232,6 +245,26 @@
                     Cancelar
                 </button>
             </div>
+        </div>
+    </div>
+
+    <!-- ========== MODAL: Mudar plano ========== -->
+    <div id="modalPlano" class="fixed inset-0 modal-bg z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-2xl w-full max-w-sm p-6 shadow-2xl">
+            <h3 class="text-lg font-bold text-primary mb-1">Mudar plano</h3>
+            <p class="text-sm text-gray-500 mb-4" id="modalPlanoNome">Empresa</p>
+            <p class="text-xs text-gray-400 mb-3">Atual: <span id="modalPlanoAtual" class="font-semibold text-gray-700">—</span></p>
+            <div class="grid grid-cols-1 gap-2 mb-5">
+                <button type="button" data-plano="basico" class="plano-mudar-btn border-2 border-gray-200 rounded-xl py-3 px-4 text-left hover:border-primary transition">
+                    <span class="font-bold text-primary">Básico</span>
+                    <span class="block text-sm text-gray-500">3 fotos na vitrine · R$ 80/mês</span>
+                </button>
+                <button type="button" data-plano="plus" class="plano-mudar-btn border-2 border-gray-200 rounded-xl py-3 px-4 text-left hover:border-primary transition">
+                    <span class="font-bold text-primary">Plus</span>
+                    <span class="block text-sm text-gray-500">5 fotos na vitrine · R$ 120/mês</span>
+                </button>
+            </div>
+            <button id="btnFecharModalPlano" class="w-full bg-gray-100 text-gray-600 font-medium py-3 rounded-xl hover:bg-gray-200 transition">Cancelar</button>
         </div>
     </div>
 
@@ -276,9 +309,8 @@
                     <div>
                         <label class="block text-sm font-medium mb-1">Plano</label>
                         <select id="ljPlano" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-primary">
-                            <option value="basico">Básico</option>
-                            <option value="destaque">Destaque</option>
-                            <option value="premium">Premium</option>
+                            <option value="basico">Básico — 3 fotos (R$ 80)</option>
+                            <option value="plus">Plus — 5 fotos (R$ 120)</option>
                         </select>
                     </div>
                 </div>
@@ -523,7 +555,10 @@
                         ${lj.instagram || lj.facebook ? '<p class="text-[11px] text-blue-600 mt-0.5">' + [lj.instagram, lj.facebook].filter(Boolean).join(' · ') + '</p>' : ''}
                         ${((lj.fotos && lj.fotos.length) || lj.logo) ? '<p class="text-[11px] text-indigo-600 mt-0.5"><i class="fas fa-camera"></i> ' + ((lj.fotos && lj.fotos.length) || 0) + ' foto(s)' + (lj.logo ? ' · logo' : '') + '</p>' : ''}
                     </td>
-                    <td class="px-4 py-3 capitalize">${lj.plano}</td>
+                    <td class="px-4 py-3">
+                        <span class="font-medium">${(String(lj.plano||'basico').toLowerCase()==='plus'||String(lj.plano||'').toLowerCase()==='destaque')?'Plus':'Básico'}</span>
+                        <span class="block text-[11px] text-gray-400">${(String(lj.plano||'basico').toLowerCase()==='plus'||String(lj.plano||'').toLowerCase()==='destaque')?'5 fotos':'3 fotos'}</span>
+                    </td>
                     <td class="px-4 py-3">
                         <span class="status-${lj.status} text-xs font-bold px-2.5 py-1 rounded-full">
                             ${statusLabel[lj.status]}
@@ -561,6 +596,9 @@
                             ` : '')}
                             
                             ${lj.status !== 'removido' ? `
+                            <button onclick="abrirModalPlano('${lj.id}')" class="text-xs bg-amber-50 text-amber-800 font-medium px-2.5 py-1 rounded-lg hover:bg-amber-100" title="Mudar plano (3 ou 5 fotos)">
+                                <i class="fas fa-layer-group"></i> Plano
+                            </button>
                             <button onclick="editarLojista('${lj.id}')" class="text-xs bg-gray-100 text-gray-600 font-medium px-2.5 py-1 rounded-lg hover:bg-gray-200" title="Editar">
                                 <i class="fas fa-pen"></i>
                             </button>
@@ -649,6 +687,60 @@
         // ========== MODAL PAGO ==========
         let lojistaPagoId = null;
         let diasSelecionados = 30;
+        let planoPagoSelecionado = 'basico';
+        let lojistaPlanoId = null;
+
+        function normalizarPlano(p) {
+            var s = String(p || 'basico').toLowerCase().trim();
+            if (s === 'plus' || s === 'destaque' || s === 'premium') return 'plus';
+            return 'basico';
+        }
+        function labelPlano(p) {
+            return normalizarPlano(p) === 'plus' ? 'Plus (5 fotos)' : 'Básico (3 fotos)';
+        }
+        function aplicarPlanoNoLojista(id, novoPlano) {
+            novoPlano = normalizarPlano(novoPlano);
+            const lista = getLojistas();
+            const idx = lista.findIndex(l => l.id === id);
+            if (idx === -1) return false;
+            const antes = normalizarPlano(lista[idx].plano);
+            lista[idx].plano = novoPlano;
+            lista[idx].planoAlteradoEm = new Date().toISOString();
+            salvarLojistas(lista);
+            salvarLojistaNuvem(lista[idx]);
+            try {
+                if (window.EmpresasDados && EmpresasDados.upsertEmpresa) {
+                    const lj = lista[idx];
+                    EmpresasDados.upsertEmpresa({
+                        id: lj.id,
+                        nome: lj.nome,
+                        categoria: lj.categoria,
+                        plano: lj.plano,
+                        status: lj.status,
+                        whatsapp: lj.whatsapp,
+                        endereco: lj.endereco || '',
+                        mapsLink: lj.mapsLink || ''
+                    });
+                }
+            } catch (e) {}
+            return antes !== novoPlano;
+        }
+
+        window.abrirModalPlano = function (id) {
+            lojistaPlanoId = id;
+            const lj = getLojistas().find(l => l.id === id);
+            document.getElementById('modalPlanoNome').textContent = lj ? (lj.nome || id) : id;
+            document.getElementById('modalPlanoAtual').textContent = labelPlano(lj && lj.plano);
+            var atual = normalizarPlano(lj && lj.plano);
+            document.querySelectorAll('.plano-mudar-btn').forEach(function (b) {
+                var on = b.dataset.plano === atual;
+                b.classList.toggle('border-primary', on);
+                b.classList.toggle('bg-primary/5', on);
+            });
+            document.getElementById('modalPlano').classList.remove('hidden');
+            document.getElementById('modalPlano').classList.add('flex');
+        };
+
         
         window.abrirModalPago = (id) => {
             lojistaPagoId = id;
@@ -657,6 +749,16 @@
             document.getElementById('modalPagoNome').textContent = lj ? lj.nome : '';
             document.getElementById('dataVencimentoCustom').value = '';
             diasSelecionados = 30;
+            // Plano atual (basico ↔ plus)
+            var planoAtual = normalizarPlano(lj && lj.plano);
+            planoPagoSelecionado = planoAtual;
+            document.querySelectorAll('.plano-pago-btn').forEach(function (b) {
+                var on = b.dataset.plano === planoAtual;
+                b.classList.toggle('border-primary', on);
+                b.classList.toggle('bg-primary', on);
+                b.classList.toggle('text-white', on);
+                b.classList.toggle('border-gray-200', !on);
+            });
             
             document.querySelectorAll('.dias-btn').forEach(b => {
                 b.classList.remove('border-primary', 'bg-primary', 'text-white');
@@ -721,6 +823,39 @@
                 document.getElementById('dataVencimentoCustom').value = '';
             });
         });
+
+        // Seleção de plano no modal de pagamento / renovação
+        document.querySelectorAll('.plano-pago-btn').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                planoPagoSelecionado = normalizarPlano(btn.dataset.plano);
+                document.querySelectorAll('.plano-pago-btn').forEach(function (b) {
+                    var on = b.dataset.plano === planoPagoSelecionado;
+                    b.classList.toggle('border-primary', on);
+                    b.classList.toggle('bg-primary', on);
+                    b.classList.toggle('text-white', on);
+                    b.classList.toggle('border-gray-200', !on);
+                });
+            });
+        });
+
+        // Modal dedicado: mudar só o plano
+        document.querySelectorAll('.plano-mudar-btn').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                if (!lojistaPlanoId) return;
+                var novo = normalizarPlano(btn.dataset.plano);
+                var mudou = aplicarPlanoNoLojista(lojistaPlanoId, novo);
+                document.getElementById('modalPlano').classList.add('hidden');
+                document.getElementById('modalPlano').classList.remove('flex');
+                renderTabela();
+                alert(mudou
+                    ? ('Plano alterado para ' + labelPlano(novo) + '.')
+                    : ('Plano já era ' + labelPlano(novo) + '.'));
+            });
+        });
+        document.getElementById('btnFecharModalPlano').addEventListener('click', function () {
+            document.getElementById('modalPlano').classList.add('hidden');
+            document.getElementById('modalPlano').classList.remove('flex');
+        });
         
         document.getElementById('btnFecharModalPago').addEventListener('click', () => {
             document.getElementById('modalPago').classList.add('hidden');
@@ -755,6 +890,11 @@
             lista[idx].pagoEm = new Date().toISOString();
             lista[idx].descontoAplicado = desconto;
             lista[idx].descontoEm = new Date().toISOString();
+            // Aplica plano escolhido no modal (Básico 3 / Plus 5)
+            if (typeof planoPagoSelecionado !== 'undefined' && planoPagoSelecionado) {
+                lista[idx].plano = normalizarPlano(planoPagoSelecionado);
+                lista[idx].planoAlteradoEm = new Date().toISOString();
+            }
             
             salvarLojistas(lista);
             salvarLojistaNuvem(lista[idx]);
@@ -1015,7 +1155,7 @@
             const ig = document.getElementById('ljInstagram'); if (ig) ig.value = lj.instagram || '';
             const fb = document.getElementById('ljFacebook'); if (fb) fb.value = lj.facebook || '';
             document.getElementById('ljEmail').value = lj.email || '';
-            document.getElementById('ljPlano').value = lj.plano || 'basico';
+            document.getElementById('ljPlano').value = (typeof normalizarPlano === 'function' ? normalizarPlano(lj.plano) : (lj.plano || 'basico'));
             document.getElementById('ljCategoria').value = lj.categoria || 'outros';
             if (document.getElementById('ljSenha')) document.getElementById('ljSenha').value = lj.senha || '';
             if (document.getElementById('ljSenha2')) document.getElementById('ljSenha2').value = lj.senha || '';
