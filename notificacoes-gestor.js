@@ -50,16 +50,22 @@
         return item;
     }
 
+    /** Ao "marcar como lida", apaga o aviso da central (local + espelho nuvem). */
     function marcarLida(id) {
-        const lista = ler().map(function (n) {
-            if (n.id === id) n.lida = true;
-            return n;
-        });
+        const lista = ler().filter(function (n) { return n.id !== id; });
         salvar(lista);
     }
 
     function marcarTodasLidas() {
-        salvar(ler().map(function (n) { n.lida = true; return n; }));
+        salvar([]);
+    }
+
+    function apagar(id) {
+        marcarLida(id);
+    }
+
+    function limparTodas() {
+        marcarTodasLidas();
     }
 
     function naoLidas() {
@@ -162,6 +168,8 @@
         ler: ler,
         marcarLida: marcarLida,
         marcarTodasLidas: marcarTodasLidas,
+        apagar: apagar,
+        limparTodas: limparTodas,
         naoLidas: naoLidas,
         renderLista: renderLista,
         atualizarBadge: atualizarBadge,
