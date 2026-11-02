@@ -227,7 +227,8 @@
         <div id="tab-fotos" class="tab-content hidden">
             <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
                 <h2 class="text-lg font-bold text-primary mb-2">Fotos do seu negócio</h2>
-                <p class="text-sm text-gray-500 mb-5">Veja, remova ou troque logo e fotos. A primeira da galeria é a capa no site. JPG ou PNG (máx. ~2MB cada).</p>
+                <p class="text-sm text-gray-500 mb-1">Envie a <strong>logo</strong> e depois as fotos da vitrine: <strong>Foto 1</strong>, <strong>Foto 2</strong>, <strong>Foto 3</strong>… até o limite do seu plano.</p>
+                <p id="limiteFotosPlano" class="text-sm text-primary font-medium mb-5">Limite do plano: carregando…</p>
                 
                 <!-- Logo -->
                 <div class="mb-8">
@@ -265,7 +266,8 @@
                         <!-- Previews das fotos ainda não salvas -->
                     </div>
                     <input type="file" id="inputFotos" accept="image/png,image/jpeg" multiple class="text-sm">
-                    <p class="text-xs text-gray-400 mt-1">Selecione uma ou várias. Elas só vão para o site depois de clicar em <strong>Salvar fotos</strong>.</p>
+                    <p class="text-xs text-gray-400 mt-1">Pode enviar uma por uma (Foto 1, Foto 2…) ou várias de uma vez. Elas só vão para o site depois de clicar em <strong>Salvar fotos</strong>.</p>
+                    <p id="avisoLimiteFotos" class="text-xs text-amber-700 mt-1 hidden"></p>
                 </div>
                 
                 <div class="mt-6 flex flex-wrap items-center gap-3">
@@ -428,14 +430,19 @@
             `;
         } else {
             statusBox.className = 'mb-6 rounded-xl p-4 bg-yellow-50 border border-yellow-200';
+            var planoNome = (lojista.plano || 'basico').toLowerCase();
+            var planoLabel = planoNome === 'plus' || planoNome === 'destaque' ? 'Plus' :
+                             planoNome === 'premium' ? 'Premium' : 'Básico';
+            var maxFotosPlano = (planoNome === 'plus' || planoNome === 'destaque') ? 5 :
+                                planoNome === 'premium' ? 8 : 3;
             statusBox.innerHTML = `
                 <div class="flex items-center gap-3">
                     <div class="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center flex-shrink-0">
                         <i class="fas fa-clock text-yellow-600"></i>
                     </div>
                     <div class="min-w-0 flex-1">
-                        <p class="font-bold text-yellow-800">Aguardando liberação</p>
-                        <p class="text-sm text-yellow-600">Seu perfil será liberado após a confirmação do pagamento</p>
+                        <p class="font-bold text-yellow-800">Cadastro recebido</p>
+                        <p class="text-sm text-yellow-700">Seu cadastro será liberado em instantes. Já pode seguir postando a <strong>logo</strong> da sua empresa e as <strong>fotos</strong> conforme o plano <strong>${planoLabel}</strong> (até ${maxFotosPlano} fotos na vitrine).</p>
                     </div>
                 </div>
                 <div class="mt-3 pt-3 border-t border-yellow-200">
@@ -935,12 +942,12 @@
             fotos.forEach(function (src, idx) {
                 var div = document.createElement('div');
                 div.className = 'relative aspect-square rounded-xl overflow-hidden border border-gray-200 group bg-gray-50';
-                var capaBadge = idx === 0
-                    ? '<span class="absolute bottom-1 left-1 bg-primary text-white text-[10px] font-bold px-1.5 py-0.5 rounded">Capa</span>'
-                    : '';
+                var label = idx === 0
+                    ? '<span class="absolute bottom-1 left-1 bg-primary text-white text-[10px] font-bold px-1.5 py-0.5 rounded">Foto ' + (idx + 1) + ' · Capa</span>'
+                    : '<span class="absolute bottom-1 left-1 bg-black/60 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">Foto ' + (idx + 1) + '</span>';
                 div.innerHTML =
                     '<img src="' + src + '" class="w-full h-full object-cover" alt="Foto ' + (idx + 1) + '">' +
-                    capaBadge +
+                    label +
                     '<div class="absolute top-1 right-1 flex gap-1">' +
                     (idx > 0 ? '<button type="button" data-capa-idx="' + idx + '" class="btn-capa-foto bg-yellow-400 text-primary w-7 h-7 rounded-full text-xs font-bold shadow hover:bg-yellow-300" title="Definir como capa">★</button>' : '') +
                     '<button type="button" data-foto-idx="' + idx + '" class="btn-rm-foto bg-red-500 text-white w-7 h-7 rounded-full text-xs shadow hover:bg-red-600" title="Remover">&times;</button>' +
@@ -971,6 +978,7 @@
                 });
             });
             renderLogo();
+            if (typeof atualizarTextoLimiteFotos === 'function') atualizarTextoLimiteFotos();
         }
 
         function renderPendentes() {
@@ -983,7 +991,7 @@
                 div.className = 'relative aspect-square rounded-xl overflow-hidden border-2 border-dashed border-primary/40 bg-blue-50';
                 div.innerHTML =
                     '<img src="' + src + '" class="w-full h-full object-cover" alt="Nova ' + (idx + 1) + '">' +
-                    '<span class="absolute bottom-1 left-1 bg-primary text-white text-[10px] font-bold px-1.5 py-0.5 rounded">Nova</span>' +
+                    '<span class="absolute bottom-1 left-1 bg-primary text-white text-[10px] font-bold px-1.5 py-0.5 rounded">Nova · Foto ' + (idx + 1) + '</span>' +
                     '<button type="button" data-pend-idx="' + idx + '" class="btn-rm-pend absolute top-1 right-1 bg-red-500 text-white w-7 h-7 rounded-full text-xs shadow" title="Remover">&times;</button>';
                 box.appendChild(div);
             });
@@ -1015,7 +1023,7 @@
                 }, 50);
             });
         });
-        setTimeout(function () { renderGaleriaSalva(); renderPendentes(); }, 300);
+        setTimeout(function () { renderGaleriaSalva(); renderPendentes(); if (typeof atualizarTextoLimiteFotos === "function") atualizarTextoLimiteFotos(); }, 300);
 
         document.getElementById('inputLogo').addEventListener('change', function (e) {
             var file = e.target.files[0];
@@ -1045,16 +1053,48 @@
             });
         }
 
+        function maxFotosDoPlano() {
+            var p = String((lojista && lojista.plano) || 'basico').toLowerCase();
+            if (p === 'plus' || p === 'destaque') return 5;
+            if (p === 'premium') return 8;
+            return 3; // basico
+        }
+
+        function atualizarTextoLimiteFotos() {
+            var max = maxFotosDoPlano();
+            var perfil = lerPerfilFotos();
+            var atuais = (perfil.fotos || []).length;
+            var pend = fotosSelecionadas.length;
+            var el = document.getElementById('limiteFotosPlano');
+            if (el) {
+                var plano = String((lojista && lojista.plano) || 'basico').toLowerCase();
+                var nome = plano === 'plus' || plano === 'destaque' ? 'Plus' : (plano === 'premium' ? 'Premium' : 'Básico');
+                el.innerHTML = 'Plano <strong>' + nome + '</strong>: até <strong>' + max + ' fotos</strong> na vitrine · você tem <strong>' + atuais + '</strong> publicada(s)' +
+                    (pend ? ' e <strong>' + pend + '</strong> aguardando salvar' : '') +
+                    ' · restam <strong>' + Math.max(0, max - atuais - pend) + '</strong>.';
+            }
+            var av = document.getElementById('avisoLimiteFotos');
+            if (av) {
+                if (atuais + pend >= max) {
+                    av.classList.remove('hidden');
+                    av.textContent = 'Limite do plano atingido (' + max + ' fotos). Remova alguma publicada para enviar outra.';
+                } else {
+                    av.classList.add('hidden');
+                }
+            }
+        }
+
         document.getElementById('inputFotos').addEventListener('change', function (e) {
             var files = Array.from(e.target.files || []);
             if (!files.length) return;
-            var maxTotal = 12;
+            var maxTotal = maxFotosDoPlano();
             var perfil = lerPerfilFotos();
             var atuais = (perfil.fotos || []).length;
             var espaço = Math.max(0, maxTotal - atuais - fotosSelecionadas.length);
             if (espaço === 0 && files.length) {
-                alert('Limite de fotos na vitrine atingido (máx. 12). Remova alguma antes de adicionar.');
+                alert('Limite do seu plano atingido (máx. ' + maxTotal + ' fotos na vitrine). Remova alguma antes de adicionar.');
                 e.target.value = '';
+                atualizarTextoLimiteFotos();
                 return;
             }
             files = files.slice(0, espaço || files.length);
@@ -1064,10 +1104,12 @@
                 reader.onload = function (ev) {
                     fotosPendentesPreview.push(ev.target.result);
                     renderPendentes();
+                    atualizarTextoLimiteFotos();
                 };
                 reader.readAsDataURL(file);
             });
             e.target.value = '';
+            atualizarTextoLimiteFotos();
         });
 
         var btnCancelarPendentes = document.getElementById('btnCancelarPendentes');
@@ -1081,6 +1123,7 @@
                 document.getElementById('inputLogo').value = '';
                 renderPendentes();
                 renderLogo();
+                if (typeof atualizarTextoLimiteFotos === 'function') atualizarTextoLimiteFotos();
             });
         }
 
