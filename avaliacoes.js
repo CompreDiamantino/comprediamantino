@@ -1,11 +1,15 @@
 /**
  * Avaliações — Compre Diamantino
  *
- * Visitante: 1 voto/mês por CELULAR, por loja (vários celulares = vários votos possíveis).
+ * Visitante: 1 voto/mês por APARELHO, por loja.
+ *   - Trocar o número digitado no mesmo celular/navegador NÃO libera novo voto.
+ *   - Celular com DDD ainda é pedido (identidade + contato), mas o teto é o aparelho.
+ *
  * Anunciante logado: 1 voto/mês por LOGIN (conta), por loja — vale em qualquer aparelho.
- * Pode avaliar várias lojas no mesmo mês.
+ *   - Um login pode votar em várias lojas (e dono de 2–3 comércios usa a mesma conta).
  */
 const AVALIACOES_KEY = 'cd_avaliacoes';
+const APARELHO_KEY = 'cd_aparelho_id';
 
 function normalizarCelular(tel) {
     return String(tel || '').replace(/\D/g, '');
@@ -23,6 +27,28 @@ function getAvaliacoesLocais() {
 
 function salvarAvaliacoesLocais(dados) {
     localStorage.setItem(AVALIACOES_KEY, JSON.stringify(dados));
+}
+
+/** ID estável deste navegador/aparelho (visitante) */
+function getAparelhoId() {
+    try {
+        var id = localStorage.getItem(APARELHO_KEY);
+        if (id && String(id).length >= 8) return String(id);
+        id = 'ap' + Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
+        localStorage.setItem(APARELHO_KEY, id);
+        return id;
+    } catch (e) {
+        return 'ap-temp';
+    }
+}
+
+function chaveAparelhoVoto(empresaId, mes) {
+    return 'ap:' + getAparelhoId() + '_' + empresaId + '_' + (mes || mesAnoAtual());
+}
+
+function aparelhoJaVotou(empresaId, mes) {
+    const avaliacoes = getAvaliacoesLocais();
+    return !!avaliacoes[chaveAparelhoVoto(empresaId, mes)];
 }
 
 /** Celular lembrado do visitante (último voto) — preenche automático */
@@ -81,8 +107,8 @@ function getAnuncianteLogado() {
 
 /**
  * Identidade do voto:
- * - logado → login:email_ou_id
- * - visitante → cel:6599...
+ * - logado → login:email_ou_id  (conta; 1x por loja/mês em qualquer aparelho)
+ * - visitante → cel:6599... + trava extra por aparelho
  */
 function identidadeVoto(celularOpcional) {
     const an = getAnuncianteLogado();
@@ -109,23 +135,52 @@ function chaveVoto(identidadeChave, empresaId, mes) {
 }
 
 function podeAvaliar(empresaId, celularOpcional) {
+    const logado = getAnuncianteLogado();
+    const mes = mesAnoAtual();
+    const avaliacoes = getAvaliacoesLocais();
+
+    // --- Anunciante logado: limite por CONTA (pode votar em todas as lojas, 1x cada) ---
+    if (logado && logado.id) {
+        const idn = { tipo: 'login', chave: 'login:' + logado.id, label: logado.nome };
+        const chave = chaveVoto(idn.chave, empresaId, mes);
+        if (avaliacoes[chave]) {
+            return {
+                pode: false,
+                precisaCelular: false,
+                mensagem: 'Você já votou para essa loja ou comércio esse mês com sua conta.'
+            };
+        }
+        return { pode: true, precisaCelular: false, mensagem: '', identidade: idn };
+    }
+
+    // --- Visitante: limite por APARELHO (trocar número não libera novo voto) ---
+    if (aparelhoJaVotou(empresaId, mes)) {
+        return {
+            pode: false,
+            precisaCelular: false,
+            mensagem: 'Neste aparelho você já avaliou esta loja este mês. Pode avaliar outras lojas ou voltar no próximo mês.'
+        };
+    }
+
     const idn = identidadeVoto(celularOpcional);
     if (!idn) {
         return {
             pode: false,
-            precisaCelular: !getAnuncianteLogado(),
+            precisaCelular: true,
             mensagem: 'Informe seu celular com DDD para votar.'
         };
     }
-    const avaliacoes = getAvaliacoesLocais();
-    const chave = chaveVoto(idn.chave, empresaId);
-    if (avaliacoes[chave]) {
+
+    // Também bloqueia se o mesmo celular já votou (outro aparelho / espelho local)
+    const chaveCel = chaveVoto(idn.chave, empresaId, mes);
+    if (avaliacoes[chaveCel]) {
         return {
             pode: false,
             precisaCelular: false,
             mensagem: 'Você já votou para essa loja ou comércio esse mês.'
         };
     }
+
     return { pode: true, precisaCelular: false, mensagem: '', identidade: idn };
 }
 
@@ -222,9 +277,8 @@ function sbResumoTodas() {
 }
 
 function registrarAvaliacaoLocal(empresaId, nota, idn, mes, comentario) {
-    const chave = chaveVoto(idn.chave, empresaId, mes);
     const avaliacoes = getAvaliacoesLocais();
-    avaliacoes[chave] = {
+    const payload = {
         empresaId,
         nota: parseInt(nota, 10),
         comentario: String(comentario || '').trim().substring(0, 300),
@@ -233,6 +287,15 @@ function registrarAvaliacaoLocal(empresaId, nota, idn, mes, comentario) {
         tipo: idn.tipo,
         identidade: idn.chave
     };
+    // Chave principal (login:… ou cel:…)
+    avaliacoes[chaveVoto(idn.chave, empresaId, mes)] = payload;
+    // Visitante: trava também por APARELHO (mesmo número diferente no mesmo browser)
+    if (idn.tipo !== 'login') {
+        avaliacoes[chaveAparelhoVoto(empresaId, mes)] = Object.assign({}, payload, {
+            tipo: 'aparelho',
+            identidade: 'ap:' + getAparelhoId()
+        });
+    }
     salvarAvaliacoesLocais(avaliacoes);
     try {
         const listaKey = 'cd_avaliacoes_lista_' + empresaId;
@@ -340,36 +403,37 @@ function renderEstrelasAvaliacao(containerId, empresaId) {
 
     const logado = getAnuncianteLogado();
 
-    // Se já logado, checa se já votou este mês sem pedir celular
-    if (logado) {
-        const check = podeAvaliar(empresaId, null);
-        if (!check.pode) {
-            container.innerHTML = `
+    // Já votou este mês? (login OU aparelho visitante)
+    const checkPrevio = podeAvaliar(empresaId, null);
+    if (!checkPrevio.pode && !checkPrevio.precisaCelular) {
+        const extra = logado
+            ? 'Conta logada: 1 voto por loja no mês (pode avaliar outras lojas).'
+            : 'Neste aparelho já houve voto nesta loja este mês. Trocar o número não libera outro voto.';
+        container.innerHTML = `
                 <div class="bg-yellow-50 border border-yellow-200 rounded-xl p-4 text-center">
                     <p class="text-yellow-800 font-medium">
                         <i class="fas fa-info-circle mr-1"></i>
-                        Você já votou para essa loja ou comércio esse mês.
+                        ${checkPrevio.mensagem || 'Você já votou para essa loja ou comércio esse mês.'}
                     </p>
-                    <p class="text-yellow-700 text-sm mt-1">Conta logada: voto único no mês, em qualquer aparelho.</p>
+                    <p class="text-yellow-700 text-sm mt-1">${extra}</p>
                 </div>`;
-            return;
-        }
+        return;
     }
 
     const celSalvo = getCelularSalvo();
     const temCelAuto = !!(logado || (celSalvo && celSalvo.length >= 10));
-    // Não pede celular se logado OU se já votou antes neste aparelho (número lembrado)
+    // Visitante: pede celular com DDD na 1ª vez; logado não precisa
     const campoCelular = temCelAuto ? '' : `
             <div class="mb-3">
-                <label class="block text-sm font-medium text-gray-700 mb-1">Seu celular (WhatsApp)</label>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Seu celular com DDD (WhatsApp)</label>
                 <input type="tel" id="celAvaliacao" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary" placeholder="65 9xxxx-xxxx" inputmode="numeric" value="">
-                <p class="text-[11px] text-gray-400 mt-1">Só na primeira vez neste aparelho. Depois o número fica lembrado.</p>
+                <p class="text-[11px] text-gray-400 mt-1">1 voto por loja por mês neste aparelho. Trocar o número depois não libera novo voto na mesma loja.</p>
             </div>`;
 
     const avisoLogado = logado ? `
             <p class="text-xs text-green-700 bg-green-50 border border-green-100 rounded-lg px-3 py-2 mb-3">
                 <i class="fas fa-user-check mr-1"></i> Logado como <strong>${(logado.nome || 'anunciante').replace(/</g,'')}</strong> —
-                voto automático com sua conta (1 vez no mês nesta loja).
+                voto com sua conta (1 vez no mês nesta loja; pode votar em outras).
             </p>` : (celSalvo ? `
             <p class="text-xs text-blue-700 bg-blue-50 border border-blue-100 rounded-lg px-3 py-2 mb-3">
                 <i class="fas fa-mobile-alt mr-1"></i> Celular lembrado neste aparelho: <strong>${celSalvo.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3')}</strong>
@@ -378,7 +442,7 @@ function renderEstrelasAvaliacao(containerId, empresaId) {
     container.innerHTML = `
         <div class="bg-white border border-gray-200 rounded-xl p-5">
             <h3 class="font-bold text-gray-800 mb-1">Avalie este estabelecimento</h3>
-            <p class="text-xs text-gray-500 mb-3">De 1 a 5 estrelas. Pode avaliar várias lojas. Cada loja: 1 voto por mês.</p>
+            <p class="text-xs text-gray-500 mb-3">De 1 a 5 estrelas. Pode avaliar várias lojas. Cada loja: 1 voto por mês${logado ? ' por conta' : ' por aparelho'}.</p>
             ${avisoLogado}
             ${campoCelular}
             <div class="flex gap-1 mb-4" id="estrelasSelect">
@@ -483,5 +547,7 @@ window.Avaliacoes = {
     sbMediaEmpresa,
     sbResumoTodas,
     normalizarCelular,
-    getAnuncianteLogado
+    getAnuncianteLogado,
+    getAparelhoId,
+    aparelhoJaVotou
 };

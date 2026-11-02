@@ -746,34 +746,16 @@
         });
         
         // Carrega dados salvos + dados do cadastro inicial
-        (function carregarPerfil() {
-            let perfilSalvo = {};
-            try { perfilSalvo = JSON.parse(localStorage.getItem('cd_perfil_' + lojista.empresaId) || '{}'); } catch(e) {}
-            // preenche a partir da fila do gestor se perfil ainda vazio
-            if (!perfilSalvo.nomeFantasia) {
-                try {
-                    const lista = JSON.parse(localStorage.getItem('cd_lojistas_admin') || '[]');
-                    const row = lista.find(l => String(l.id) === String(lojista.empresaId));
-                    if (row) {
-                        perfilSalvo = Object.assign({
-                            nomeFantasia: row.nome,
-                            whatsapp: row.whatsapp,
-                            endereco: row.endereco,
-                            categoria: row.categoria,
-                            descricao: row.descricao,
-                            oQueVende: row.oQueVende
-                        }, perfilSalvo);
-                    }
-                } catch(e) {}
-            }
-            const set = (id, v) => { const el = document.getElementById(id); if (el && v != null) el.value = v; };
-            set('nomeFantasia', perfilSalvo.nomeFantasia || lojista.nome || '');
+        function aplicarCamposPerfil(perfilSalvo) {
+            perfilSalvo = perfilSalvo || {};
+            const set = (id, v) => { const el = document.getElementById(id); if (el && v != null && v !== '') el.value = v; };
+            set('nomeFantasia', perfilSalvo.nomeFantasia || perfilSalvo.nome || lojista.nome || '');
             set('categoria', perfilSalvo.categoria || '');
             set('descricao', perfilSalvo.descricao || '');
             set('oQueVende', perfilSalvo.oQueVende || '');
             set('fazEntrega', perfilSalvo.entrega || 'nao');
             set('tipoAtendimento', perfilSalvo.tipoAtendimento || 'loja');
-            set('whatsapp', perfilSalvo.whatsapp || lojista.telefone || '');
+            set('whatsapp', perfilSalvo.whatsapp || lojista.telefone || lojista.whatsapp || '');
             set('instagram', perfilSalvo.instagram || '');
             set('facebook', perfilSalvo.facebook || '');
             set('twitter', perfilSalvo.twitter || '');
@@ -788,6 +770,90 @@
             set('mapsLink', perfilSalvo.mapsLink || '');
             const cd = document.getElementById('contadorDesc');
             if (cd) cd.textContent = (perfilSalvo.descricao || '').length;
+        }
+
+        /** Mescla logo/fotos (e demais campos) vindos do cadastro/nuvem no cd_perfil_ local */
+        function mesclarNuvemNoPerfil(row) {
+            if (!row || !lojista.empresaId) return null;
+            var id = lojista.empresaId;
+            var perfil = {};
+            try { perfil = JSON.parse(localStorage.getItem('cd_perfil_' + id) || '{}'); } catch (e) { perfil = {}; }
+            var mudou = false;
+            function pegar(destKey, sources) {
+                if (perfil[destKey]) return;
+                for (var i = 0; i < sources.length; i++) {
+                    var v = sources[i];
+                    if (v === undefined || v === null || v === '') continue;
+                    if (Array.isArray(v) && !v.length) continue;
+                    perfil[destKey] = v;
+                    mudou = true;
+                    return;
+                }
+            }
+            pegar('nomeFantasia', [row.nomeFantasia, row.nome]);
+            pegar('whatsapp', [row.whatsapp, row.telefone]);
+            pegar('endereco', [row.endereco]);
+            pegar('categoria', [row.categoria]);
+            pegar('descricao', [row.descricao]);
+            pegar('oQueVende', [row.oQueVende]);
+            pegar('mapsLink', [row.mapsLink]);
+            pegar('referencia', [row.referencia]);
+            pegar('horario', [row.horario]);
+            pegar('instagram', [row.instagram]);
+            pegar('facebook', [row.facebook]);
+            pegar('site', [row.site]);
+            // Logo e fotos: se local vazio, usa o da nuvem/cadastro
+            if (!perfil.logo && row.logo) { perfil.logo = row.logo; mudou = true; }
+            var fotosRow = Array.isArray(row.fotos) ? row.fotos.filter(Boolean) : [];
+            var fotosLoc = Array.isArray(perfil.fotos) ? perfil.fotos.filter(Boolean) : [];
+            if (!fotosLoc.length && fotosRow.length) {
+                perfil.fotos = fotosRow;
+                mudou = true;
+            }
+            // Se a "logo" da nuvem parece foto de vitrine e não há fotos, usa como capa da galeria também
+            if ((!perfil.fotos || !perfil.fotos.length) && perfil.logo && !fotosRow.length) {
+                // mantém só logo; galeria fica vazia (ok)
+            }
+            if (mudou) {
+                perfil.atualizadoEm = perfil.atualizadoEm || new Date().toISOString();
+                localStorage.setItem('cd_perfil_' + id, JSON.stringify(perfil));
+            }
+            return perfil;
+        }
+
+        (function carregarPerfil() {
+            let perfilSalvo = {};
+            try { perfilSalvo = JSON.parse(localStorage.getItem('cd_perfil_' + lojista.empresaId) || '{}'); } catch(e) {}
+            // preenche a partir da fila do gestor / cadastro se perfil ainda incompleto
+            try {
+                const lista = JSON.parse(localStorage.getItem('cd_lojistas_admin') || '[]');
+                const row = lista.find(l => String(l.id) === String(lojista.empresaId));
+                if (row) {
+                    perfilSalvo = mesclarNuvemNoPerfil(row) || Object.assign({
+                        nomeFantasia: row.nome,
+                        whatsapp: row.whatsapp,
+                        endereco: row.endereco,
+                        categoria: row.categoria,
+                        descricao: row.descricao,
+                        oQueVende: row.oQueVende,
+                        logo: row.logo || '',
+                        fotos: row.fotos || []
+                    }, perfilSalvo);
+                }
+            } catch(e) {}
+            aplicarCamposPerfil(perfilSalvo);
+
+            // Busca 1× na nuvem (mesmo aparelho ou outro) para trazer logo/fotos já salvos no R2/Firestore
+            if (lojista.empresaId && window.LojistasNuvem && LojistasNuvem.puxarUm) {
+                LojistasNuvem.puxarUm(lojista.empresaId).then(function (row) {
+                    if (!row) return;
+                    var perfil = mesclarNuvemNoPerfil(row);
+                    if (perfil) aplicarCamposPerfil(perfil);
+                    // atualiza aba Fotos se as funções já existirem
+                    if (typeof renderGaleriaSalva === 'function') renderGaleriaSalva();
+                    if (typeof renderLogo === 'function') renderLogo();
+                }).catch(function () {});
+            }
         })();
         
         // ========== FOTOS (logo + vitrine → R2 + perfil + nuvem) ==========
@@ -797,8 +863,21 @@
         let logoPendentePreview = null;
 
         function lerPerfilFotos() {
-            try { return JSON.parse(localStorage.getItem('cd_perfil_' + lojista.empresaId) || '{}'); }
-            catch (e) { return {}; }
+            var p = {};
+            try { p = JSON.parse(localStorage.getItem('cd_perfil_' + lojista.empresaId) || '{}'); }
+            catch (e) { p = {}; }
+            // fallback: cadastro/admin local (ex.: foto enviada no cadastro ou outro aparelho já sincronizado)
+            if ((!p.logo && !(p.fotos && p.fotos.length))) {
+                try {
+                    var lista = JSON.parse(localStorage.getItem('cd_lojistas_admin') || '[]');
+                    var row = lista.find(function (l) { return String(l.id) === String(lojista.empresaId); });
+                    if (row) {
+                        if (!p.logo && row.logo) p.logo = row.logo;
+                        if (!(p.fotos && p.fotos.length) && row.fotos && row.fotos.length) p.fotos = row.fotos;
+                    }
+                } catch (e2) {}
+            }
+            return p;
         }
 
         function persistirPerfilFotos(p) {
@@ -924,6 +1003,15 @@
                 setTimeout(function () {
                     renderGaleriaSalva();
                     renderPendentes();
+                    // Se ainda vazio, tenta puxar da nuvem (foto de outro aparelho / cadastro)
+                    var p = lerPerfilFotos();
+                    if ((!p.logo && !(p.fotos && p.fotos.length)) && lojista.empresaId && window.LojistasNuvem && LojistasNuvem.puxarUm) {
+                        LojistasNuvem.puxarUm(lojista.empresaId).then(function (row) {
+                            if (!row) return;
+                            if (typeof mesclarNuvemNoPerfil === 'function') mesclarNuvemNoPerfil(row);
+                            renderGaleriaSalva();
+                        }).catch(function () {});
+                    }
                 }, 50);
             });
         });
