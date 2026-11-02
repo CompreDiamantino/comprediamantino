@@ -368,13 +368,32 @@
         // ========== DADOS LOJISTAS ==========
         const STORAGE_KEY = 'cd_lojistas_admin';
         
-        // Lista de lojistas cadastrados
+        // Lista de lojistas cadastrados (ignora exclusões totais)
         function getLojistas() {
             let dados = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
             if (!dados) {
                 dados = [];
                 localStorage.setItem(STORAGE_KEY, JSON.stringify(dados));
             }
+            try {
+                if (window.LojistasNuvem && LojistasNuvem.foiExcluidoTotal) {
+                    const antes = dados.length;
+                    dados = dados.filter(function (l) { return l && !LojistasNuvem.foiExcluidoTotal(l.id); });
+                    if (dados.length !== antes) {
+                        localStorage.setItem(STORAGE_KEY, JSON.stringify(dados));
+                        if (window.LojistasNuvem.salvarLocal) LojistasNuvem.salvarLocal(dados);
+                    }
+                } else {
+                    const excl = JSON.parse(localStorage.getItem('cd_excluidos_total') || '[]');
+                    if (excl.length) {
+                        const set = {};
+                        excl.forEach(function (id) { set[String(id)] = true; });
+                        const antes = dados.length;
+                        dados = dados.filter(function (l) { return l && !set[String(l.id)]; });
+                        if (dados.length !== antes) localStorage.setItem(STORAGE_KEY, JSON.stringify(dados));
+                    }
+                }
+            } catch (e) {}
             return dados;
         }
         
@@ -885,6 +904,20 @@
             lista.splice(idx, 1);
             salvarLojistas(lista);
 
+            // Tombstone: garante que não volta no próximo puxar da nuvem
+            try {
+                if (window.LojistasNuvem && LojistasNuvem.marcarExcluido) {
+                    LojistasNuvem.marcarExcluido(id);
+                } else {
+                    var keyEx = 'cd_excluidos_total';
+                    var arrEx = JSON.parse(localStorage.getItem(keyEx) || '[]');
+                    if (arrEx.indexOf(String(id)) === -1) {
+                        arrEx.push(String(id));
+                        localStorage.setItem(keyEx, JSON.stringify(arrEx));
+                    }
+                }
+            } catch (e) {}
+
             // Remove do mapa / EmpresasDados
             try {
                 if (window.EmpresasDados && EmpresasDados.lerEmpresas && EmpresasDados.salvarEmpresas) {
@@ -893,12 +926,19 @@
                 }
             } catch (e) {}
 
-            // Tenta apagar na nuvem se houver
+            // Tenta apagar na nuvem (apagar já marca tombstone + tenta delete / flag excluidoTotal)
             try {
                 if (window.LojistasNuvem && LojistasNuvem.apagar) {
                     LojistasNuvem.apagar(id);
                 } else if (window.cdDb) {
-                    window.cdDb.collection('lojistas').doc(String(id)).delete().catch(function () {});
+                    window.cdDb.collection('lojistas').doc(String(id)).delete().catch(function () {
+                        window.cdDb.collection('lojistas').doc(String(id)).set({
+                            excluidoTotal: true,
+                            status: 'removido',
+                            removidoEm: new Date().toISOString(),
+                            atualizadoEm: new Date().toISOString()
+                        }, { merge: true }).catch(function () {});
+                    });
                 }
             } catch (e) {}
 
