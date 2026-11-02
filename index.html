@@ -570,19 +570,26 @@
         });
     </script>
     <script src="install-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+    <script src="firebase-config.js"></script>
+    <script src="lojistas-nuvem.js"></script>
     <script src="empresas-dados.js"></script>
     <script src="ranking.js"></script>
     <script>
-        /** Empresas em Destaque na home — mostra cadastradas (com fotos) mesmo em fase de teste */
-        function carregarDestaquesHome() {
-            var box = document.getElementById('empresasDestaque');
-            if (!box) return;
+        /** Empresas em Destaque na home — busca na nuvem (Firestore) + fallback localStorage */
+        function isEmpresaVisivelPublico(lj) {
+            if (!lj || !lj.nome) return false;
+            var st = String(lj.status || '').toLowerCase();
+            if (st === 'removido' || st === 'bloqueado' || st === 'pendente') return false;
+            if (st === 'ativo' || st === 'aviso' || st === 'pago' || st === 'aprovado' || st === 'publicado') return true;
+            // Aprovado pelo gestor (campo aprovadoEm) mesmo se status ainda não estiver padronizado
+            if (lj.aprovadoEm) return true;
+            return false;
+        }
 
-            var lista = [];
-            try {
-                lista = JSON.parse(localStorage.getItem('cd_lojistas_admin') || '[]');
-            } catch (e) { lista = []; }
-
+        function montarListaBase(listaNuvem) {
+            var lista = Array.isArray(listaNuvem) ? listaNuvem.slice() : [];
             // Une espelho do mapa (EmpresasDados), sem serviços públicos
             try {
                 if (window.EmpresasDados && EmpresasDados.seedSeVazio) {
@@ -596,16 +603,15 @@
                     });
                 }
             } catch (e) {}
+            return lista;
+        }
 
-            // Fase de teste: aparece se ativo/aviso OU se tem foto/logo e não está removido/bloqueado
-            var visiveis = lista.filter(function (lj) {
-                if (!lj || !lj.nome) return false;
-                var st = (lj.status || '').toLowerCase();
-                if (st === 'removido' || st === 'bloqueado') return false;
-                if (st === 'ativo' || st === 'aviso') return true;
-                var temFoto = !!(lj.logo || (lj.fotos && lj.fotos.length));
-                return temFoto; // pendente/vencido com foto também aparece em teste
-            });
+        function renderDestaquesHome(listaBruta) {
+            var box = document.getElementById('empresasDestaque');
+            if (!box) return;
+
+            var lista = montarListaBase(listaBruta);
+            var visiveis = lista.filter(isEmpresaVisivelPublico);
 
             var ordemPlano = { premium: 0, destaque: 1, basico: 2 };
             visiveis.sort(function (a, b) {
@@ -661,6 +667,32 @@
                     waBtn +
                     '</div></div></article>';
             }).join('');
+        }
+
+        function lerLocalLojistas() {
+            try {
+                return JSON.parse(localStorage.getItem('cd_lojistas_admin') || '[]');
+            } catch (e) {
+                return [];
+            }
+        }
+
+        /** Carrega destaques: 1) local rápido 2) nuvem e atualiza */
+        function carregarDestaquesHome() {
+            // 1) mostra o que já tem no aparelho (instantâneo)
+            renderDestaquesHome(lerLocalLojistas());
+
+            // 2) busca na nuvem e redesenha (todos os visitantes veem as empresas aprovadas)
+            if (window.LojistasNuvem && LojistasNuvem.puxar) {
+                try {
+                    if (window.iniciarFirebase) iniciarFirebase();
+                } catch (e) {}
+                LojistasNuvem.puxar(function (lista) {
+                    renderDestaquesHome(lista || []);
+                }).catch(function (err) {
+                    console.warn('destaques nuvem', err);
+                });
+            }
         }
 
         function carregarOfertasHome() {

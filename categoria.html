@@ -39,6 +39,10 @@
         </div>
     </div>
 
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+    <script src="firebase-config.js"></script>
+    <script src="lojistas-nuvem.js"></script>
     <script src="empresas-dados.js"></script>
     <script>
         const NOMES = {
@@ -69,37 +73,48 @@
             return false;
         }
 
-        function render() {
-            const box = document.getElementById('lista');
-            let lista = [];
-            const ids = {};
+        function isAtivoPublico(e) {
+            if (!e || !e.nome) return false;
+            var st = String(e.status || '').toLowerCase();
+            if (st === 'removido' || st === 'bloqueado' || st === 'pendente') return false;
+            if (st === 'ativo' || st === 'aviso' || st === 'pago' || st === 'aprovado' || st === 'publicado') return true;
+            if (e.aprovadoEm) return true;
+            return false;
+        }
 
-            // Só cadastros reais ativos (sem demo de teste)
+        function coletarLista(listaNuvem) {
+            var lista = [];
+            var ids = {};
+
+            function add(e) {
+                if (!e || !e.nome || isDemo(e)) return;
+                if ((e.categoria || 'outros') !== cat) return;
+                if (!isAtivoPublico(e)) return;
+                if (ids[String(e.id)]) return;
+                lista.push(e);
+                ids[String(e.id)] = true;
+            }
+
+            (Array.isArray(listaNuvem) ? listaNuvem : []).forEach(add);
+
+            // fallback / complementa com localStorage
             try {
                 const lj = JSON.parse(localStorage.getItem('cd_lojistas_admin') || '[]');
-                lj.forEach(function (e) {
-                    if (!e || !e.nome || isDemo(e)) return;
-                    if ((e.categoria || 'outros') !== cat) return;
-                    const st = (e.status || '').toLowerCase();
-                    if (st === 'removido' || st === 'bloqueado' || st === 'pendente') return;
-                    if (st === 'ativo' || st === 'aviso' || st === 'pago' || st === 'aprovado' || st === 'publicado') {
-                        lista.push(e);
-                        ids[String(e.id)] = true;
-                    }
-                });
+                lj.forEach(add);
             } catch (_) {}
 
             if (window.EmpresasDados) {
                 EmpresasDados.seedSeVazio().forEach(function (e) {
-                    if (!e || e.publico || isDemo(e)) return;
-                    if ((e.categoria || 'outros') !== cat) return;
-                    if (ids[String(e.id)]) return;
-                    if (e.status === 'ativo' || e.status === 'aviso') {
-                        lista.push(e);
-                        ids[String(e.id)] = true;
-                    }
+                    if (!e || e.publico) return;
+                    add(e);
                 });
             }
+            return lista;
+        }
+
+        function render(listaNuvem) {
+            const box = document.getElementById('lista');
+            const lista = coletarLista(listaNuvem);
 
             if (!lista.length) {
                 box.innerHTML = '<div class="col-span-full text-center py-12">' +
@@ -130,7 +145,19 @@
             '<a href="cadastro-lojista.html?cat=' + encodeURIComponent(cat) + '" class="inline-block bg-primary text-white font-bold px-5 py-2.5 rounded-xl">Cadastrar meu negócio</a>' +
             '</div>';
         }
-        render();
+
+        // 1) local rápido
+        render([]);
+        // 2) nuvem
+        if (window.LojistasNuvem && LojistasNuvem.puxar) {
+            try { if (window.iniciarFirebase) iniciarFirebase(); } catch (e) {}
+            LojistasNuvem.puxar(function (lista) {
+                render(lista || []);
+            }).catch(function (err) {
+                console.warn('categoria nuvem', err);
+                render([]);
+            });
+        }
     </script>
     <script src="auth-utils.js"></script>
     <script>
