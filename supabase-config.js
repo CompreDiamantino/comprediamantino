@@ -1,9 +1,9 @@
 /**
  * Supabase — Compre Diamantino (avaliações)
- * Projeto: vqjuwnryvgtnctacikl (sa-east-1)
+ * Projeto: vqjjuwnryvgtnctacikl (sa-east-1)
  */
 window.CD_SUPABASE = {
-  url: 'https://vqjuwnryvgtnctacikl.supabase.co',
+  url: 'https://vqjjuwnryvgtnctacikl.supabase.co',
   anonKey: 'sb_publishable_g55E6A3GZiS1UC0GoHhwlw_AkJn_Vfu'
 };
 
