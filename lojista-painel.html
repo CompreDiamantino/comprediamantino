@@ -227,37 +227,55 @@
         <div id="tab-fotos" class="tab-content hidden">
             <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
                 <h2 class="text-lg font-bold text-primary mb-2">Fotos do seu negócio</h2>
-                <p class="text-sm text-gray-500 mb-5">Envie de 3 a 5 fotos. A primeira será a capa. Formatos: JPG ou PNG (máx. 2MB cada).</p>
+                <p class="text-sm text-gray-500 mb-5">Veja, remova ou troque logo e fotos. A primeira da galeria é a capa no site. JPG ou PNG (máx. ~2MB cada).</p>
                 
                 <!-- Logo -->
-                <div class="mb-6">
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Logo (recomendado fundo transparente)</label>
-                    <div class="flex items-center gap-4">
-                        <div id="previewLogo" class="w-20 h-20 bg-gray-100 rounded-xl flex items-center justify-center text-gray-400 border-2 border-dashed border-gray-200 overflow-hidden">
+                <div class="mb-8">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Logo</label>
+                    <div class="flex flex-wrap items-center gap-4">
+                        <div id="previewLogo" class="w-24 h-24 bg-gray-100 rounded-xl flex items-center justify-center text-gray-400 border-2 border-dashed border-gray-200 overflow-hidden relative">
                             <i class="fas fa-image text-2xl"></i>
                         </div>
-                        <div>
-                            <input type="file" id="inputLogo" accept="image/png,image/jpeg" class="text-sm">
-                            <p class="text-xs text-gray-400 mt-1">PNG ou JPG, ideal 400x400px</p>
+                        <div class="space-y-2">
+                            <input type="file" id="inputLogo" accept="image/png,image/jpeg" class="text-sm block">
+                            <p class="text-xs text-gray-400">PNG ou JPG, ideal 400×400px. Escolha um arquivo e clique em Salvar.</p>
+                            <button type="button" id="btnRemoverLogo" class="hidden text-xs text-red-600 hover:text-red-800 font-medium">
+                                <i class="fas fa-trash mr-1"></i> Remover logo atual
+                            </button>
                         </div>
                     </div>
                 </div>
                 
-                <!-- Galeria -->
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Galeria de fotos (produtos / ambiente)</label>
-                    <div id="galeriaPreview" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 mb-4">
-                        <!-- Previews aparecem aqui -->
+                <!-- Galeria já publicada -->
+                <div class="mb-6">
+                    <div class="flex items-center justify-between mb-2">
+                        <label class="block text-sm font-medium text-gray-700">Fotos publicadas <span id="qtdFotosPub" class="text-gray-400 font-normal">(0)</span></label>
+                        <span class="text-[11px] text-gray-400">Clique em ★ para capa · × para remover</span>
+                    </div>
+                    <div id="galeriaPreview" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 min-h-[4rem]">
+                        <!-- Previews das fotos salvas -->
+                    </div>
+                    <p id="galeriaVaziaMsg" class="text-sm text-gray-400 text-center py-6 hidden">Nenhuma foto publicada ainda. Adicione abaixo.</p>
+                </div>
+
+                <!-- Novas fotos (pendentes) -->
+                <div class="mb-4 border-t border-gray-100 pt-5">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Adicionar novas fotos</label>
+                    <div id="galeriaPendentes" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 mb-3">
+                        <!-- Previews das fotos ainda não salvas -->
                     </div>
                     <input type="file" id="inputFotos" accept="image/png,image/jpeg" multiple class="text-sm">
-                    <p class="text-xs text-gray-400 mt-1">Você pode selecionar várias de uma vez (máx. 5)</p>
+                    <p class="text-xs text-gray-400 mt-1">Selecione uma ou várias. Elas só vão para o site depois de clicar em <strong>Salvar fotos</strong>.</p>
                 </div>
                 
-                <div class="mt-6">
+                <div class="mt-6 flex flex-wrap items-center gap-3">
                     <button id="btnSalvarFotos" class="bg-primary text-white font-bold px-8 py-3 rounded-xl hover:bg-accent transition">
                         <i class="fas fa-cloud-upload-alt mr-2"></i> Salvar fotos
                     </button>
-                    <span id="msgFotos" class="ml-3 text-sm hidden"></span>
+                    <button type="button" id="btnCancelarPendentes" class="hidden bg-gray-100 text-gray-700 font-medium px-4 py-3 rounded-xl hover:bg-gray-200 transition text-sm">
+                        Descartar novas
+                    </button>
+                    <span id="msgFotos" class="text-sm hidden"></span>
                 </div>
             </div>
         </div>
@@ -773,101 +791,221 @@
         })();
         
         // ========== FOTOS (logo + vitrine → R2 + perfil + nuvem) ==========
-        let fotosSelecionadas = [];
+        let fotosSelecionadas = []; // File[]
+        let fotosPendentesPreview = []; // dataURL[]
         let logoSelecionado = null;
+        let logoPendentePreview = null;
 
         function lerPerfilFotos() {
             try { return JSON.parse(localStorage.getItem('cd_perfil_' + lojista.empresaId) || '{}'); }
             catch (e) { return {}; }
         }
 
+        function persistirPerfilFotos(p) {
+            var id = lojista.empresaId || lojista.id || 'x';
+            p.atualizadoEm = new Date().toISOString();
+            localStorage.setItem('cd_perfil_' + id, JSON.stringify(p));
+            try {
+                var lista = JSON.parse(localStorage.getItem('cd_lojistas_admin') || '[]');
+                var ix = lista.findIndex(function (x) { return String(x.id) === String(id); });
+                if (ix >= 0) {
+                    lista[ix].fotos = p.fotos || [];
+                    lista[ix].logo = p.logo || '';
+                    lista[ix].atualizadoEm = p.atualizadoEm;
+                    localStorage.setItem('cd_lojistas_admin', JSON.stringify(lista));
+                }
+            } catch (e2) {}
+            if (window.LojistasNuvem && LojistasNuvem.salvarUm) {
+                var reg = Object.assign({}, lojista, {
+                    id: id,
+                    fotos: p.fotos || [],
+                    logo: p.logo || '',
+                    atualizadoEm: p.atualizadoEm
+                });
+                LojistasNuvem.salvarUm(reg).catch(function () {});
+            }
+        }
+
+        function renderLogo() {
+            var box = document.getElementById('previewLogo');
+            var btnRm = document.getElementById('btnRemoverLogo');
+            if (!box) return;
+            var salvo = lerPerfilFotos().logo || '';
+            var src = logoPendentePreview || salvo;
+            if (src) {
+                box.innerHTML = '<img src="' + src + '" class="w-full h-full object-cover" alt="Logo">';
+            } else {
+                box.innerHTML = '<i class="fas fa-image text-2xl"></i>';
+            }
+            if (btnRm) {
+                if (salvo && !logoPendentePreview) btnRm.classList.remove('hidden');
+                else btnRm.classList.add('hidden');
+            }
+        }
+
         function renderGaleriaSalva() {
-            const galeria = document.getElementById('galeriaPreview');
+            var galeria = document.getElementById('galeriaPreview');
+            var vazia = document.getElementById('galeriaVaziaMsg');
+            var qtd = document.getElementById('qtdFotosPub');
             if (!galeria) return;
-            const perfil = lerPerfilFotos();
-            const fotos = Array.isArray(perfil.fotos) ? perfil.fotos.filter(Boolean) : [];
-            if (fotosSelecionadas.length) return;
+            var perfil = lerPerfilFotos();
+            var fotos = Array.isArray(perfil.fotos) ? perfil.fotos.filter(Boolean) : [];
+            if (qtd) qtd.textContent = '(' + fotos.length + ')';
             galeria.innerHTML = '';
+            if (vazia) vazia.classList.toggle('hidden', fotos.length > 0);
             fotos.forEach(function (src, idx) {
-                const div = document.createElement('div');
-                div.className = 'relative aspect-square rounded-xl overflow-hidden border border-gray-200 group';
+                var div = document.createElement('div');
+                div.className = 'relative aspect-square rounded-xl overflow-hidden border border-gray-200 group bg-gray-50';
+                var capaBadge = idx === 0
+                    ? '<span class="absolute bottom-1 left-1 bg-primary text-white text-[10px] font-bold px-1.5 py-0.5 rounded">Capa</span>'
+                    : '';
                 div.innerHTML =
                     '<img src="' + src + '" class="w-full h-full object-cover" alt="Foto ' + (idx + 1) + '">' +
-                    '<button type="button" data-foto-idx="' + idx + '" class="btn-rm-foto absolute top-1 right-1 bg-red-500 text-white w-7 h-7 rounded-full text-xs opacity-90 hover:opacity-100" title="Remover">&times;</button>';
+                    capaBadge +
+                    '<div class="absolute top-1 right-1 flex gap-1">' +
+                    (idx > 0 ? '<button type="button" data-capa-idx="' + idx + '" class="btn-capa-foto bg-yellow-400 text-primary w-7 h-7 rounded-full text-xs font-bold shadow hover:bg-yellow-300" title="Definir como capa">★</button>' : '') +
+                    '<button type="button" data-foto-idx="' + idx + '" class="btn-rm-foto bg-red-500 text-white w-7 h-7 rounded-full text-xs shadow hover:bg-red-600" title="Remover">&times;</button>' +
+                    '</div>';
                 galeria.appendChild(div);
             });
             galeria.querySelectorAll('.btn-rm-foto').forEach(function (btn) {
                 btn.addEventListener('click', function () {
-                    const i = parseInt(btn.getAttribute('data-foto-idx'), 10);
-                    const p = lerPerfilFotos();
+                    if (!confirm('Remover esta foto da vitrine?')) return;
+                    var i = parseInt(btn.getAttribute('data-foto-idx'), 10);
+                    var p = lerPerfilFotos();
                     p.fotos = (p.fotos || []).filter(function (_, j) { return j !== i; });
-                    p.atualizadoEm = new Date().toISOString();
-                    localStorage.setItem('cd_perfil_' + lojista.empresaId, JSON.stringify(p));
-                    try {
-                        var lista = JSON.parse(localStorage.getItem('cd_lojistas_admin') || '[]');
-                        var ix = lista.findIndex(function (x) { return String(x.id) === String(lojista.empresaId); });
-                        if (ix >= 0) {
-                            lista[ix].fotos = p.fotos;
-                            lista[ix].logo = p.logo || lista[ix].logo;
-                            localStorage.setItem('cd_lojistas_admin', JSON.stringify(lista));
-                        }
-                    } catch (e2) {}
-                    if (window.LojistasNuvem && LojistasNuvem.salvarUm) {
-                        var reg = Object.assign({}, lojista, { id: lojista.empresaId || lojista.id, fotos: p.fotos, logo: p.logo || '' });
-                        LojistasNuvem.salvarUm(reg).catch(function () {});
-                    }
+                    persistirPerfilFotos(p);
                     renderGaleriaSalva();
                 });
             });
-            if (perfil.logo) {
-                document.getElementById('previewLogo').innerHTML = '<img src="' + perfil.logo + '" class="w-full h-full object-cover">';
-            }
+            galeria.querySelectorAll('.btn-capa-foto').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    var i = parseInt(btn.getAttribute('data-capa-idx'), 10);
+                    var p = lerPerfilFotos();
+                    var arr = (p.fotos || []).slice();
+                    if (i < 0 || i >= arr.length) return;
+                    var item = arr.splice(i, 1)[0];
+                    arr.unshift(item);
+                    p.fotos = arr;
+                    persistirPerfilFotos(p);
+                    renderGaleriaSalva();
+                });
+            });
+            renderLogo();
+        }
+
+        function renderPendentes() {
+            var box = document.getElementById('galeriaPendentes');
+            var btnDesc = document.getElementById('btnCancelarPendentes');
+            if (!box) return;
+            box.innerHTML = '';
+            fotosPendentesPreview.forEach(function (src, idx) {
+                var div = document.createElement('div');
+                div.className = 'relative aspect-square rounded-xl overflow-hidden border-2 border-dashed border-primary/40 bg-blue-50';
+                div.innerHTML =
+                    '<img src="' + src + '" class="w-full h-full object-cover" alt="Nova ' + (idx + 1) + '">' +
+                    '<span class="absolute bottom-1 left-1 bg-primary text-white text-[10px] font-bold px-1.5 py-0.5 rounded">Nova</span>' +
+                    '<button type="button" data-pend-idx="' + idx + '" class="btn-rm-pend absolute top-1 right-1 bg-red-500 text-white w-7 h-7 rounded-full text-xs shadow" title="Remover">&times;</button>';
+                box.appendChild(div);
+            });
+            box.querySelectorAll('.btn-rm-pend').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    var i = parseInt(btn.getAttribute('data-pend-idx'), 10);
+                    fotosSelecionadas.splice(i, 1);
+                    fotosPendentesPreview.splice(i, 1);
+                    renderPendentes();
+                });
+            });
+            if (btnDesc) btnDesc.classList.toggle('hidden', !fotosPendentesPreview.length && !logoSelecionado);
         }
 
         document.querySelectorAll('[data-tab="fotos"]').forEach(function (btn) {
             btn.addEventListener('click', function () {
-                setTimeout(renderGaleriaSalva, 50);
+                setTimeout(function () {
+                    renderGaleriaSalva();
+                    renderPendentes();
+                }, 50);
             });
         });
-        setTimeout(renderGaleriaSalva, 300);
+        setTimeout(function () { renderGaleriaSalva(); renderPendentes(); }, 300);
 
-        document.getElementById('inputLogo').addEventListener('change', (e) => {
-            const file = e.target.files[0];
+        document.getElementById('inputLogo').addEventListener('change', function (e) {
+            var file = e.target.files[0];
             if (!file) return;
             logoSelecionado = file;
-            const reader = new FileReader();
-            reader.onload = (ev) => {
-                document.getElementById('previewLogo').innerHTML = `<img src="${ev.target.result}" class="w-full h-full object-cover">`;
+            var reader = new FileReader();
+            reader.onload = function (ev) {
+                logoPendentePreview = ev.target.result;
+                renderLogo();
+                var btnDesc = document.getElementById('btnCancelarPendentes');
+                if (btnDesc) btnDesc.classList.remove('hidden');
             };
             reader.readAsDataURL(file);
         });
 
-        document.getElementById('inputFotos').addEventListener('change', (e) => {
-            const files = Array.from(e.target.files).slice(0, 5);
-            fotosSelecionadas = files;
-            const galeria = document.getElementById('galeriaPreview');
-            galeria.innerHTML = '';
-            files.forEach(file => {
-                const reader = new FileReader();
-                reader.onload = (ev) => {
-                    const div = document.createElement('div');
-                    div.className = 'aspect-square rounded-xl overflow-hidden border border-gray-200';
-                    div.innerHTML = `<img src="${ev.target.result}" class="w-full h-full object-cover">`;
-                    galeria.appendChild(div);
+        var btnRemoverLogo = document.getElementById('btnRemoverLogo');
+        if (btnRemoverLogo) {
+            btnRemoverLogo.addEventListener('click', function () {
+                if (!confirm('Remover o logo atual?')) return;
+                var p = lerPerfilFotos();
+                p.logo = '';
+                logoSelecionado = null;
+                logoPendentePreview = null;
+                document.getElementById('inputLogo').value = '';
+                persistirPerfilFotos(p);
+                renderLogo();
+            });
+        }
+
+        document.getElementById('inputFotos').addEventListener('change', function (e) {
+            var files = Array.from(e.target.files || []);
+            if (!files.length) return;
+            var maxTotal = 12;
+            var perfil = lerPerfilFotos();
+            var atuais = (perfil.fotos || []).length;
+            var espaço = Math.max(0, maxTotal - atuais - fotosSelecionadas.length);
+            if (espaço === 0 && files.length) {
+                alert('Limite de fotos na vitrine atingido (máx. 12). Remova alguma antes de adicionar.');
+                e.target.value = '';
+                return;
+            }
+            files = files.slice(0, espaço || files.length);
+            files.forEach(function (file) {
+                fotosSelecionadas.push(file);
+                var reader = new FileReader();
+                reader.onload = function (ev) {
+                    fotosPendentesPreview.push(ev.target.result);
+                    renderPendentes();
                 };
                 reader.readAsDataURL(file);
             });
+            e.target.value = '';
         });
 
-        document.getElementById('btnSalvarFotos').addEventListener('click', async () => {
-            const msg = document.getElementById('msgFotos');
+        var btnCancelarPendentes = document.getElementById('btnCancelarPendentes');
+        if (btnCancelarPendentes) {
+            btnCancelarPendentes.addEventListener('click', function () {
+                fotosSelecionadas = [];
+                fotosPendentesPreview = [];
+                logoSelecionado = null;
+                logoPendentePreview = null;
+                document.getElementById('inputFotos').value = '';
+                document.getElementById('inputLogo').value = '';
+                renderPendentes();
+                renderLogo();
+            });
+        }
+
+        document.getElementById('btnSalvarFotos').addEventListener('click', async function () {
+            var msg = document.getElementById('msgFotos');
             msg.classList.remove('hidden');
-            msg.className = 'ml-3 text-sm text-gray-600 font-medium';
-            msg.textContent = 'Enviando fotos...';
+            msg.className = 'text-sm text-gray-600 font-medium';
+            msg.textContent = 'Salvando...';
             try {
                 var id = lojista.empresaId || lojista.id || 'x';
                 var prefix = 'lojistas/' + id;
                 var perfil = lerPerfilFotos();
+                var urls = [];
 
                 if (logoSelecionado) {
                     var logoData = await new Promise(function (res) {
@@ -876,7 +1014,7 @@
                         fr.onerror = function () { res(''); };
                         fr.readAsDataURL(logoSelecionado);
                     });
-                    if (logoData && window.CDR2) {
+                    if (logoData && window.CDR2 && CDR2.uploadImagemFlex) {
                         perfil.logo = await CDR2.uploadImagemFlex(logoData, prefix + '/logo');
                     } else if (logoData) {
                         perfil.logo = logoData;
@@ -893,13 +1031,13 @@
                         fr.readAsDataURL(files[i]);
                     }));
                 }
-                dataUrls = dataUrls.filter(Boolean).slice(0, 8);
-                var urls = dataUrls;
-                if (window.CDR2 && dataUrls.length) {
+                dataUrls = dataUrls.filter(Boolean).slice(0, 12);
+                urls = dataUrls;
+                if (window.CDR2 && dataUrls.length && CDR2.uploadListaImagens) {
                     urls = await CDR2.uploadListaImagens(dataUrls, prefix + '/vitrine');
                 }
                 if (urls.length) {
-                    perfil.fotos = (perfil.fotos || []).concat(urls).slice(-12);
+                    perfil.fotos = (perfil.fotos || []).concat(urls).slice(0, 12);
                 }
                 perfil.atualizadoEm = new Date().toISOString();
                 localStorage.setItem('cd_perfil_' + id, JSON.stringify(perfil));
@@ -909,7 +1047,7 @@
                     var ix = lista.findIndex(function (x) { return String(x.id) === String(id); });
                     if (ix >= 0) {
                         lista[ix].fotos = perfil.fotos || [];
-                        if (perfil.logo) lista[ix].logo = perfil.logo;
+                        lista[ix].logo = perfil.logo || '';
                         lista[ix].atualizadoEm = perfil.atualizadoEm;
                         localStorage.setItem('cd_lojistas_admin', JSON.stringify(lista));
                     }
@@ -939,91 +1077,150 @@
 
                 if (window.NotifGestor) {
                     NotifGestor.add('fotos', 'Fotos: ' + (lojista.nome || 'Anunciante'),
-                        (urls.length ? urls.length + ' nova(s)' : 'logo atualizada'), { lojistaId: id });
+                        (urls.length ? urls.length + ' nova(s)' : (logoSelecionado ? 'logo atualizada' : 'atualização')), { lojistaId: id });
                 }
 
                 fotosSelecionadas = [];
+                fotosPendentesPreview = [];
                 logoSelecionado = null;
+                logoPendentePreview = null;
                 document.getElementById('inputFotos').value = '';
                 document.getElementById('inputLogo').value = '';
                 renderGaleriaSalva();
+                renderPendentes();
 
-                msg.textContent = window.CDR2 && CDR2.ativo()
-                    ? '✓ Fotos no R2 e perfil atualizado! Já aparecem para o cliente.'
+                msg.textContent = (window.CDR2 && CDR2.ativo && CDR2.ativo())
+                    ? '✓ Fotos atualizadas e enviadas. Já aparecem para o cliente.'
                     : '✓ Fotos salvas neste aparelho.';
-                msg.className = 'ml-3 text-sm text-green-600 font-medium';
+                msg.className = 'text-sm text-green-600 font-medium';
             } catch (err) {
                 msg.textContent = 'Erro ao enviar: ' + (err.message || err);
-                msg.className = 'ml-3 text-sm text-red-600 font-medium';
+                msg.className = 'text-sm text-red-600 font-medium';
             }
             setTimeout(function () { msg.classList.add('hidden'); }, 6000);
         });
         
         // ========== PROMOÇÕES ==========
         let promocoes = JSON.parse(localStorage.getItem('cd_promos_' + lojista.empresaId) || '[]');
-        
+        let promoEditIndex = -1;
+
+        function salvarPromosLocal() {
+            localStorage.setItem('cd_promos_' + lojista.empresaId, JSON.stringify(promocoes));
+            try {
+                var p = JSON.parse(localStorage.getItem('cd_perfil_' + lojista.empresaId) || '{}');
+                p.promocoes = promocoes;
+                p.atualizadoEm = new Date().toISOString();
+                localStorage.setItem('cd_perfil_' + lojista.empresaId, JSON.stringify(p));
+            } catch (e) {}
+            try {
+                var lista = JSON.parse(localStorage.getItem('cd_lojistas_admin') || '[]');
+                var ix = lista.findIndex(function (x) { return String(x.id) === String(lojista.empresaId); });
+                if (ix >= 0) {
+                    lista[ix].promocoes = promocoes;
+                    localStorage.setItem('cd_lojistas_admin', JSON.stringify(lista));
+                }
+            } catch (e2) {}
+            if (window.LojistasNuvem && LojistasNuvem.salvarUm) {
+                var reg = Object.assign({}, lojista, {
+                    id: lojista.empresaId || lojista.id,
+                    promocoes: promocoes
+                });
+                LojistasNuvem.salvarUm(reg).catch(function () {});
+            }
+        }
+
         function renderPromocoes() {
             const lista = document.getElementById('listaPromocoes');
             if (promocoes.length === 0) {
                 lista.innerHTML = '<p class="text-gray-400 text-sm text-center py-8">Nenhuma promoção cadastrada ainda.</p>';
                 return;
             }
-            
             lista.innerHTML = promocoes.map((p, i) => `
                 <div class="border border-gray-200 rounded-xl p-4 flex items-start justify-between gap-3">
-                    <div>
+                    <div class="min-w-0 flex-1">
                         ${p.selo ? `<span class="inline-block bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full mb-1">${p.selo}</span>` : ''}
                         <h4 class="font-bold">${p.titulo}</h4>
                         <p class="text-sm text-gray-600">${p.descricao || ''}</p>
                         ${p.validade ? `<p class="text-xs text-gray-400 mt-1">Válido até ${p.validade}</p>` : ''}
                     </div>
-                    <button onclick="removerPromo(${i})" class="text-red-400 hover:text-red-600 p-1">
-                        <i class="fas fa-trash"></i>
-                    </button>
+                    <div class="flex items-center gap-1 flex-shrink-0">
+                        <button type="button" onclick="editarPromo(${i})" class="text-primary hover:text-accent p-1.5" title="Editar">
+                            <i class="fas fa-pen"></i>
+                        </button>
+                        <button type="button" onclick="removerPromo(${i})" class="text-red-400 hover:text-red-600 p-1.5" title="Remover">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
                 </div>
             `).join('');
         }
-        
-        window.removerPromo = (index) => {
+
+        window.removerPromo = function (index) {
             if (confirm('Remover esta promoção?')) {
                 promocoes.splice(index, 1);
-                localStorage.setItem('cd_promos_' + lojista.empresaId, JSON.stringify(promocoes));
+                salvarPromosLocal();
                 renderPromocoes();
+                if (promoEditIndex === index) {
+                    promoEditIndex = -1;
+                    document.getElementById('formPromoBox').classList.add('hidden');
+                }
             }
         };
-        
-        document.getElementById('btnNovaPromo').addEventListener('click', () => {
+
+        window.editarPromo = function (index) {
+            var p = promocoes[index];
+            if (!p) return;
+            promoEditIndex = index;
             document.getElementById('formPromoBox').classList.remove('hidden');
+            document.getElementById('tituloFormPromo').textContent = 'Editar promoção';
+            document.getElementById('promoTitulo').value = p.titulo || '';
+            document.getElementById('promoDesc').value = p.descricao || '';
+            document.getElementById('promoValidade').value = p.validade || '';
+            document.getElementById('promoSelo').value = p.selo || '';
+            document.getElementById('formPromoBox').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        };
+
+        document.getElementById('btnNovaPromo').addEventListener('click', function () {
+            promoEditIndex = -1;
+            document.getElementById('formPromoBox').classList.remove('hidden');
+            document.getElementById('tituloFormPromo').textContent = 'Nova promoção';
             document.getElementById('promoTitulo').value = '';
             document.getElementById('promoDesc').value = '';
             document.getElementById('promoValidade').value = '';
             document.getElementById('promoSelo').value = '';
         });
-        
-        document.getElementById('btnCancelarPromo').addEventListener('click', () => {
+
+        document.getElementById('btnCancelarPromo').addEventListener('click', function () {
             document.getElementById('formPromoBox').classList.add('hidden');
+            promoEditIndex = -1;
         });
-        
-        document.getElementById('btnSalvarPromo').addEventListener('click', () => {
+
+        document.getElementById('btnSalvarPromo').addEventListener('click', function () {
             const titulo = document.getElementById('promoTitulo').value.trim();
             if (!titulo) {
                 alert('Digite o título da promoção');
                 return;
             }
-            
-            promocoes.push({
-                titulo,
+            var dados = {
+                titulo: titulo,
                 descricao: document.getElementById('promoDesc').value.trim(),
                 validade: document.getElementById('promoValidade').value,
                 selo: document.getElementById('promoSelo').value.trim(),
                 criadaEm: new Date().toISOString()
-            });
-            
-            localStorage.setItem('cd_promos_' + lojista.empresaId, JSON.stringify(promocoes));
+            };
+            if (promoEditIndex >= 0 && promoEditIndex < promocoes.length) {
+                dados.criadaEm = promocoes[promoEditIndex].criadaEm || dados.criadaEm;
+                dados.atualizadoEm = new Date().toISOString();
+                promocoes[promoEditIndex] = dados;
+            } else {
+                promocoes.push(dados);
+            }
+            salvarPromosLocal();
             document.getElementById('formPromoBox').classList.add('hidden');
+            promoEditIndex = -1;
             renderPromocoes();
         });
-        
+
         renderPromocoes();
     </script>
 
