@@ -129,23 +129,101 @@ function podeAvaliar(empresaId, celularOpcional) {
     return { pode: true, precisaCelular: false, mensagem: '', identidade: idn };
 }
 
-function registrarAvaliacao(empresaId, nota, comentario, celularOpcional) {
-    const check = podeAvaliar(empresaId, celularOpcional);
-    if (!check.pode) {
-        return {
-            sucesso: false,
-            mensagem: check.mensagem || 'Você já votou para essa loja ou comércio esse mês.'
-        };
-    }
-    if (nota < 1 || nota > 5) {
-        return { sucesso: false, mensagem: 'Nota inválida. Escolha de 1 a 5 estrelas.' };
-    }
+/** --- Supabase (avaliações na nuvem; não usa cota Firebase) --- */
+function sbCfg() {
+    return (window.CD_SUPABASE && window.cdSupabaseReady && window.cdSupabaseReady())
+        ? window.CD_SUPABASE
+        : null;
+}
 
-    const idn = check.identidade || identidadeVoto(celularOpcional);
-    const mes = mesAnoAtual();
+function sbHeaders() {
+    var c = sbCfg();
+    if (!c) return null;
+    return {
+        'apikey': c.anonKey,
+        'Authorization': 'Bearer ' + c.anonKey,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=minimal'
+    };
+}
+
+function sbUrl(pathQuery) {
+    var c = sbCfg();
+    if (!c) return null;
+    return String(c.url).replace(/\/$/, '') + '/rest/v1/' + pathQuery;
+}
+
+/** Grava voto no Supabase. Retorna Promise<{ok, mensagem, conflito}> */
+function sbEnviarAvaliacao(empresaId, nota, identidade, mes, comentario) {
+    var headers = sbHeaders();
+    var url = sbUrl('avaliacoes');
+    if (!headers || !url) {
+        return Promise.resolve({ ok: false, mensagem: 'Supabase não configurado', offline: true });
+    }
+    var body = {
+        empresa_id: String(empresaId),
+        nota: parseInt(nota, 10),
+        identidade: String(identidade),
+        mes: String(mes),
+        comentario: String(comentario || '').substring(0, 300)
+    };
+    return fetch(url, {
+        method: 'POST',
+        headers: headers,
+        body: JSON.stringify(body)
+    }).then(function (res) {
+        if (res.status === 201 || res.status === 200) {
+            return { ok: true, mensagem: 'Avaliação enviada com sucesso! Obrigado.' };
+        }
+        if (res.status === 409) {
+            return { ok: false, conflito: true, mensagem: 'Você já votou para essa loja ou comércio esse mês.' };
+        }
+        return res.text().then(function (t) {
+            // unique violation também pode vir 400
+            if (/duplicate|unique|avaliacoes_unico/i.test(t || '')) {
+                return { ok: false, conflito: true, mensagem: 'Você já votou para essa loja ou comércio esse mês.' };
+            }
+            console.warn('Supabase avaliacao', res.status, t);
+            return { ok: false, mensagem: 'Não foi possível enviar a avaliação. Tente de novo.' };
+        });
+    }).catch(function (err) {
+        console.warn(err);
+        return { ok: false, mensagem: 'Sem conexão com o servidor de avaliações.', offline: true };
+    });
+}
+
+/** Média/total no Supabase (view avaliacoes_resumo) */
+function sbMediaEmpresa(empresaId) {
+    var headers = sbHeaders();
+    var url = sbUrl('avaliacoes_resumo?empresa_id=eq.' + encodeURIComponent(String(empresaId)) + '&select=media,total,soma_estrelas');
+    if (!headers || !url) return Promise.resolve(null);
+    return fetch(url, { headers: headers })
+        .then(function (r) { return r.ok ? r.json() : []; })
+        .then(function (rows) {
+            if (!rows || !rows.length) return { media: 0, total: 0, soma: 0 };
+            var row = rows[0];
+            return {
+                media: parseFloat(row.media) || 0,
+                total: parseInt(row.total, 10) || 0,
+                soma: parseInt(row.soma_estrelas, 10) || 0
+            };
+        })
+        .catch(function () { return null; });
+}
+
+/** Lista resumos de várias empresas (painel gestor) */
+function sbResumoTodas() {
+    var headers = sbHeaders();
+    var url = sbUrl('avaliacoes_resumo?select=empresa_id,media,total,soma_estrelas');
+    if (!headers || !url) return Promise.resolve([]);
+    return fetch(url, { headers: headers })
+        .then(function (r) { return r.ok ? r.json() : []; })
+        .catch(function () { return []; });
+}
+
+function registrarAvaliacaoLocal(empresaId, nota, idn, mes, comentario) {
     const chave = chaveVoto(idn.chave, empresaId, mes);
     const avaliacoes = getAvaliacoesLocais();
-
     avaliacoes[chave] = {
         empresaId,
         nota: parseInt(nota, 10),
@@ -156,7 +234,6 @@ function registrarAvaliacao(empresaId, nota, comentario, celularOpcional) {
         identidade: idn.chave
     };
     salvarAvaliacoesLocais(avaliacoes);
-
     try {
         const listaKey = 'cd_avaliacoes_lista_' + empresaId;
         const lista = JSON.parse(localStorage.getItem(listaKey) || '[]');
@@ -169,8 +246,50 @@ function registrarAvaliacao(empresaId, nota, comentario, celularOpcional) {
         });
         localStorage.setItem(listaKey, JSON.stringify(lista));
     } catch (e) {}
+}
 
-    return { sucesso: true, mensagem: 'Avaliação enviada com sucesso! Obrigado.' };
+/**
+ * Registra avaliação (Supabase se configurado + espelho local).
+ * Retorna Promise<{sucesso, mensagem}>
+ */
+function registrarAvaliacao(empresaId, nota, comentario, celularOpcional) {
+    const check = podeAvaliar(empresaId, celularOpcional);
+    if (!check.pode) {
+        return Promise.resolve({
+            sucesso: false,
+            mensagem: check.mensagem || 'Você já votou para essa loja ou comércio esse mês.'
+        });
+    }
+    if (nota < 1 || nota > 5) {
+        return Promise.resolve({ sucesso: false, mensagem: 'Nota inválida. Escolha de 1 a 5 estrelas.' });
+    }
+
+    const idn = check.identidade || identidadeVoto(celularOpcional);
+    const mes = mesAnoAtual();
+    const comentarioLimpo = String(comentario || '').trim().substring(0, 300);
+
+    // Sempre espelha local (anti double-click e offline)
+    registrarAvaliacaoLocal(empresaId, nota, idn, mes, comentarioLimpo);
+
+    if (!sbCfg()) {
+        return Promise.resolve({
+            sucesso: true,
+            mensagem: 'Avaliação registrada neste aparelho. Configure o Supabase para o gestor ver todos os votos.'
+        });
+    }
+
+    return sbEnviarAvaliacao(empresaId, nota, idn.chave, mes, comentarioLimpo).then(function (r) {
+        if (r.ok) return { sucesso: true, mensagem: r.mensagem };
+        if (r.conflito) return { sucesso: false, mensagem: r.mensagem };
+        // offline: local já salvou
+        if (r.offline) {
+            return {
+                sucesso: true,
+                mensagem: 'Avaliação salva neste aparelho. Quando houver conexão, o gestor verá pela nuvem nos próximos votos.'
+            };
+        }
+        return { sucesso: false, mensagem: r.mensagem || 'Falha ao enviar avaliação.' };
+    });
 }
 
 function totalEstrelasEmpresa(empresaId) {
@@ -187,6 +306,32 @@ function mediaEmpresa(empresaId) {
         const soma = lista.reduce((acc, a) => acc + (parseInt(a.nota, 10) || 0), 0);
         return { media: soma / lista.length, total: lista.length };
     } catch { return { media: 0, total: 0 }; }
+}
+
+/** Atualiza média na UI a partir do Supabase (quando houver) */
+function atualizarMediaNaPagina(empresaId) {
+    var num = document.getElementById('empMediaNum');
+    var stars = document.getElementById('empMediaStars');
+    var txt = document.getElementById('empMediaTxt');
+    function pintar(m) {
+        if (!m || !m.total) {
+            if (num) num.textContent = '—';
+            if (txt) txt.textContent = 'Sem avaliações ainda';
+            if (stars) stars.innerHTML = '';
+            return;
+        }
+        if (num) num.textContent = (Math.round(m.media * 10) / 10).toFixed(1);
+        if (txt) txt.textContent = m.total + (m.total === 1 ? ' avaliação' : ' avaliações');
+        if (stars) stars.innerHTML = renderMediaEstrelas(m.media, m.total);
+    }
+    // local imediato
+    pintar(mediaEmpresa(empresaId));
+    // nuvem
+    if (sbCfg()) {
+        sbMediaEmpresa(empresaId).then(function (m) {
+            if (m) pintar(m);
+        });
+    }
 }
 
 function renderEstrelasAvaliacao(containerId, empresaId) {
@@ -276,29 +421,34 @@ function renderEstrelasAvaliacao(containerId, empresaId) {
 
     btnEnviar.addEventListener('click', () => {
         const celEl = document.getElementById('celAvaliacao');
-        // Logado → não precisa; senão campo ou número já salvo no aparelho
         let celular = celEl ? celEl.value : '';
         if (!normalizarCelular(celular) && logado && logado.celular) celular = logado.celular;
         if (!normalizarCelular(celular)) celular = getCelularSalvo();
         const comentario = document.getElementById('comentarioAvaliacao').value;
-        const resultado = registrarAvaliacao(empresaId, notaSelecionada, comentario, celular);
-
+        btnEnviar.disabled = true;
         msg.classList.remove('hidden');
-        if (resultado.sucesso) {
-            if (celular) salvarCelularAvaliacao(celular);
-            msg.className = 'text-sm mt-2 text-center text-green-600 font-medium';
-            msg.textContent = resultado.mensagem;
-            setTimeout(() => {
-                container.innerHTML = `
-                    <div class="bg-green-50 border border-green-200 rounded-xl p-4 text-center">
-                        <p class="text-green-800 font-medium"><i class="fas fa-check-circle mr-1"></i> Avaliação registrada.</p>
-                        <p class="text-green-700 text-sm mt-1">Você poderá votar novamente nesta loja no próximo mês.</p>
-                    </div>`;
-            }, 800);
-        } else {
-            msg.className = 'text-sm mt-2 text-center text-red-600 font-medium';
-            msg.textContent = resultado.mensagem;
-        }
+        msg.className = 'text-sm mt-2 text-center text-gray-500 font-medium';
+        msg.textContent = 'Enviando…';
+
+        Promise.resolve(registrarAvaliacao(empresaId, notaSelecionada, comentario, celular))
+            .then(function (resultado) {
+                if (resultado.sucesso) {
+                    if (celular) salvarCelularAvaliacao(celular);
+                    msg.className = 'text-sm mt-2 text-center text-green-600 font-medium';
+                    msg.textContent = resultado.mensagem;
+                    atualizarMediaNaPagina(empresaId);
+                    setTimeout(function () {
+                        container.innerHTML =
+                            '<div class="bg-green-50 border border-green-200 rounded-xl p-4 text-center">' +
+                            '<p class="text-green-800 font-medium"><i class="fas fa-check-circle mr-1"></i> Avaliação registrada.</p>' +
+                            '<p class="text-green-700 text-sm mt-1">Você poderá votar novamente nesta loja no próximo mês.</p></div>';
+                    }, 600);
+                } else {
+                    btnEnviar.disabled = false;
+                    msg.className = 'text-sm mt-2 text-center text-red-600 font-medium';
+                    msg.textContent = resultado.mensagem;
+                }
+            });
     });
 }
 
@@ -329,6 +479,9 @@ window.Avaliacoes = {
     renderMediaEstrelas,
     totalEstrelasEmpresa,
     mediaEmpresa,
+    atualizarMediaNaPagina,
+    sbMediaEmpresa,
+    sbResumoTodas,
     normalizarCelular,
     getAnuncianteLogado
 };

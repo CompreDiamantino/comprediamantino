@@ -207,6 +207,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
     <script src="firebase-config.js"></script>
     <script src="empresas-dados.js"></script>
+    <script src="supabase-config.js"></script>
     <script src="avaliacoes.js"></script>
     <script>
         const empresaId = new URLSearchParams(window.location.search).get('id') || '';
@@ -515,23 +516,9 @@
 
             if (window.Avaliacoes) {
                 Avaliacoes.renderEstrelasAvaliacao('boxAvaliacao', empresaId);
-                try {
-                    var m = Avaliacoes.mediaEmpresa(empresaId);
-                    var num = document.getElementById('empMediaNum');
-                    var stars = document.getElementById('empMediaStars');
-                    var txt = document.getElementById('empMediaTxt');
-                    if (m && m.total > 0) {
-                        if (num) num.textContent = (Math.round(m.media * 10) / 10).toFixed(1);
-                        if (txt) txt.textContent = m.total + (m.total === 1 ? ' avaliação' : ' avaliações');
-                        if (stars && Avaliacoes.renderMediaEstrelas) {
-                            stars.innerHTML = Avaliacoes.renderMediaEstrelas(m.media, m.total);
-                        }
-                    } else {
-                        if (num) num.textContent = '—';
-                        if (txt) txt.textContent = 'Sem avaliações ainda';
-                        if (stars) stars.innerHTML = '';
-                    }
-                } catch (e) {}
+                if (Avaliacoes.atualizarMediaNaPagina) {
+                    Avaliacoes.atualizarMediaNaPagina(empresaId);
+                }
             }
         }
 
