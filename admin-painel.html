@@ -1118,7 +1118,7 @@
             document.getElementById('modalLojista').classList.add('flex');
         });
 
-        // Remove cadastros de teste (WhatsApp começando com 659999) — exclusão total liberada
+        // Remove cadastros de teste + votos órfãos no Supabase
         document.getElementById('btnLimparTestes').addEventListener('click', () => {
             const lista = getLojistas();
             const testes = lista.filter(function (l) {
@@ -1126,16 +1126,34 @@
                 return wa.indexOf('659999') === 0 || wa.indexOf('55659999') === 0
                     || /teste|demo|padaria do centro|auto peças diamantino|beleza & estilo|casa construir|pet shop amigo/i.test(l.nome || '');
             });
-            if (!testes.length) {
-                alert('Nenhum cadastro de teste encontrado (WhatsApp 659999… ou nomes de demo).');
-                return;
+
+            var idsAtivos = {};
+            lista.forEach(function (l) {
+                if (!l || !l.id) return;
+                var st = String(l.status || '').toLowerCase();
+                // Mantém votos só de quem ainda existe e não é teste
+                if (st === 'removido') return;
+                var wa = String(l.whatsapp || '').replace(/\D/g, '');
+                var eTeste = wa.indexOf('659999') === 0 || wa.indexOf('55659999') === 0
+                    || /teste|demo|padaria do centro|auto peças diamantino|beleza & estilo|casa construir|pet shop amigo/i.test(l.nome || '');
+                if (!eTeste) idsAtivos[String(l.id)] = true;
+            });
+
+            var msg = '';
+            if (testes.length) {
+                msg += '• ' + testes.length + ' cadastro(s) de teste serão APAGADOS de vez.\n';
+            } else {
+                msg += '• Nenhum cadastro de teste (WhatsApp 659999… / nomes demo).\n';
             }
-            if (!confirm('Encontrados ' + testes.length + ' cadastro(s) de teste.\n\nSerão APAGADOS de vez (sem lista negra), liberando recadastro.\n\nContinuar?')) return;
+            msg += '• Também serão apagados no Supabase os VOTOS de empresas que não estão mais ativas (órfãos de teste).\n\nContinuar?';
+
+            if (!confirm(msg)) return;
+
             const ids = {};
             testes.forEach(function (t) { ids[String(t.id)] = true; });
             const restam = lista.filter(function (l) { return !ids[String(l.id)]; });
             salvarLojistas(restam);
-            // limpa lista negra desses
+
             try {
                 let negros = JSON.parse(localStorage.getItem('cd_removidos') || '[]');
                 negros = negros.filter(function (r) {
@@ -1147,6 +1165,7 @@
                 });
                 localStorage.setItem('cd_removidos', JSON.stringify(negros));
             } catch (e) {}
+
             testes.forEach(function (t) {
                 try {
                     if (window.LojistasNuvem && LojistasNuvem.apagar) LojistasNuvem.apagar(t.id);
@@ -1154,10 +1173,46 @@
                         var emp = EmpresasDados.lerEmpresas().filter(function (e) { return String(e.id) !== String(t.id); });
                         EmpresasDados.salvarEmpresas(emp);
                     }
+                    if (window.Avaliacoes && Avaliacoes.sbApagarAvaliacoesEmpresa) {
+                        Avaliacoes.sbApagarAvaliacoesEmpresa(t.id);
+                    }
                 } catch (e) {}
             });
+
+            // Limpa votos órfãos no Supabase (empresa_id que não está entre os ativos reais)
+            var promessas = [];
+            if (window.Avaliacoes && Avaliacoes.sbResumoTodas && Avaliacoes.sbApagarAvaliacoesEmpresa) {
+                promessas.push(
+                    Avaliacoes.sbResumoTodas().then(function (rows) {
+                        var apagados = 0;
+                        var chain = Promise.resolve();
+                        (rows || []).forEach(function (row) {
+                            var eid = row && row.empresa_id != null ? String(row.empresa_id) : '';
+                            if (!eid) return;
+                            if (idsAtivos[eid]) return; // empresa real ativa → mantém
+                            chain = chain.then(function () {
+                                return Avaliacoes.sbApagarAvaliacoesEmpresa(eid).then(function (r) {
+                                    if (r && r.ok) apagados++;
+                                });
+                            });
+                        });
+                        return chain.then(function () { return apagados; });
+                    }).catch(function () { return 0; })
+                );
+            }
+
             renderTabela();
-            alert(testes.length + ' teste(s) apagado(s). Pode recadastrar sem restrição.');
+
+            Promise.all(promessas).then(function (res) {
+                var nVotos = res[0] || 0;
+                var txt = testes.length + ' cadastro(s) de teste apagado(s).';
+                if (nVotos) txt += '\n' + nVotos + ' empresa(s) com votos órfãos limpos no Supabase.';
+                else txt += '\nNenhum voto órfão encontrado (ou Supabase sem permissão de DELETE).';
+                txt += '\n\nPode recadastrar sem restrição.';
+                alert(txt);
+            }).catch(function () {
+                alert(testes.length + ' teste(s) apagado(s). (Limpeza de votos no Supabase falhou — use o SQL se precisar.)');
+            });
         });
         
         document.getElementById('btnFecharModalLojista').addEventListener('click', () => {
