@@ -226,8 +226,8 @@
             <div class="bg-amber-50 border border-amber-100 rounded-xl p-4 text-sm text-amber-950 space-y-2">
                 <p class="font-bold"><i class="fas fa-info-circle text-amber-600"></i> Taxa só de manutenção (depois do 1º mês grátis)</p>
                 <p>Qualquer cobrança futura serve apenas para <strong>manter o portal no ar</strong> (hospedagem, mapa, atualizações). Não é aluguel de vitrine. O valor ainda será definido, mas <strong>não passa de R$ 20</strong> (plano 3 fotos) ou <strong>R$ 30</strong> (plano 5 fotos).</p>
-                <p class="font-bold pt-1"><i class="fas fa-star text-yellow-500"></i> Estrelas e Top 10</p>
-                <p>Visitantes e outros anunciantes dão nota (1 a 5★). Cada pessoa vota <strong>só 1 vez por mês</strong> em cada estabelecimento (controle pelo celular). Quem tiver mais estrelas e ficar no <strong>Top 10</strong> do ranking <strong>não paga mensalidade</strong>. As estrelas também geram desconto progressivo (pode chegar a 100%). A gestão aplica o benefício na renovação.</p>
+                <p class="font-bold pt-1"><i class="fas fa-star text-yellow-500"></i> Estrelas e Top 10 — ganhe até 100% de desconto</p>
+                <p>Visitantes e outros anunciantes dão nota (1 a 5★). Cada pessoa vota <strong>só 1 vez por mês</strong> em cada estabelecimento (controle pelo celular). Os mais votados ganham desconto progressivo na mensalidade — pode chegar a <strong>100%</strong>. Ficou no <strong>Top 10</strong>? Não paga. Divulgue seu perfil e peça para amigos e clientes votarem: quanto mais estrelas, maior o benefício. A gestão aplica na renovação.</p>
             </div>
 
             <div class="flex gap-2">
@@ -243,12 +243,12 @@
             
             <div class="bg-blue-50 border border-blue-100 rounded-xl p-4 text-sm text-blue-900">
                 <p class="font-bold mb-1">Aprovação da gestão</p>
-                <p>Seu cadastro é enviado à gestão. Você <strong>já pode entrar</strong> na área do anunciante para completar perfil, fotos e o que vende; a publicação no site público vem após a confirmação. Depois da aprovação você posta fotos e promoções. O <strong>primeiro mês é gratuito</strong>. Quem ficar no Top 10 por estrelas não paga mensalidade.</p>
+                <p>Seu cadastro é enviado à gestão. Você <strong>já pode entrar</strong> na área do anunciante para completar perfil, fotos e o que vende; a publicação no site público vem após a confirmação. Depois da aprovação você posta fotos e promoções. O <strong>primeiro mês é gratuito</strong>. Divulgue e peça votos: os mais votados ganham até 100% de desconto; Top 10 não paga.</p>
             </div>
 
             <label class="flex items-start gap-2 text-sm text-gray-600">
                 <input type="checkbox" id="aceite" class="mt-1">
-                <span>Li e concordo: o portal é só para <strong>divulgação</strong> em <strong>Diamantino-MT</strong> (formal ou informal; CNPJ não obrigatório); o 1º mês é grátis; depois, se houver taxa de manutenção, o valor ainda será definido (no máx. R$ 20 ou R$ 30 conforme o plano); Top 10 por estrelas não paga mensalidade; cada celular vota só 1 vez por mês em cada loja.</span>
+                <span>Li e concordo: o portal é só para <strong>divulgação</strong> em <strong>Diamantino-MT</strong> (formal ou informal; CNPJ não obrigatório); o 1º mês é grátis; depois, se houver taxa de manutenção, o valor ainda será definido (no máx. R$ 20 ou R$ 30 conforme o plano); os mais votados ganham até 100% de desconto e o Top 10 não paga mensalidade; cada celular vota só 1 vez por mês em cada loja.</span>
             </label>
 
             <div id="msgErro" class="hidden text-red-600 text-sm font-medium"></div>
@@ -492,7 +492,7 @@
                     ((window._cadLogoData) ? '<p><strong>Logo:</strong> sim</p>' : '') +
                     '<p><strong>Plano:</strong> ' + planoTxt + '</p>' +
                     '<p><strong>Dia de pagamento:</strong> todo dia ' + (document.getElementById('diaPagamento').value || '—') + ' (após o 1º mês grátis)</p>' +
-                    '<p><strong>1º mês grátis</strong> · depois taxa de manutenção (valor a definir, no máx. R$ 20 ou R$ 30) · Top 10 por estrelas não paga</p>';
+                    '<p><strong>1º mês grátis</strong> · depois taxa de manutenção (valor a definir, no máx. R$ 20 ou R$ 30) · mais votados até 100% de desconto · Top 10 não paga</p>';
             }
 
             for (let i = 1; i <= 4; i++) {
