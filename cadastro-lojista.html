@@ -157,23 +157,23 @@
 
         <!-- STEP 3 -->
         <div id="step3" class="hidden bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-4">
-            <h2 class="font-bold text-primary">Taxa de manutenção (após 7 dias grátis)</h2>
-            <p class="text-sm text-gray-500">O portal é para <strong>divulgação</strong> do comércio local. Após a semana grátis, há uma taxa mensal de manutenção conforme a quantidade de fotos na vitrine.</p>
+            <h2 class="font-bold text-primary">Plano de divulgação</h2>
+            <p class="text-sm text-gray-500">O portal é para <strong>divulgação</strong> do comércio local. O <strong>primeiro mês é gratuito</strong>. Depois, se houver cobrança, será só uma taxa simbólica de manutenção do site (hospedagem, mapa e atualizações) — valor ainda a definir, no máximo R$ 20 (3 fotos) ou R$ 30 (5 fotos).</p>
             
             <label class="block border-2 border-gray-200 rounded-xl p-4 cursor-pointer hover:border-primary has-[:checked]:border-primary has-[:checked]:bg-blue-50">
                 <input type="radio" name="plano" value="basico" class="mr-2" checked>
-                <span class="font-bold">Básico — R$ 80/mês</span>
-                <span class="block text-sm text-gray-500 ml-6"><strong>3 fotos por dia</strong> · perfil, mapa e WhatsApp</span>
+                <span class="font-bold">Básico — 3 fotos</span>
+                <span class="block text-sm text-gray-500 ml-6"><strong>3 fotos por dia</strong> · perfil, mapa e WhatsApp · 1º mês grátis · depois no máx. R$ 20/mês (valor a definir)</span>
             </label>
             <label class="block border-2 border-gray-200 rounded-xl p-4 cursor-pointer hover:border-primary has-[:checked]:border-primary has-[:checked]:bg-blue-50">
                 <input type="radio" name="plano" value="plus" class="mr-2">
-                <span class="font-bold">Plus — R$ 120/mês</span>
-                <span class="block text-sm text-gray-500 ml-6"><strong>5 fotos por dia</strong> · destaque e prioridade no mapa</span>
+                <span class="font-bold">Plus — 5 fotos</span>
+                <span class="block text-sm text-gray-500 ml-6"><strong>5 fotos por dia</strong> · destaque e prioridade no mapa · 1º mês grátis · depois no máx. R$ 30/mês (valor a definir)</span>
             </label>
 
             <div class="border border-gray-200 rounded-xl p-4 bg-gray-50">
-                <label class="block text-sm font-medium text-gray-800 mb-1">Melhor dia para pagamento *</label>
-                <p class="text-xs text-gray-500 mb-2">Escolha o dia do mês em que prefere pagar a manutenção. O vencimento mensal segue esse dia.</p>
+                <label class="block text-sm font-medium text-gray-800 mb-1">Melhor dia para pagamento (após o 1º mês grátis) *</label>
+                <p class="text-xs text-gray-500 mb-2">Escolha o dia do mês em que prefere pagar a manutenção, se houver. O vencimento mensal segue esse dia (só depois do período gratuito).</p>
                 <select id="diaPagamento" required class="w-full border border-gray-200 rounded-xl px-4 py-2.5 bg-white focus:outline-none focus:border-primary">
                     <option value="">Selecione o dia…</option>
                     <option value="1">1</option>
@@ -224,10 +224,10 @@
             </div>
 
             <div class="bg-amber-50 border border-amber-100 rounded-xl p-4 text-sm text-amber-950 space-y-2">
-                <p class="font-bold"><i class="fas fa-info-circle text-amber-600"></i> Custo de manutenção do site</p>
-                <p>Os valores (R$ 80 ou R$ 120) servem para <strong>manutenção do portal</strong> (hospedagem, mapa, atualizações). Não é “aluguel de vitrine” comercial à parte — é o custo de manter o Compre Diamantino no ar para a cidade.</p>
-                <p class="font-bold pt-1"><i class="fas fa-star text-yellow-500"></i> Bônus por estrelas</p>
-                <p>Visitantes e outros anunciantes podem dar nota (1 a 5★). Cada pessoa vota <strong>só 1 vez por mês</strong> em cada estabelecimento (controle pelo celular). A partir de <strong>500 estrelas</strong> começa o desconto na mensalidade; quanto mais estrelas, maior o bônus (pode chegar a 100%). O desconto é aplicado pela gestão na renovação.</p>
+                <p class="font-bold"><i class="fas fa-info-circle text-amber-600"></i> Taxa só de manutenção (depois do 1º mês grátis)</p>
+                <p>Qualquer cobrança futura serve apenas para <strong>manter o portal no ar</strong> (hospedagem, mapa, atualizações). Não é aluguel de vitrine. O valor ainda será definido, mas <strong>não passa de R$ 20</strong> (plano 3 fotos) ou <strong>R$ 30</strong> (plano 5 fotos).</p>
+                <p class="font-bold pt-1"><i class="fas fa-star text-yellow-500"></i> Estrelas e Top 10</p>
+                <p>Visitantes e outros anunciantes dão nota (1 a 5★). Cada pessoa vota <strong>só 1 vez por mês</strong> em cada estabelecimento (controle pelo celular). Quem tiver mais estrelas e ficar no <strong>Top 10</strong> do ranking <strong>não paga mensalidade</strong>. As estrelas também geram desconto progressivo (pode chegar a 100%). A gestão aplica o benefício na renovação.</p>
             </div>
 
             <div class="flex gap-2">
@@ -243,12 +243,12 @@
             
             <div class="bg-blue-50 border border-blue-100 rounded-xl p-4 text-sm text-blue-900">
                 <p class="font-bold mb-1">Aprovação da gestão</p>
-                <p>Seu cadastro é enviado à gestão. Você <strong>já pode entrar</strong> na área do anunciante para completar perfil, fotos e o que vende; a publicação no site público vem após a confirmação (como no IBN). Depois da aprovação você recebe acesso para postar fotos e promoções. Os primeiros <strong>7 dias são grátis</strong>.</p>
+                <p>Seu cadastro é enviado à gestão. Você <strong>já pode entrar</strong> na área do anunciante para completar perfil, fotos e o que vende; a publicação no site público vem após a confirmação. Depois da aprovação você posta fotos e promoções. O <strong>primeiro mês é gratuito</strong>. Quem ficar no Top 10 por estrelas não paga mensalidade.</p>
             </div>
 
             <label class="flex items-start gap-2 text-sm text-gray-600">
                 <input type="checkbox" id="aceite" class="mt-1">
-                <span>Li e concordo: o portal é só para <strong>divulgação</strong> em <strong>Diamantino-MT</strong> (formal ou informal; CNPJ não obrigatório); após os 7 dias grátis há taxa de manutenção do site (R$ 80 ou R$ 120); o sistema de estrelas (a partir de 500) gera desconto aplicado pela gestão; cada celular vota só 1 vez por mês em cada loja.</span>
+                <span>Li e concordo: o portal é só para <strong>divulgação</strong> em <strong>Diamantino-MT</strong> (formal ou informal; CNPJ não obrigatório); o 1º mês é grátis; depois, se houver taxa de manutenção, o valor ainda será definido (no máx. R$ 20 ou R$ 30 conforme o plano); Top 10 por estrelas não paga mensalidade; cada celular vota só 1 vez por mês em cada loja.</span>
             </label>
 
             <div id="msgErro" class="hidden text-red-600 text-sm font-medium"></div>
@@ -477,7 +477,7 @@
                     return;
                 }
                 const plano = document.querySelector('input[name="plano"]:checked').value;
-                const planoTxt = plano === 'plus' ? 'Plus — R$ 120/mês (5 fotos)' : 'Básico — R$ 80/mês (3 fotos)';
+                const planoTxt = plano === 'plus' ? 'Plus — 5 fotos (1º mês grátis · depois no máx. R$ 30)' : 'Básico — 3 fotos (1º mês grátis · depois no máx. R$ 20)';
                 document.getElementById('resumo').innerHTML =
                     '<p><strong>Loja:</strong> ' + document.getElementById('nomeLoja').value + '</p>' +
                     '<p><strong>Responsável:</strong> ' + document.getElementById('nomeResp').value + '</p>' +
@@ -491,8 +491,8 @@
                     ((window._cadFotosData && window._cadFotosData.length) ? '<p><strong>Fotos:</strong> ' + window._cadFotosData.length + ' enviada(s)</p>' : '') +
                     ((window._cadLogoData) ? '<p><strong>Logo:</strong> sim</p>' : '') +
                     '<p><strong>Plano:</strong> ' + planoTxt + '</p>' +
-                    '<p><strong>Dia de pagamento:</strong> todo dia ' + (document.getElementById('diaPagamento').value || '—') + '</p>' +
-                    '<p><strong>7 dias grátis</strong> · depois taxa de manutenção · estrelas podem zerar a mensalidade</p>';
+                    '<p><strong>Dia de pagamento:</strong> todo dia ' + (document.getElementById('diaPagamento').value || '—') + ' (após o 1º mês grátis)</p>' +
+                    '<p><strong>1º mês grátis</strong> · depois taxa de manutenção (valor a definir, no máx. R$ 20 ou R$ 30) · Top 10 por estrelas não paga</p>';
             }
 
             for (let i = 1; i <= 4; i++) {
@@ -526,6 +526,24 @@
                     return;
                 }
 
+                // Evita cadastro duplicado: mesmo WhatsApp já na fila/gestão
+                try {
+                    var celNovo = String(document.getElementById('whatsapp').value || '').replace(/\D/g, '');
+                    var listaExist = [];
+                    try { listaExist = JSON.parse(localStorage.getItem('cd_lojistas_admin') || '[]'); } catch (e) {}
+                    if (celNovo && listaExist.length) {
+                        var jaTem = listaExist.find(function (lj) {
+                            var c = String(lj.whatsapp || '').replace(/\D/g, '');
+                            return c && c === celNovo && (lj.status === 'pendente' || lj.status === 'ativo' || lj.status === 'aprovado' || !lj.status);
+                        });
+                        if (jaTem) {
+                            msg.textContent = 'Já existe um cadastro com este WhatsApp. Entre na área do anunciante ou fale com a gestão — não é preciso cadastrar de novo.';
+                            msg.classList.remove('hidden');
+                            return;
+                        }
+                    }
+                } catch (eDup) {}
+
                 if (!document.getElementById('aceite').checked) {
                 msg.textContent = 'Marque o aceite para enviar.';
                 msg.classList.remove('hidden');
@@ -556,13 +574,13 @@
                 status: 'pendente',
                 vencimento: null,
                 criadoEm: new Date().toISOString(),
-                trialDias: 7
+                trialDias: 30
             };
-            // Calcula 1º vencimento após trial (7 dias), no dia escolhido
+            // Calcula 1º vencimento após trial (30 dias = 1º mês grátis), no dia escolhido
             (function () {
                 const dia = reg.diaPagamento;
                 const base = new Date();
-                base.setDate(base.getDate() + 7);
+                base.setDate(base.getDate() + 30);
                 let y = base.getFullYear(), m = base.getMonth(), d = dia;
                 let venc = new Date(y, m, d);
                 if (venc < base) venc = new Date(y, m + 1, d);
@@ -787,5 +805,6 @@
         }
       });
     </script>
+<script src="install-app.js"></script>
 </body>
 </html>
