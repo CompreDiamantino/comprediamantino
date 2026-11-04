@@ -1082,6 +1082,29 @@
                 }
             } catch (e) {}
 
+            // Apaga votos dessa empresa no Supabase (avaliacoes) para não ficar lixo no ranking
+            try {
+                if (window.Avaliacoes && Avaliacoes.sbApagarAvaliacoesEmpresa) {
+                    Avaliacoes.sbApagarAvaliacoesEmpresa(id).then(function (r) {
+                        if (r && r.ok) console.log('Avaliações da empresa removidas do Supabase');
+                        else console.warn('Não foi possível limpar avaliações no Supabase', r);
+                    });
+                }
+            } catch (e) {}
+
+            // Limpa espelho local de avaliações dessa empresa
+            try {
+                var av = JSON.parse(localStorage.getItem('cd_avaliacoes') || '{}');
+                Object.keys(av).forEach(function (k) {
+                    var a = av[k];
+                    if (!a) return;
+                    if (a.empresaId === id || k.indexOf('_' + id) !== -1 || k.endsWith(id)) delete av[k];
+                });
+                localStorage.setItem('cd_avaliacoes', JSON.stringify(av));
+                localStorage.removeItem('cd_avaliacoes_lista_' + id);
+                localStorage.removeItem('cd_estrelas_empresa_' + id);
+            } catch (e) {}
+
             renderTabela();
             alert('Excluído totalmente. Pode recadastrar sem restrição.');
         };

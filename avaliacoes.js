@@ -276,6 +276,26 @@ function sbResumoTodas() {
         .catch(function () { return []; });
 }
 
+/** Apaga todos os votos de uma empresa no Supabase (usado na exclusão total do gestor) */
+function sbApagarAvaliacoesEmpresa(empresaId) {
+    var headers = sbHeaders();
+    var url = sbUrl('avaliacoes?empresa_id=eq.' + encodeURIComponent(String(empresaId)));
+    if (!headers || !url) return Promise.resolve({ ok: false, offline: true });
+    return fetch(url, {
+        method: 'DELETE',
+        headers: headers
+    }).then(function (res) {
+        if (res.ok || res.status === 204) return { ok: true };
+        return res.text().then(function (t) {
+            console.warn('Supabase delete avaliacoes', res.status, t);
+            return { ok: false, mensagem: t || String(res.status) };
+        });
+    }).catch(function (err) {
+        console.warn(err);
+        return { ok: false, offline: true };
+    });
+}
+
 function registrarAvaliacaoLocal(empresaId, nota, idn, mes, comentario) {
     const avaliacoes = getAvaliacoesLocais();
     const payload = {
@@ -383,8 +403,14 @@ function atualizarMediaNaPagina(empresaId) {
             if (stars) stars.innerHTML = '';
             return;
         }
-        if (num) num.textContent = (Math.round(m.media * 10) / 10).toFixed(1);
-        if (txt) txt.textContent = m.total + (m.total === 1 ? ' avaliação' : ' avaliações');
+        var mediaFmt = (Math.round(m.media * 10) / 10).toFixed(1);
+        var soma = (m.soma != null && m.soma > 0) ? m.soma : Math.round(m.media * m.total);
+        // Número grande = SOMA de estrelas (o que o gestor usa no desconto)
+        if (num) num.textContent = soma + '★';
+        if (txt) {
+            txt.textContent = soma + '★ no ranking · média ' + mediaFmt +
+                ' (' + m.total + (m.total === 1 ? ' voto)' : ' votos)');
+        }
         if (stars) stars.innerHTML = renderMediaEstrelas(m.media, m.total);
     }
     // local imediato
@@ -546,6 +572,7 @@ window.Avaliacoes = {
     atualizarMediaNaPagina,
     sbMediaEmpresa,
     sbResumoTodas,
+    sbApagarAvaliacoesEmpresa,
     normalizarCelular,
     getAnuncianteLogado,
     getAparelhoId,
