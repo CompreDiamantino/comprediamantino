@@ -697,12 +697,12 @@
             }
         }
 
-        function carregarOfertasHome() {
+        function carregarOfertasHome(listaNuvem) {
             var el = document.getElementById('ofertasPorSetor');
             if (!el) return;
             try {
                 if (window.RankingCD) {
-                    RankingCD.renderOfertasNaHome('ofertasPorSetor');
+                    RankingCD.renderOfertasNaHome('ofertasPorSetor', listaNuvem || null);
                     return;
                 }
             } catch (e) { console.error(e); }
@@ -710,7 +710,16 @@
         }
         function bootHome() {
             carregarDestaquesHome();
-            carregarOfertasHome();
+            // Ranking: tenta com lista da nuvem (mesmos IDs dos votos no Supabase)
+            if (window.LojistasNuvem && LojistasNuvem.puxar) {
+                LojistasNuvem.puxar(function (lista) {
+                    carregarOfertasHome(lista || []);
+                }).catch(function () {
+                    carregarOfertasHome(null);
+                });
+            } else {
+                carregarOfertasHome(null);
+            }
         }
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', bootHome);

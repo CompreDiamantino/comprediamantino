@@ -112,22 +112,49 @@
         return estrelasEmpresaLocal(empresaId);
     }
 
-    function listarEmpresas() {
-        if (window.EmpresasDados && EmpresasDados.seedSeVazio) {
-            return EmpresasDados.seedSeVazio().filter(function (e) {
-                return (e.status === 'ativo' || e.status === 'aviso') && !e.publico;
-            });
+    function statusVisivel(st) {
+        st = String(st || '').toLowerCase();
+        return st === 'ativo' || st === 'aviso' || st === 'pago' || st === 'aprovado' || st === 'publicado' || st === '';
+    }
+
+    /**
+     * Lista empresas para o ranking.
+     * Une: lista opcional (Firestore) + EmpresasDados local.
+     * Sem isso a home ficava só com o mapa local e os IDs não batiam com o Supabase.
+     */
+    function listarEmpresas(listaExtra) {
+        var mapa = {};
+        function add(e) {
+            if (!e || !e.id || e.publico) return;
+            if (!statusVisivel(e.status) && !e.aprovadoEm) return;
+            var id = String(e.id);
+            if (!mapa[id]) mapa[id] = e;
+            else {
+                // prefere quem tem nome/whatsapp mais completo
+                var cur = mapa[id];
+                if ((!cur.nome || cur.nome.length < 2) && e.nome) mapa[id] = e;
+            }
         }
-        return [];
+        if (Array.isArray(listaExtra)) listaExtra.forEach(add);
+        try {
+            if (window.EmpresasDados && EmpresasDados.seedSeVazio) {
+                EmpresasDados.seedSeVazio().forEach(add);
+            }
+        } catch (e) {}
+        try {
+            var local = JSON.parse(localStorage.getItem('cd_lojistas') || '[]');
+            if (Array.isArray(local)) local.forEach(add);
+        } catch (e) {}
+        return Object.keys(mapa).map(function (k) { return mapa[k]; });
     }
 
     /**
      * Top N por categoria.
      * Se mapaNuvem for passado, usa dados da nuvem; senão usa só localStorage.
      */
-    function topPorCategoria(limite, mapaNuvem) {
+    function topPorCategoria(limite, mapaNuvem, listaExtra) {
         limite = limite || 10;
-        const empresas = listarEmpresas().map(function (e) {
+        const empresas = listarEmpresas(listaExtra).map(function (e) {
             const est = estrelasEmpresa(e.id, mapaNuvem);
             return Object.assign({}, e, {
                 estrelas: est.total,          // soma (para ordenação e badge)
@@ -163,14 +190,14 @@
     }
 
     /** Ofertas: promoções salvas + top estrelas do setor */
-    function ofertasPorSetor(limitePorSetor, mapaNuvem) {
+    function ofertasPorSetor(limitePorSetor, mapaNuvem, listaExtra) {
         limitePorSetor = limitePorSetor || 3;
         let promos = [];
         try {
             promos = JSON.parse(localStorage.getItem('cd_promocoes') || '[]');
         } catch (e) {}
 
-        const tops = topPorCategoria(10, mapaNuvem);
+        const tops = topPorCategoria(10, mapaNuvem, listaExtra);
         return tops.map(function (bloco) {
             const ofertas = [];
             promos.forEach(function (p) {
@@ -226,12 +253,12 @@
      * Busca avaliacoes_resumo no Supabase e só então monta os cards.
      * Fallback automático para localStorage se a nuvem falhar.
      */
-    function renderOfertasNaHome(containerId) {
+    function renderOfertasNaHome(containerId, listaEmpresas) {
         const el = document.getElementById(containerId || 'ofertasPorSetor');
         if (!el) return;
 
-        function pintar(mapaNuvem) {
-            const blocos = ofertasPorSetor(3, mapaNuvem || {});
+        function pintar(mapaNuvem, listaExtra) {
+            const blocos = ofertasPorSetor(3, mapaNuvem || {}, listaExtra);
             if (!blocos.length) {
                 el.innerHTML = '<p class="text-center text-gray-400">Nenhuma oferta no momento. Seja o primeiro a anunciar!</p>';
                 return;
@@ -280,14 +307,46 @@
             // mantém conteúdo atual ou placeholder
         }
 
+        function carregarListaEPintar(mapa) {
+            // Se o caller já passou a lista (ex.: index após LojistasNuvem.puxar), usa ela
+            if (Array.isArray(listaEmpresas) && listaEmpresas.length) {
+                el.dataset.rankingLoading = '';
+                pintar(mapa, listaEmpresas);
+                return;
+            }
+            // Tenta puxar da nuvem (Firestore) para bater o mesmo ID do voto
+            if (window.LojistasNuvem && typeof LojistasNuvem.puxar === 'function') {
+                try {
+                    var p = LojistasNuvem.puxar(function (lista) {
+                        el.dataset.rankingLoading = '';
+                        pintar(mapa, lista || []);
+                    });
+                    if (p && typeof p.catch === 'function') {
+                        p.catch(function () {
+                            el.dataset.rankingLoading = '';
+                            pintar(mapa, []);
+                        });
+                    }
+                    // timeout de segurança
+                    setTimeout(function () {
+                        if (el.dataset.rankingLoading === '1') {
+                            el.dataset.rankingLoading = '';
+                            pintar(mapa, []);
+                        }
+                    }, 4000);
+                    return;
+                } catch (e) {}
+            }
+            el.dataset.rankingLoading = '';
+            pintar(mapa, []);
+        }
+
         carregarResumoNuvem()
             .then(function (mapa) {
-                el.dataset.rankingLoading = '';
-                pintar(mapa);
+                carregarListaEPintar(mapa);
             })
             .catch(function () {
-                el.dataset.rankingLoading = '';
-                pintar({}); // fallback local
+                carregarListaEPintar({});
             });
     }
 
