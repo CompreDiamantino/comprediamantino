@@ -8,7 +8,7 @@ const ULTIMOS_LOGINS_KEY = 'cd_ultimos_logins';
 const MAX_ULTIMOS = 3;
 const GESTOR_SESSION_KEY = 'cd_gestor';
 const ADMIN_SESSION_KEY = 'cd_admin';
-const INACTIVITY_MS = 60 * 1000; // 1 minuto
+const INACTIVITY_MS = 10 * 60 * 1000; // 10 minutos
 
 /** Senhas de LOGIN completo do gestor (iguais ao padrão IBN) */
 const SENHAS_GESTOR_LOGIN = [
@@ -178,7 +178,7 @@ function tocarAtividadeGestor() {
     } catch (_) {}
 }
 
-/** Verifica se passou 1 min sem atividade → bloqueia (pede só senha) */
+/** Verifica se passou 10 min sem atividade → bloqueia (pede só senha) */
 function verificarInatividadeGestor() {
     const g = getGestorSession();
     if (!g || !g.logado) return { ok: false, motivo: 'sem_sessao' };
@@ -218,7 +218,7 @@ function logoutGestorCompleto() {
 /**
  * Protege páginas do gestor.
  * - Se não logado → redireciona para gestor-login
- * - Se inativo (1 min) → mostra modal pedindo só a senha
+ * - Se inativo (10 min) → mostra modal pedindo só a senha
  * - Se ok → registra atividade e permite navegação
  */
 function protegerPaginaGestor(opcoes) {
@@ -271,7 +271,7 @@ function mostrarModalBloqueioGestor(usuario) {
                     <i class="fas fa-lock" style="color:#D97706;font-size:20px;"></i>
                 </div>
                 <h3 style="font-weight:700;color:#0A2A6B;font-size:18px;margin:0;">Sessão pausada</h3>
-                <p style="color:#6B7280;font-size:13px;margin:6px 0 0;">Ficou 1 minuto sem mexer. Digite a senha rápida de acesso para continuar.</p>
+                <p style="color:#6B7280;font-size:13px;margin:6px 0 0;">Ficou 10 minutos sem mexer. Digite a senha rápida de acesso para continuar.</p>
             </div>
             <p style="font-size:12px;color:#9CA3AF;margin-bottom:8px;">Usuário: <strong style="color:#374151;">${(usuario || 'gestor').replace(/</g, '')}</strong></p>
             <div style="position:relative;margin-bottom:12px;">
