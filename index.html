@@ -575,8 +575,6 @@
     <script src="firebase-config.js"></script>
     <script src="lojistas-nuvem.js"></script>
     <script src="empresas-dados.js"></script>
-    <script src="supabase-config.js"></script>
-    <script src="avaliacoes.js"></script>
     <script src="ranking.js"></script>
     <script>
         /** Empresas em Destaque na home — busca na nuvem (Firestore) + fallback localStorage */
@@ -665,7 +663,7 @@
                     '<h3 class="font-bold text-gray-900 text-base leading-snug mb-1 line-clamp-2">' + (lj.nome || '') + '</h3>' +
                     (cat ? '<p class="text-xs text-gray-400 mb-3"><i class="fas fa-tag mr-1"></i>' + cat + '</p>' : '<p class="mb-3"></p>') +
                     '<div class="mt-auto flex gap-2">' +
-                    '<a href="empresa.html?id=' + encodeURIComponent(lj.id) + '" class="flex-1 text-center bg-primary text-white text-sm font-bold py-2 rounded-xl hover:bg-accent transition">Ver perfil</a>' +
+                    '<a href="empresa.html?id=' + encodeURIComponent(lj.id) + '" class="flex-1 text-center bg-primary text-white text-sm font-bold py-2 rounded-xl hover:bg-accent transition">Ver empresa</a>' +
                     waBtn +
                     '</div></div></article>';
             }).join('');
@@ -697,12 +695,12 @@
             }
         }
 
-        function carregarOfertasHome(listaNuvem) {
+        function carregarOfertasHome() {
             var el = document.getElementById('ofertasPorSetor');
             if (!el) return;
             try {
                 if (window.RankingCD) {
-                    RankingCD.renderOfertasNaHome('ofertasPorSetor', listaNuvem || null);
+                    RankingCD.renderOfertasNaHome('ofertasPorSetor');
                     return;
                 }
             } catch (e) { console.error(e); }
@@ -710,16 +708,7 @@
         }
         function bootHome() {
             carregarDestaquesHome();
-            // Ranking: tenta com lista da nuvem (mesmos IDs dos votos no Supabase)
-            if (window.LojistasNuvem && LojistasNuvem.puxar) {
-                LojistasNuvem.puxar(function (lista) {
-                    carregarOfertasHome(lista || []);
-                }).catch(function () {
-                    carregarOfertasHome(null);
-                });
-            } else {
-                carregarOfertasHome(null);
-            }
+            carregarOfertasHome();
         }
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', bootHome);

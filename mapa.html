@@ -84,7 +84,7 @@
                         ${dist}
                     </div>
                     <div class="flex flex-wrap gap-2">
-                        <a href="empresa.html?id=${e.id}" class="text-xs bg-primary text-white px-3 py-1.5 rounded-lg font-semibold">Ver perfil</a>
+                        <a href="empresa.html?id=${e.id}" class="text-xs bg-primary text-white px-3 py-1.5 rounded-lg font-semibold">Ver empresa</a>
                         <a href="${dir}" target="_blank" class="text-xs bg-secondary text-primary px-3 py-1.5 rounded-lg font-semibold">Como chegar</a>
                         ${e.whatsapp ? `<a href="https://wa.me/55${String(e.whatsapp).replace(/\D/g,'')}" target="_blank" class="text-xs bg-green-500 text-white px-3 py-1.5 rounded-lg font-semibold"><i class="fab fa-whatsapp"></i></a>` : ''}
                     </div>
@@ -111,7 +111,7 @@
                         <div style="min-width:180px;font-family:sans-serif">
                             <strong>${e.nome}</strong><br>
                             <span style="color:#666;font-size:12px">${e.endereco || ''}</span><br>
-                            <a href="empresa.html?id=${e.id}" style="font-size:12px">Ver perfil</a> ·
+                            <a href="empresa.html?id=${e.id}" style="font-size:12px">Ver empresa</a> ·
                             <a href="${dir}" target="_blank" style="font-size:12px">Como chegar</a>
                         </div>`
                 });
@@ -215,5 +215,6 @@
         if (window.AuthUtils && AuthUtils.renderBarraSessao) AuthUtils.renderBarraSessao();
       });
     </script>
+<script src="install-app.js"></script>
 </body>
 </html>

@@ -137,7 +137,7 @@
                     '<div class="min-w-0"><h3 class="font-bold text-gray-900 text-lg mb-0.5 leading-snug">' + e.nome + '</h3>' +
                     '<p class="text-xs text-gray-400">' + (e.endereco || 'Diamantino-MT') + '</p></div></div>' +
                     '<div class="mt-auto flex gap-2">' +
-                    '<a href="empresa.html?id=' + encodeURIComponent(e.id) + '" class="flex-1 text-center bg-primary text-white text-sm font-bold py-2 rounded-xl">Ver perfil</a>' +
+                    '<a href="empresa.html?id=' + encodeURIComponent(e.id) + '" class="flex-1 text-center bg-primary text-white text-sm font-bold py-2 rounded-xl">Ver empresa</a>' +
                     (wa ? '<a href="' + wa + '" target="_blank" class="bg-green-500 text-white w-11 flex items-center justify-center rounded-xl"><i class="fab fa-whatsapp"></i></a>' : '') +
                     '</div></div>';
             }).join('') +
@@ -165,5 +165,6 @@
         if (window.AuthUtils && AuthUtils.renderBarraSessao) AuthUtils.renderBarraSessao();
       });
     </script>
+<script src="install-app.js"></script>
 </body>
 </html>

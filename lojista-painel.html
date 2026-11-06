@@ -352,8 +352,42 @@
                 <div class="bg-blue-50 border border-blue-100 rounded-xl p-4 text-sm text-blue-900 mb-6">
                     <i class="fas fa-info-circle mr-1"></i>
                     Quanto mais avaliações positivas, maior a chance de benefício na <strong>próxima mensalidade</strong>
-                    (vale inclusive após a semana grátis). O <strong>% de desconto</strong> é calculado e aplicado
-                    somente pela <strong>gestão do portal</strong> — você acompanha as estrelas aqui.
+                    (vale após o 1º mês grátis). Os mais votados podem ganhar até <strong>100% de desconto</strong>; Top 10 não paga.
+                    O benefício é aplicado pela <strong>gestão</strong> — você acompanha as estrelas aqui.
+                </div>
+
+                <!-- Faturamento / forma de pagamento (após perfil e fotos prontos) -->
+                <div class="border border-gray-200 rounded-xl p-5 mb-6 bg-gray-50">
+                    <h3 class="font-bold text-primary mb-1"><i class="fas fa-wallet mr-1"></i> Faturamento e pagamento</h3>
+                    <p class="text-xs text-gray-500 mb-4">Depois que o cadastro estiver completo (fotos postadas), escolha aqui o dia e a forma de pagamento da taxa de manutenção — se houver. No 1º mês é grátis.</p>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-3">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Dia preferido do mês</label>
+                            <select id="ljDiaPagamento" class="w-full border border-gray-200 rounded-xl px-3 py-2.5 bg-white text-sm focus:outline-none focus:border-primary">
+                                <option value="">Selecione…</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Forma de pagamento</label>
+                            <select id="ljFormaPagamento" class="w-full border border-gray-200 rounded-xl px-3 py-2.5 bg-white text-sm focus:outline-none focus:border-primary">
+                                <option value="">Selecione…</option>
+                                <option value="pix">PIX</option>
+                                <option value="consignado">Consignado (a combinar)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div id="boxConsignado" class="hidden mb-3">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">O que você tem para oferecer em consignado? (opcional)</label>
+                        <textarea id="ljObsConsignado" rows="2" class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-primary" placeholder="Ex.: produto, serviço ou troca que a gestão possa precisar"></textarea>
+                        <p class="text-[11px] text-gray-400 mt-1">A gestão entra em contato para combinar. Não é obrigação — é uma opção.</p>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-3">
+                        <button type="button" id="btnSalvarPagamento" class="bg-primary text-white font-bold px-5 py-2.5 rounded-xl text-sm hover:bg-accent transition">
+                            Salvar preferências
+                        </button>
+                        <span id="msgPagamento" class="text-xs hidden"></span>
+                    </div>
+                    <p id="resumoPagamento" class="text-xs text-gray-500 mt-3"></p>
                 </div>
                 
                 <div id="listaAvaliacoes" class="space-y-3">
@@ -531,6 +565,105 @@
         
         // ========== TABS ==========
         const tabs = document.querySelectorAll('.nav-item');
+
+        // --- Preferências de pagamento (dia + PIX / consignado) ---
+        (function initPagamentoLojista() {
+            var selDia = document.getElementById('ljDiaPagamento');
+            var selForma = document.getElementById('ljFormaPagamento');
+            var boxCons = document.getElementById('boxConsignado');
+            var obsCons = document.getElementById('ljObsConsignado');
+            var btn = document.getElementById('btnSalvarPagamento');
+            var msg = document.getElementById('msgPagamento');
+            var resumo = document.getElementById('resumoPagamento');
+            if (!selDia || !btn) return;
+
+            for (var d = 1; d <= 28; d++) {
+                var opt = document.createElement('option');
+                opt.value = String(d);
+                opt.textContent = 'Dia ' + d;
+                selDia.appendChild(opt);
+            }
+
+            function carregarPrefs() {
+                var id = (lojista && (lojista.empresaId || lojista.id)) || '';
+                var reg = null;
+                try {
+                    var lista = JSON.parse(localStorage.getItem('cd_lojistas_admin') || '[]');
+                    reg = lista.find(function (l) { return String(l.id) === String(id); });
+                } catch (e) {}
+                var dia = (reg && reg.diaPagamento) || (lojista && lojista.diaPagamento) || '';
+                var forma = (reg && reg.formaPagamento) || (lojista && lojista.formaPagamento) || '';
+                var obs = (reg && reg.obsConsignado) || (lojista && lojista.obsConsignado) || '';
+                if (dia) selDia.value = String(dia);
+                if (forma) selForma.value = forma;
+                if (obsCons) obsCons.value = obs || '';
+                if (boxCons) boxCons.classList.toggle('hidden', forma !== 'consignado');
+                atualizarResumo(dia, forma, obs);
+            }
+
+            function atualizarResumo(dia, forma, obs) {
+                if (!resumo) return;
+                if (!dia && !forma) {
+                    resumo.textContent = 'Ainda não definido — você pode escolher quando o perfil e as fotos estiverem prontos.';
+                    return;
+                }
+                var partes = [];
+                if (dia) partes.push('Dia ' + dia + ' de cada mês');
+                if (forma === 'pix') partes.push('PIX');
+                if (forma === 'consignado') partes.push('Consignado a combinar' + (obs ? ' (' + obs + ')' : ''));
+                resumo.textContent = 'Salvo: ' + partes.join(' · ');
+            }
+
+            if (selForma) {
+                selForma.addEventListener('change', function () {
+                    if (boxCons) boxCons.classList.toggle('hidden', selForma.value !== 'consignado');
+                });
+            }
+
+            btn.addEventListener('click', function () {
+                var dia = selDia.value ? parseInt(selDia.value, 10) : null;
+                var forma = selForma ? selForma.value : '';
+                var obs = obsCons ? obsCons.value.trim() : '';
+                if (!dia && !forma) {
+                    if (msg) {
+                        msg.classList.remove('hidden');
+                        msg.className = 'text-xs text-red-600';
+                        msg.textContent = 'Escolha ao menos o dia ou a forma de pagamento.';
+                    }
+                    return;
+                }
+                var id = (lojista && (lojista.empresaId || lojista.id)) || '';
+                try {
+                    var lista = JSON.parse(localStorage.getItem('cd_lojistas_admin') || '[]');
+                    var idx = lista.findIndex(function (l) { return String(l.id) === String(id); });
+                    if (idx >= 0) {
+                        lista[idx].diaPagamento = dia;
+                        lista[idx].formaPagamento = forma || null;
+                        lista[idx].obsConsignado = forma === 'consignado' ? obs : '';
+                        lista[idx].pagamentoDefinidoEm = new Date().toISOString();
+                        localStorage.setItem('cd_lojistas_admin', JSON.stringify(lista));
+                        if (window.LojistasNuvem && LojistasNuvem.salvarUm) {
+                            LojistasNuvem.salvarUm(lista[idx]).catch(function () {});
+                        }
+                    }
+                    if (lojista) {
+                        lojista.diaPagamento = dia;
+                        lojista.formaPagamento = forma || null;
+                        lojista.obsConsignado = forma === 'consignado' ? obs : '';
+                        localStorage.setItem('cd_lojista', JSON.stringify(lojista));
+                    }
+                } catch (e) {}
+                atualizarResumo(dia, forma, obs);
+                if (msg) {
+                    msg.classList.remove('hidden');
+                    msg.className = 'text-xs text-green-700';
+                    msg.textContent = 'Preferências salvas.';
+                }
+            });
+
+            carregarPrefs();
+        })();
+
         const contents = document.querySelectorAll('.tab-content');
         
         tabs.forEach(tab => {

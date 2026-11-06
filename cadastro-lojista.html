@@ -171,43 +171,6 @@
                 <span class="block text-sm text-gray-500 ml-6"><strong>5 fotos por dia</strong> · destaque e prioridade no mapa · 1º mês grátis · depois no máx. R$ 30/mês (valor a definir)</span>
             </label>
 
-            <div class="border border-gray-200 rounded-xl p-4 bg-gray-50">
-                <label class="block text-sm font-medium text-gray-800 mb-1">Melhor dia para pagamento (após o 1º mês grátis) *</label>
-                <p class="text-xs text-gray-500 mb-2">Escolha o dia do mês em que prefere pagar a manutenção, se houver. O vencimento mensal segue esse dia (só depois do período gratuito).</p>
-                <select id="diaPagamento" required class="w-full border border-gray-200 rounded-xl px-4 py-2.5 bg-white focus:outline-none focus:border-primary">
-                    <option value="">Selecione o dia…</option>
-                    <option value="1">1</option>
-                    <option value="2">2</option>
-                    <option value="3">3</option>
-                    <option value="4">4</option>
-                    <option value="5">5</option>
-                    <option value="6">6</option>
-                    <option value="7">7</option>
-                    <option value="8">8</option>
-                    <option value="9">9</option>
-                    <option value="10">10</option>
-                    <option value="11">11</option>
-                    <option value="12">12</option>
-                    <option value="13">13</option>
-                    <option value="14">14</option>
-                    <option value="15">15</option>
-                    <option value="16">16</option>
-                    <option value="17">17</option>
-                    <option value="18">18</option>
-                    <option value="19">19</option>
-                    <option value="20">20</option>
-                    <option value="21">21</option>
-                    <option value="22">22</option>
-                    <option value="23">23</option>
-                    <option value="24">24</option>
-                    <option value="25">25</option>
-                    <option value="26">26</option>
-                    <option value="27">27</option>
-                    <option value="28">28</option>
-                </select>
-                <p class="text-[11px] text-gray-400 mt-1">Dias 1 a 28 (evita problema em meses curtos). A gestão usa este dia no boleto/aviso de renovação.</p>
-            </div>
-
             <div class="border border-gray-200 rounded-xl p-4">
                 <p class="text-sm font-medium text-gray-800 mb-2">Faz entrega? *</p>
                 <div class="flex flex-wrap gap-4 text-sm">
@@ -471,11 +434,6 @@
                 return;
             }
             if (n === 4) {
-                const diaEl = document.getElementById('diaPagamento');
-                if (!diaEl || !diaEl.value) {
-                    alert('Escolha o melhor dia do mês para o pagamento.');
-                    return;
-                }
                 const plano = document.querySelector('input[name="plano"]:checked').value;
                 const planoTxt = plano === 'plus' ? 'Plus — 5 fotos (1º mês grátis · depois no máx. R$ 30)' : 'Básico — 3 fotos (1º mês grátis · depois no máx. R$ 20)';
                 document.getElementById('resumo').innerHTML =
@@ -491,8 +449,7 @@
                     ((window._cadFotosData && window._cadFotosData.length) ? '<p><strong>Fotos:</strong> ' + window._cadFotosData.length + ' enviada(s)</p>' : '') +
                     ((window._cadLogoData) ? '<p><strong>Logo:</strong> sim</p>' : '') +
                     '<p><strong>Plano:</strong> ' + planoTxt + '</p>' +
-                    '<p><strong>Dia de pagamento:</strong> todo dia ' + (document.getElementById('diaPagamento').value || '—') + ' (após o 1º mês grátis)</p>' +
-                    '<p><strong>1º mês grátis</strong> · depois taxa de manutenção (valor a definir, no máx. R$ 20 ou R$ 30) · mais votados até 100% de desconto · Top 10 não paga</p>';
+                                        '<p><strong>1º mês grátis</strong> · depois taxa de manutenção (se houver) · mais votados até 100% de desconto · Top 10 não paga · dia e forma de pagamento você escolhe depois no painel</p>';
             }
 
             for (let i = 1; i <= 4; i++) {
@@ -570,21 +527,17 @@
                 logo: window._cadLogoData || '',
                 fotos: (window._cadFotosData || []).slice(0, 3),
                 plano: plano,
-                diaPagamento: parseInt(document.getElementById('diaPagamento').value, 10) || 10,
+                diaPagamento: null,
                 status: 'pendente',
                 vencimento: null,
                 criadoEm: new Date().toISOString(),
                 trialDias: 30
             };
-            // Calcula 1º vencimento após trial (30 dias = 1º mês grátis), no dia escolhido
+            // 1º vencimento após trial (30 dias). Dia e forma de pagamento o lojista define depois no painel.
             (function () {
-                const dia = reg.diaPagamento;
                 const base = new Date();
                 base.setDate(base.getDate() + 30);
-                let y = base.getFullYear(), m = base.getMonth(), d = dia;
-                let venc = new Date(y, m, d);
-                if (venc < base) venc = new Date(y, m + 1, d);
-                reg.vencimento = venc.toISOString().slice(0, 10);
+                reg.vencimento = base.toISOString().slice(0, 10);
             })();
 
             // Sobe logo/fotos para R2 se configurado (senão mantém data:URL)

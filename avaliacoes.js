@@ -276,26 +276,6 @@ function sbResumoTodas() {
         .catch(function () { return []; });
 }
 
-/** Apaga todos os votos de uma empresa no Supabase (usado na exclusão total do gestor) */
-function sbApagarAvaliacoesEmpresa(empresaId) {
-    var headers = sbHeaders();
-    var url = sbUrl('avaliacoes?empresa_id=eq.' + encodeURIComponent(String(empresaId)));
-    if (!headers || !url) return Promise.resolve({ ok: false, offline: true });
-    return fetch(url, {
-        method: 'DELETE',
-        headers: headers
-    }).then(function (res) {
-        if (res.ok || res.status === 204) return { ok: true };
-        return res.text().then(function (t) {
-            console.warn('Supabase delete avaliacoes', res.status, t);
-            return { ok: false, mensagem: t || String(res.status) };
-        });
-    }).catch(function (err) {
-        console.warn(err);
-        return { ok: false, offline: true };
-    });
-}
-
 function registrarAvaliacaoLocal(empresaId, nota, idn, mes, comentario) {
     const avaliacoes = getAvaliacoesLocais();
     const payload = {
@@ -403,14 +383,8 @@ function atualizarMediaNaPagina(empresaId) {
             if (stars) stars.innerHTML = '';
             return;
         }
-        var mediaFmt = (Math.round(m.media * 10) / 10).toFixed(1);
-        var soma = (m.soma != null && m.soma > 0) ? m.soma : Math.round(m.media * m.total);
-        // Número grande = SOMA de estrelas (o que o gestor usa no desconto)
-        if (num) num.textContent = soma + '★';
-        if (txt) {
-            txt.textContent = soma + '★ no ranking · média ' + mediaFmt +
-                ' (' + m.total + (m.total === 1 ? ' voto)' : ' votos)');
-        }
+        if (num) num.textContent = (Math.round(m.media * 10) / 10).toFixed(1);
+        if (txt) txt.textContent = m.total + (m.total === 1 ? ' avaliação' : ' avaliações');
         if (stars) stars.innerHTML = renderMediaEstrelas(m.media, m.total);
     }
     // local imediato
@@ -467,8 +441,8 @@ function renderEstrelasAvaliacao(containerId, empresaId) {
 
     container.innerHTML = `
         <div class="bg-white border border-gray-200 rounded-xl p-5">
-            <h3 class="font-bold text-gray-800 mb-1">Avalie este estabelecimento</h3>
-            <p class="text-xs text-gray-500 mb-3">De 1 a 5 estrelas. Pode avaliar várias lojas. Cada loja: 1 voto por mês${logado ? ' por conta' : ' por aparelho'}.</p>
+            <h3 class="font-bold text-gray-800 mb-1">Avalie esta empresa</h3>
+            <p class="text-xs text-gray-500 mb-3">Toque nas estrelas (1 a 5). Pode avaliar várias lojas. Cada loja: 1 voto por mês${logado ? ' por conta' : ' por aparelho'}. Quanto mais estrelas a empresa receber, maior o desconto na mensalidade (até 100%).</p>
             ${avisoLogado}
             ${campoCelular}
             <div class="flex gap-1 mb-4" id="estrelasSelect">
@@ -572,7 +546,6 @@ window.Avaliacoes = {
     atualizarMediaNaPagina,
     sbMediaEmpresa,
     sbResumoTodas,
-    sbApagarAvaliacoesEmpresa,
     normalizarCelular,
     getAnuncianteLogado,
     getAparelhoId,
