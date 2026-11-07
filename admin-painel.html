@@ -181,24 +181,40 @@
             </div>
             <div id="detRedes" class="text-sm space-y-1"></div>
 
-            <!-- Avaliação sigilosa — só gestão vê -->
-            <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-2">
-                <p class="text-xs font-bold text-slate-700"><i class="fas fa-user-shield mr-1"></i> Avaliação sigilosa (só gestão)</p>
-                <p class="text-[11px] text-slate-500">Nota interna para qualificar o anunciante. Não aparece no site público nem para o lojista.</p>
-                <div class="flex flex-wrap items-center gap-2">
-                    <label class="text-xs text-slate-600">Nota:</label>
-                    <select id="detNotaSigilosa" class="border border-gray-200 rounded-lg px-2 py-1.5 text-sm bg-white">
-                        <option value="">—</option>
-                        <option value="1">1 ★</option>
-                        <option value="2">2 ★</option>
-                        <option value="3">3 ★</option>
-                        <option value="4">4 ★</option>
-                        <option value="5">5 ★</option>
-                    </select>
-                    <button type="button" id="btnSalvarNotaSigilosa" class="bg-slate-800 text-white text-xs font-bold px-3 py-1.5 rounded-lg hover:bg-slate-700">Salvar nota</button>
-                    <span id="msgNotaSigilosa" class="text-[11px] hidden"></span>
+            <!-- Avaliação sigilosa — só gestão vê (soma/remove estrelas) -->
+            <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3">
+                <p class="text-xs font-bold text-slate-700"><i class="fas fa-user-shield mr-1"></i> Estrelas sigilosas (só gestão)</p>
+                <p class="text-[11px] text-slate-500">Saldo interno só da gestão (bônus ou punição). Não mistura com as estrelas públicas: o site mostra só a soma dos votos reais (no máx. 5★ × quantidade de avaliações).</p>
+                <p class="text-sm font-semibold text-slate-800">Saldo sigiloso: <span id="detSaldoSigiloso" class="text-primary">0</span> ★</p>
+                <div>
+                    <p class="text-[11px] text-slate-600 mb-1.5">Acrescentar</p>
+                    <div class="flex flex-wrap gap-1.5" id="btnsAddEstrelas">
+                        <button type="button" data-delta="1" class="btn-delta-add text-xs font-bold px-2.5 py-1.5 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100">+1</button>
+                        <button type="button" data-delta="5" class="btn-delta-add text-xs font-bold px-2.5 py-1.5 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100">+5</button>
+                        <button type="button" data-delta="10" class="btn-delta-add text-xs font-bold px-2.5 py-1.5 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100">+10</button>
+                        <button type="button" data-delta="21" class="btn-delta-add text-xs font-bold px-2.5 py-1.5 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100">+21</button>
+                        <button type="button" data-delta="30" class="btn-delta-add text-xs font-bold px-2.5 py-1.5 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100">+30</button>
+                        <button type="button" data-delta="50" class="btn-delta-add text-xs font-bold px-2.5 py-1.5 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100">+50</button>
+                    </div>
                 </div>
-                <textarea id="detObsSigilosa" rows="2" class="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-xs" placeholder="Observação interna (opcional)"></textarea>
+                <div>
+                    <p class="text-[11px] text-slate-600 mb-1.5">Remover (punição / ajuste)</p>
+                    <div class="flex flex-wrap gap-1.5" id="btnsRemEstrelas">
+                        <button type="button" data-delta="-1" class="btn-delta-rem text-xs font-bold px-2.5 py-1.5 rounded-lg bg-red-50 text-red-800 border border-red-200 hover:bg-red-100">−1</button>
+                        <button type="button" data-delta="-5" class="btn-delta-rem text-xs font-bold px-2.5 py-1.5 rounded-lg bg-red-50 text-red-800 border border-red-200 hover:bg-red-100">−5</button>
+                        <button type="button" data-delta="-10" class="btn-delta-rem text-xs font-bold px-2.5 py-1.5 rounded-lg bg-red-50 text-red-800 border border-red-200 hover:bg-red-100">−10</button>
+                        <button type="button" data-delta="-21" class="btn-delta-rem text-xs font-bold px-2.5 py-1.5 rounded-lg bg-red-50 text-red-800 border border-red-200 hover:bg-red-100">−21</button>
+                        <button type="button" data-delta="-30" class="btn-delta-rem text-xs font-bold px-2.5 py-1.5 rounded-lg bg-red-50 text-red-800 border border-red-200 hover:bg-red-100">−30</button>
+                        <button type="button" data-delta="-50" class="btn-delta-rem text-xs font-bold px-2.5 py-1.5 rounded-lg bg-red-50 text-red-800 border border-red-200 hover:bg-red-100">−50</button>
+                    </div>
+                </div>
+                <div class="flex flex-wrap items-center gap-2">
+                    <input type="number" id="detDeltaCustom" class="w-24 border border-gray-200 rounded-lg px-2 py-1.5 text-sm" placeholder="Ex: 15" />
+                    <button type="button" id="btnAddCustom" class="text-xs font-bold px-2.5 py-1.5 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700">+ valor</button>
+                    <button type="button" id="btnRemCustom" class="text-xs font-bold px-2.5 py-1.5 rounded-lg bg-red-600 text-white hover:bg-red-700">− valor</button>
+                </div>
+                <textarea id="detObsSigilosa" rows="2" class="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-xs" placeholder="Motivo (opcional) — ex.: punição por conteúdo, bônus por qualidade"></textarea>
+                <span id="msgNotaSigilosa" class="text-[11px] hidden block"></span>
             </div>
 
             <div class="flex flex-wrap gap-2 pt-2 border-t">
@@ -1423,44 +1439,75 @@
                 btnWa.classList.add('hidden');
             }
 
-            // Avaliação sigilosa (só gestão)
-            var selNota = document.getElementById('detNotaSigilosa');
+            // Estrelas sigilosas (só gestão) — saldo em cd_estrelas_empresa_ + campo no cadastro
+            window._detLojistaIdSigiloso = lj.id;
+            var saldoEl = document.getElementById('detSaldoSigiloso');
             var obsNota = document.getElementById('detObsSigilosa');
             var msgNota = document.getElementById('msgNotaSigilosa');
-            if (selNota) selNota.value = (lj.notaSigilosa != null && lj.notaSigilosa !== '') ? String(lj.notaSigilosa) : '';
+            var saldo = 0;
+            try {
+                saldo = parseInt(localStorage.getItem('cd_estrelas_empresa_' + lj.id) || '0', 10) || 0;
+            } catch (e) { saldo = 0; }
+            if (lj.estrelasSigilosas != null) saldo = parseInt(lj.estrelasSigilosas, 10) || saldo;
+            if (saldoEl) saldoEl.textContent = String(saldo);
             if (obsNota) obsNota.value = lj.obsSigilosa || '';
             if (msgNota) { msgNota.classList.add('hidden'); msgNota.textContent = ''; }
-            window._detLojistaIdSigiloso = lj.id;
         }
 
-        document.getElementById('btnSalvarNotaSigilosa') && document.getElementById('btnSalvarNotaSigilosa').addEventListener('click', function () {
+        function aplicarDeltaEstrelasSigilosas(delta) {
             var id = window._detLojistaIdSigiloso;
-            if (!id) return;
-            var selNota = document.getElementById('detNotaSigilosa');
+            if (!id || !delta) return;
+            delta = parseInt(delta, 10) || 0;
+            if (!delta) return;
             var obsNota = document.getElementById('detObsSigilosa');
             var msgNota = document.getElementById('msgNotaSigilosa');
-            var nota = selNota && selNota.value ? parseInt(selNota.value, 10) : null;
+            var saldoEl = document.getElementById('detSaldoSigiloso');
             var obs = obsNota ? obsNota.value.trim() : '';
+            var saldo = 0;
+            try {
+                saldo = parseInt(localStorage.getItem('cd_estrelas_empresa_' + id) || '0', 10) || 0;
+            } catch (e) { saldo = 0; }
+            saldo = saldo + delta;
+            // permite negativo (punição forte), mas não trava
+            try {
+                localStorage.setItem('cd_estrelas_empresa_' + id, String(saldo));
+            } catch (e2) {}
             try {
                 var lista = JSON.parse(localStorage.getItem('cd_lojistas_admin') || '[]');
                 var idx = lista.findIndex(function (l) { return String(l.id) === String(id); });
                 if (idx >= 0) {
-                    lista[idx].notaSigilosa = nota;
+                    lista[idx].estrelasSigilosas = saldo;
                     lista[idx].obsSigilosa = obs;
                     lista[idx].notaSigilosaEm = new Date().toISOString();
+                    var hist = Array.isArray(lista[idx].histSigiloso) ? lista[idx].histSigiloso : [];
+                    hist.unshift({ delta: delta, saldo: saldo, obs: obs, em: new Date().toISOString() });
+                    lista[idx].histSigiloso = hist.slice(0, 30);
                     localStorage.setItem('cd_lojistas_admin', JSON.stringify(lista));
                     if (window.LojistasNuvem && LojistasNuvem.salvarUm) {
                         LojistasNuvem.salvarUm(lista[idx]).catch(function () {});
                     }
                 }
-            } catch (e) {}
+            } catch (e3) {}
+            if (saldoEl) saldoEl.textContent = String(saldo);
             if (msgNota) {
                 msgNota.classList.remove('hidden');
-                msgNota.className = 'text-[11px] text-green-700';
-                msgNota.textContent = 'Nota sigilosa salva (só gestão).';
+                msgNota.className = 'text-[11px] ' + (delta > 0 ? 'text-green-700' : 'text-red-700');
+                msgNota.textContent = (delta > 0 ? 'Acrescentadas ' : 'Removidas ') + Math.abs(delta) + ' ★ · saldo sigiloso: ' + saldo;
             }
-            try { if (typeof renderTabela === 'function') renderTabela(); } catch (e2) {}
-            try { if (typeof carregarLista === 'function') carregarLista(); } catch (e3) {}
+        }
+
+        document.querySelectorAll('.btn-delta-add, .btn-delta-rem').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                aplicarDeltaEstrelasSigilosas(btn.getAttribute('data-delta'));
+            });
+        });
+        document.getElementById('btnAddCustom') && document.getElementById('btnAddCustom').addEventListener('click', function () {
+            var v = parseInt((document.getElementById('detDeltaCustom') || {}).value, 10) || 0;
+            if (v > 0) aplicarDeltaEstrelasSigilosas(v);
+        });
+        document.getElementById('btnRemCustom') && document.getElementById('btnRemCustom').addEventListener('click', function () {
+            var v = parseInt((document.getElementById('detDeltaCustom') || {}).value, 10) || 0;
+            if (v > 0) aplicarDeltaEstrelasSigilosas(-v);
         });
 
         window.verDetalheLojista = function (id) {

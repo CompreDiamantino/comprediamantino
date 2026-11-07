@@ -23,25 +23,40 @@
     var _resumoCache = null;
     var _resumoPromise = null;
 
-    /** Soma de estrelas local (fallback offline) */
+    /** Soma de estrelas local (fallback offline) — só votos reais; sigilosas não entram no público */
     function estrelasEmpresaLocal(empresaId) {
         let total = 0;
         let qtd = 0;
-        try {
-            const extra = parseInt(localStorage.getItem('cd_estrelas_empresa_' + empresaId) || '0', 10);
-            if (extra) total += extra;
-        } catch (e) {}
         try {
             const raw = JSON.parse(localStorage.getItem('cd_avaliacoes') || '{}');
             Object.keys(raw).forEach(function (k) {
                 const a = raw[k];
                 if (!a) return;
                 if (a.empresaId === empresaId || k.indexOf('_' + empresaId) !== -1 || k.endsWith(empresaId)) {
-                    total += parseInt(a.nota, 10) || 0;
+                    var nota = parseInt(a.nota, 10) || 0;
+                    if (nota < 1) nota = 0;
+                    if (nota > 5) nota = 5;
+                    total += nota;
                     qtd++;
                 }
             });
         } catch (e) {}
+        // Também lista por empresa, se existir
+        try {
+            const lista = JSON.parse(localStorage.getItem('cd_avaliacoes_lista_' + empresaId) || '[]');
+            if (Array.isArray(lista) && lista.length && qtd === 0) {
+                lista.forEach(function (a) {
+                    var nota = parseInt(a.nota, 10) || 0;
+                    if (nota < 1) nota = 0;
+                    if (nota > 5) nota = 5;
+                    total += nota;
+                    qtd++;
+                });
+            }
+        } catch (e2) {}
+        // Compatível: nunca mais estrelas do que qtd * 5
+        var max = qtd * 5;
+        if (qtd > 0 && total > max) total = max;
         return { total: total, qtd: qtd, media: qtd ? total / qtd : 0 };
     }
 
@@ -103,10 +118,14 @@
         var id = String(empresaId || '');
         if (mapaNuvem && mapaNuvem[id]) {
             var r = mapaNuvem[id];
+            var qtd = r.total || 0;
+            var soma = r.soma || 0;
+            var max = qtd * 5;
+            if (qtd > 0 && soma > max) soma = max;
             return {
-                total: r.soma || 0,
-                qtd: r.total || 0,
-                media: r.media || 0
+                total: soma,
+                qtd: qtd,
+                media: r.media || (qtd ? soma / qtd : 0)
             };
         }
         return estrelasEmpresaLocal(empresaId);
@@ -189,63 +208,47 @@
         return (Math.round(m * 10) / 10).toFixed(1);
     }
 
-    /** Ofertas: promoções salvas + top estrelas do setor */
+    /** Ofertas: só promoções reais publicadas pelos anunciantes (sem preencher com ranking) */
     function ofertasPorSetor(limitePorSetor, mapaNuvem, listaExtra) {
-        limitePorSetor = limitePorSetor || 3;
+        limitePorSetor = limitePorSetor || 6;
         let promos = [];
         try {
             promos = JSON.parse(localStorage.getItem('cd_promocoes') || '[]');
         } catch (e) {}
+        var agora = Date.now();
+        promos = promos.filter(function (p) {
+            if (!p || !p.empresaId) return false;
+            if (p.fim) {
+                var fim = new Date(p.fim).getTime();
+                if (!isNaN(fim) && fim < agora) return false;
+            }
+            return true;
+        });
+        if (!promos.length) return [];
 
-        const tops = topPorCategoria(10, mapaNuvem, listaExtra);
-        return tops.map(function (bloco) {
-            const ofertas = [];
-            promos.forEach(function (p) {
-                const emp = bloco.empresas.find(function (e) { return e.id === p.empresaId; });
-                if (emp) {
-                    ofertas.push({
-                        titulo: p.titulo || 'Oferta',
-                        texto: p.texto || p.descricao || '',
-                        empresa: emp.nome,
-                        empresaId: emp.id,
-                        whatsapp: emp.whatsapp || '',
-                        selo: p.selo || 'Oferta',
-                        estrelas: emp.estrelas,
-                        media: emp.media,
-                        numAvaliacoes: emp.numAvaliacoes
-                    });
-                }
+        const empresas = listarEmpresas(listaExtra);
+        const porId = {};
+        empresas.forEach(function (e) { if (e && e.id) porId[String(e.id)] = e; });
+
+        const porCat = {};
+        promos.forEach(function (p) {
+            var emp = porId[String(p.empresaId)];
+            if (!emp) return;
+            var catId = String(emp.categoria || 'outros').toLowerCase();
+            var catMeta = CATEGORIAS.find(function (c) { return c.id === catId; }) || { id: catId, nome: catId, icone: 'fa-store' };
+            if (!porCat[catId]) porCat[catId] = { categoria: catMeta, ofertas: [] };
+            if (porCat[catId].ofertas.length >= limitePorSetor) return;
+            porCat[catId].ofertas.push({
+                titulo: p.titulo || 'Promoção',
+                texto: p.texto || p.descricao || '',
+                empresa: emp.nome,
+                empresaId: emp.id,
+                whatsapp: emp.whatsapp || '',
+                selo: '',
+                estrelas: (estrelasEmpresa(emp.id, mapaNuvem) || {}).total || 0
             });
-            bloco.empresas.forEach(function (e) {
-                if (ofertas.length >= limitePorSetor) return;
-                if (ofertas.some(function (o) { return o.empresaId === e.id; })) return;
-
-                var textoRanking;
-                if (e.estrelas > 0) {
-                    textoRanking = e.estrelas + '★ no ranking · média ' +
-                        formatarMedia(e.media) +
-                        (e.numAvaliacoes ? ' (' + e.numAvaliacoes + ' voto' + (e.numAvaliacoes === 1 ? '' : 's') + ')' : '');
-                } else {
-                    textoRanking = '0★ no ranking';
-                }
-
-                ofertas.push({
-                    titulo: e.nome,
-                    texto: (e.endereco || 'Diamantino-MT') + ' · ' + textoRanking,
-                    empresa: e.nome,
-                    empresaId: e.id,
-                    whatsapp: e.whatsapp || '',
-                    selo: 'Top ★',
-                    estrelas: e.estrelas,
-                    media: e.media,
-                    numAvaliacoes: e.numAvaliacoes
-                });
-            });
-            return {
-                categoria: bloco.categoria,
-                ofertas: ofertas.slice(0, limitePorSetor)
-            };
-        }).filter(function (b) { return b.ofertas.length > 0; });
+        });
+        return Object.keys(porCat).map(function (k) { return porCat[k]; }).filter(function (b) { return b.ofertas.length > 0; });
     }
 
     /**
@@ -260,47 +263,29 @@
         function pintar(mapaNuvem, listaExtra) {
             const blocos = ofertasPorSetor(3, mapaNuvem || {}, listaExtra);
             if (!blocos.length) {
-                el.innerHTML = '<p class="text-center text-gray-400">Nenhuma oferta no momento. Seja o primeiro a anunciar!</p>';
+                el.innerHTML = '<p class="text-center text-gray-400 text-sm">Nenhuma promoção publicada no momento.</p>';
                 return;
             }
 
             el.innerHTML = blocos.map(function (b) {
                 const cards = b.ofertas.map(function (o) {
                     const wa = o.whatsapp
-                        ? 'https://wa.me/55' + String(o.whatsapp).replace(/\D/g, '') + '?text=' + encodeURIComponent('Olá! Vi ' + o.titulo + ' no Compre Diamantino')
-                        : 'empresa.html?id=' + o.empresaId;
-
-                    // Badge: soma de estrelas em destaque (o que o gestor usa no desconto)
-                    var badgeEstrelas = (o.estrelas > 0 ? o.estrelas : 0) + '★';
-
+                        ? 'https://wa.me/55' + String(o.whatsapp).replace(/\D/g, '') + '?text=' + encodeURIComponent('Olá! Vi a promoção no Compre Diamantino')
+                        : '';
                     var empUrl = 'empresa.html?id=' + encodeURIComponent(o.empresaId);
                     return (
-                        '<div class="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm card-hover">' +
-                        '<div class="flex justify-between items-start mb-2">' +
-                        '<span class="bg-secondary text-primary text-xs font-bold px-2.5 py-1 rounded-full">' + o.selo + '</span>' +
-                        '<span class="text-xs text-yellow-600 font-semibold">' + badgeEstrelas + '</span>' +
-                        '</div>' +
-                        '<h3 class="font-bold text-gray-900 mb-1">' + o.titulo + '</h3>' +
-                        '<p class="text-sm text-gray-500 mb-2">' + o.empresa + '</p>' +
-                        '<p class="text-sm text-gray-600 mb-4">' + o.texto + '</p>' +
-                        '<div class="flex flex-wrap gap-3">' +
-                        '<a href="' + empUrl + '" class="inline-flex items-center gap-1 text-sm font-bold text-primary hover:underline">Ver empresa</a>' +
-                        (o.whatsapp ? '<a href="' + wa + '" class="inline-flex items-center gap-1 text-sm font-semibold text-green-600 hover:underline"><i class="fab fa-whatsapp"></i> WhatsApp</a>' : '') +
-                        '</div>' +
-                        '</div>'
+                        '<a href="' + empUrl + '" class="block bg-white rounded-xl px-4 py-3 border border-gray-100 hover:border-gray-200 transition">' +
+                        '<p class="font-medium text-gray-800 text-sm">' + (o.empresa || o.titulo) + '</p>' +
+                        (o.texto ? '<p class="text-xs text-gray-500 mt-0.5 line-clamp-2">' + o.texto + '</p>' : '') +
+                        '<p class="text-xs text-primary mt-1">Ver empresa' + (wa ? ' · WhatsApp' : '') + '</p>' +
+                        '</a>'
                     );
                 }).join('');
 
-                var catLink = 'categoria.html?cat=' + encodeURIComponent(b.categoria.id) + '&ofertas=1';
                 return (
-                    '<div class="mb-10">' +
-                    '<a href="' + catLink + '" class="flex items-center gap-2 mb-4 group">' +
-                    '<i class="fas ' + b.categoria.icone + ' text-primary"></i>' +
-                    '<h3 class="text-lg font-bold text-primary group-hover:underline">' + b.categoria.nome + '</h3>' +
-                    '<span class="text-[10px] font-extrabold bg-secondary text-primary px-2 py-0.5 rounded-full animate-pulse">OFERTAS</span>' +
-                    '<span class="text-xs text-gray-400">toque para ver as empresas</span>' +
-                    '</a>' +
-                    '<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">' + cards + '</div>' +
+                    '<div class="mb-5">' +
+                    '<p class="text-xs font-medium text-gray-400 mb-2 uppercase tracking-wide">' + b.categoria.nome + '</p>' +
+                    '<div class="grid grid-cols-1 sm:grid-cols-2 gap-2">' + cards + '</div>' +
                     '</div>'
                 );
             }).join('');
