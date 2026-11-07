@@ -273,28 +273,33 @@
                     // Badge: soma de estrelas em destaque (o que o gestor usa no desconto)
                     var badgeEstrelas = (o.estrelas > 0 ? o.estrelas : 0) + '★';
 
+                    var empUrl = 'empresa.html?id=' + encodeURIComponent(o.empresaId);
                     return (
                         '<div class="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm card-hover">' +
                         '<div class="flex justify-between items-start mb-2">' +
-                        '<span class="bg-primary text-white text-xs font-bold px-2.5 py-1 rounded-full">' + o.selo + '</span>' +
+                        '<span class="bg-secondary text-primary text-xs font-bold px-2.5 py-1 rounded-full">' + o.selo + '</span>' +
                         '<span class="text-xs text-yellow-600 font-semibold">' + badgeEstrelas + '</span>' +
                         '</div>' +
                         '<h3 class="font-bold text-gray-900 mb-1">' + o.titulo + '</h3>' +
                         '<p class="text-sm text-gray-500 mb-2">' + o.empresa + '</p>' +
                         '<p class="text-sm text-gray-600 mb-4">' + o.texto + '</p>' +
-                        '<a href="' + wa + '" class="inline-flex items-center gap-2 text-sm font-semibold text-primary hover:underline">' +
-                        '<i class="fab fa-whatsapp text-green-500"></i> Ver / WhatsApp</a>' +
+                        '<div class="flex flex-wrap gap-3">' +
+                        '<a href="' + empUrl + '" class="inline-flex items-center gap-1 text-sm font-bold text-primary hover:underline">Ver empresa</a>' +
+                        (o.whatsapp ? '<a href="' + wa + '" class="inline-flex items-center gap-1 text-sm font-semibold text-green-600 hover:underline"><i class="fab fa-whatsapp"></i> WhatsApp</a>' : '') +
+                        '</div>' +
                         '</div>'
                     );
                 }).join('');
 
+                var catLink = 'categoria.html?cat=' + encodeURIComponent(b.categoria.id) + '&ofertas=1';
                 return (
                     '<div class="mb-10">' +
-                    '<div class="flex items-center gap-2 mb-4">' +
+                    '<a href="' + catLink + '" class="flex items-center gap-2 mb-4 group">' +
                     '<i class="fas ' + b.categoria.icone + ' text-primary"></i>' +
-                    '<h3 class="text-lg font-bold text-primary">' + b.categoria.nome + '</h3>' +
-                    '<span class="text-xs text-gray-400">Top por estrelas</span>' +
-                    '</div>' +
+                    '<h3 class="text-lg font-bold text-primary group-hover:underline">' + b.categoria.nome + '</h3>' +
+                    '<span class="text-[10px] font-extrabold bg-secondary text-primary px-2 py-0.5 rounded-full animate-pulse">OFERTAS</span>' +
+                    '<span class="text-xs text-gray-400">toque para ver as empresas</span>' +
+                    '</a>' +
                     '<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">' + cards + '</div>' +
                     '</div>'
                 );

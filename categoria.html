@@ -59,10 +59,16 @@
 
         const params = new URLSearchParams(location.search);
         const cat = (params.get('cat') || '').toLowerCase() || 'outros';
+        const soOfertas = params.get('ofertas') === '1' || params.get('ofertas') === 'true';
         const meta = NOMES[cat] || { t: 'Comércio em Diamantino', d: 'Empresas deste setor.' };
         document.getElementById('tituloCat').textContent = meta.t;
         document.getElementById('introCat').textContent = meta.d;
-        document.title = meta.t + ' — Compre Diamantino';
+        document.title = (soOfertas ? ('Ofertas · ' + meta.t) : meta.t) + ' — Compre Diamantino';
+        if (soOfertas) {
+            var h = document.querySelector('h1');
+            if (h) h.innerHTML = 'Ofertas · ' + meta.t;
+            var sub = document.querySelector('header p, .container p.text-gray-500');
+        }
 
         function isDemo(e) {
             if (!e) return true;
@@ -112,13 +118,35 @@
             return lista;
         }
 
+        function empresasComPromo(lista) {
+            var promos = [];
+            try { promos = JSON.parse(localStorage.getItem('cd_promocoes') || '[]'); } catch (e) {}
+            var agora = Date.now();
+            var ids = {};
+            promos.forEach(function (p) {
+                if (!p || !p.empresaId) return;
+                if (p.fim) {
+                    var fim = new Date(p.fim).getTime();
+                    if (!isNaN(fim) && fim < agora) return;
+                }
+                ids[String(p.empresaId)] = p;
+            });
+            return (lista || []).filter(function (e) { return ids[String(e.id)]; }).map(function (e) {
+                return Object.assign({}, e, { _promo: ids[String(e.id)] });
+            });
+        }
+
         function render(listaNuvem) {
             const box = document.getElementById('lista');
-            const lista = coletarLista(listaNuvem);
+            var lista = coletarLista(listaNuvem);
+            if (soOfertas) {
+                var comPromo = empresasComPromo(lista);
+                if (comPromo.length) lista = comPromo;
+            }
 
             if (!lista.length) {
                 box.innerHTML = '<div class="col-span-full text-center py-12">' +
-                    '<p class="text-gray-500 mb-2">Ainda não há empresas ativas nesta categoria.</p>' +
+                    '<p class="text-gray-500 mb-2">' + (soOfertas ? 'Nenhuma oferta ativa neste setor no momento.' : 'Ainda não há empresas ativas nesta categoria.') + '</p>' +
                     '<p class="text-sm text-gray-400 mb-4">Quando o gestor aprovar um cadastro deste ramo, ele aparece aqui.</p>' +
                     '<a href="cadastro-lojista.html?cat=' + encodeURIComponent(cat) + '" class="inline-block bg-primary text-white font-bold px-5 py-2.5 rounded-xl">Cadastrar meu negócio</a>' +
                     '</div>';
@@ -132,7 +160,8 @@
                 const thumb = capa
                     ? '<img src="' + String(capa).replace(/"/g, '') + '" alt="" class="w-12 h-12 rounded-xl object-cover flex-shrink-0" loading="lazy">'
                     : '<div class="w-12 h-12 rounded-xl bg-blue-50 text-primary font-bold flex items-center justify-center flex-shrink-0">' + (e.nome || 'E').charAt(0).toUpperCase() + '</div>';
-                return '<div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex flex-col">' +
+                return '<div class="relative bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex flex-col">' +
+                    (e._promo ? '<span class="absolute top-3 right-3 bg-secondary text-primary text-[10px] font-extrabold px-2 py-0.5 rounded-full">OFERTA</span>' : '') +
                     '<div class="flex items-start gap-3 mb-3">' + thumb +
                     '<div class="min-w-0"><h3 class="font-bold text-gray-900 text-lg mb-0.5 leading-snug">' + e.nome + '</h3>' +
                     '<p class="text-xs text-gray-400">' + (e.endereco || 'Diamantino-MT') + '</p></div></div>' +
@@ -165,6 +194,5 @@
         if (window.AuthUtils && AuthUtils.renderBarraSessao) AuthUtils.renderBarraSessao();
       });
     </script>
-<script src="install-app.js"></script>
 </body>
 </html>

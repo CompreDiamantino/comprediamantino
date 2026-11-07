@@ -105,6 +105,32 @@
         
         .selo-basico { background: #64748B; }
         .selo-destaque { background: #0A2A6B; }
+        @keyframes catPulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(245, 197, 24, 0.55); transform: scale(1); }
+            50% { box-shadow: 0 0 0 8px rgba(245, 197, 24, 0); transform: scale(1.03); }
+        }
+        .cat-com-oferta {
+            border-color: #F5C518 !important;
+            background: linear-gradient(180deg, #fffbeb 0%, #fff 60%) !important;
+            animation: catPulse 1.6s ease-in-out infinite;
+            position: relative;
+        }
+        .cat-badge-oferta {
+            position: absolute; top: 8px; right: 8px;
+            background: #F5C518; color: #0A2A6B;
+            font-size: 10px; font-weight: 800;
+            padding: 2px 7px; border-radius: 999px;
+            letter-spacing: 0.02em;
+            animation: catPulse 1.2s ease-in-out infinite;
+        }
+        .cat-badge-qtd {
+            display: inline-block; margin-top: 6px;
+            font-size: 11px; font-weight: 600;
+            color: #0A2A6B; background: #e8eefc;
+            padding: 2px 8px; border-radius: 999px;
+        }
+        .cat-badge-qtd.vazio { color: #9ca3af; background: #f3f4f6; font-weight: 500; }
+
         .selo-premium { background: linear-gradient(135deg, #F5C518, #E6A800); color: #0A2A6B; }
         
         /* Fixed WhatsApp button */
@@ -146,8 +172,8 @@
                 </a>
                 
                 <nav class="hidden md:flex items-center gap-6 text-sm font-medium">
-                    <a href="#categorias" class="hover:text-secondary transition">Categorias</a>
                     <a href="#destaques" class="hover:text-secondary transition">Destaques</a>
+                    <a href="#categorias" class="hover:text-secondary transition">Categorias</a>
                     <a href="#ofertas" class="hover:text-secondary transition">Ofertas</a>
                     <a href="mapa.html" class="hover:text-secondary transition">Mapa</a>
                     <a href="#contato" class="hover:text-secondary transition">Contato</a>
@@ -169,8 +195,8 @@
         
         <div id="menuMobile" class="hidden md:hidden bg-accent border-t border-blue-800">
             <nav class="flex flex-col px-4 py-3 gap-1">
-                <a href="#categorias" class="py-2 px-3 rounded hover:bg-primary">Categorias</a>
                 <a href="#destaques" class="py-2 px-3 rounded hover:bg-primary">Destaques</a>
+                <a href="#categorias" class="py-2 px-3 rounded hover:bg-primary">Categorias</a>
                 <a href="#ofertas" class="py-2 px-3 rounded hover:bg-primary">Ofertas</a>
                 <a href="mapa.html" class="py-2 px-3 rounded hover:bg-primary">Mapa</a>
                 <a href="#contato" class="py-2 px-3 rounded hover:bg-primary">Contato</a>
@@ -209,106 +235,13 @@
         </div>
     </section>
 
-    <!-- ==================== CATEGORIAS ==================== -->
-    <section id="categorias" class="py-12 md:py-16 bg-white">
-        <div class="container mx-auto px-4">
-            <div class="text-center mb-10">
-                <h2 class="text-2xl md:text-3xl font-bold text-primary mb-2">Categorias</h2>
-                <p class="text-gray-500">Navegue pelo comércio de Diamantino</p>
-            </div>
-            
-            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-6">
-                <!-- Alimentação -->
-                <a href="categoria.html?cat=alimentacao" class="category-card bg-gray-50 rounded-2xl p-5 text-center shadow-sm border border-gray-100">
-                    <div class="w-14 h-14 mx-auto mb-3 bg-orange-100 rounded-full flex items-center justify-center">
-                        <i class="fas fa-utensils text-2xl text-orange-500"></i>
-                    </div>
-                    <h3 class="font-semibold text-sm md:text-base">Alimentação</h3>
-                    <p class="text-xs text-gray-400 mt-1">Padarias, restaurantes...</p>
-                </a>
-                
-                <!-- Moda -->
-                <a href="categoria.html?cat=moda" class="category-card bg-gray-50 rounded-2xl p-5 text-center shadow-sm border border-gray-100">
-                    <div class="w-14 h-14 mx-auto mb-3 bg-pink-100 rounded-full flex items-center justify-center">
-                        <i class="fas fa-shirt text-2xl text-pink-500"></i>
-                    </div>
-                    <h3 class="font-semibold text-sm md:text-base">Moda e Vestuário</h3>
-                    <p class="text-xs text-gray-400 mt-1">Roupas, calçados...</p>
-                </a>
-                
-                <!-- Casa e Construção -->
-                <a href="categoria.html?cat=casa" class="category-card bg-gray-50 rounded-2xl p-5 text-center shadow-sm border border-gray-100">
-                    <div class="w-14 h-14 mx-auto mb-3 bg-amber-100 rounded-full flex items-center justify-center">
-                        <i class="fas fa-home text-2xl text-amber-600"></i>
-                    </div>
-                    <h3 class="font-semibold text-sm md:text-base">Casa e Construção</h3>
-                    <p class="text-xs text-gray-400 mt-1">Materiais, móveis...</p>
-                </a>
-                
-                <!-- Automotivo -->
-                <a href="categoria.html?cat=automotivo" class="category-card bg-gray-50 rounded-2xl p-5 text-center shadow-sm border border-gray-100">
-                    <div class="w-14 h-14 mx-auto mb-3 bg-blue-100 rounded-full flex items-center justify-center">
-                        <i class="fas fa-car text-2xl text-blue-600"></i>
-                    </div>
-                    <h3 class="font-semibold text-sm md:text-base">Automotivo</h3>
-                    <p class="text-xs text-gray-400 mt-1">Oficinas, peças...</p>
-                </a>
-                
-                <!-- Saúde e Beleza -->
-                <a href="categoria.html?cat=saude" class="category-card bg-gray-50 rounded-2xl p-5 text-center shadow-sm border border-gray-100">
-                    <div class="w-14 h-14 mx-auto mb-3 bg-rose-100 rounded-full flex items-center justify-center">
-                        <i class="fas fa-heart-pulse text-2xl text-rose-500"></i>
-                    </div>
-                    <h3 class="font-semibold text-sm md:text-base">Saúde e Beleza</h3>
-                    <p class="text-xs text-gray-400 mt-1">Farmácias, clínicas...</p>
-                </a>
-                
-                <!-- Tecnologia -->
-                <a href="categoria.html?cat=tecnologia" class="category-card bg-gray-50 rounded-2xl p-5 text-center shadow-sm border border-gray-100">
-                    <div class="w-14 h-14 mx-auto mb-3 bg-cyan-100 rounded-full flex items-center justify-center">
-                        <i class="fas fa-laptop-code text-2xl text-cyan-600"></i>
-                    </div>
-                    <h3 class="font-semibold text-sm md:text-base">Tecnologia</h3>
-                    <p class="text-xs text-gray-400 mt-1">TI, assistência, apps...</p>
-                </a>
-
-                <!-- Serviços -->
-                <a href="categoria.html?cat=servicos" class="category-card bg-gray-50 rounded-2xl p-5 text-center shadow-sm border border-gray-100">
-                    <div class="w-14 h-14 mx-auto mb-3 bg-indigo-100 rounded-full flex items-center justify-center">
-                        <i class="fas fa-screwdriver-wrench text-2xl text-indigo-500"></i>
-                    </div>
-                    <h3 class="font-semibold text-sm md:text-base">Serviços</h3>
-                    <p class="text-xs text-gray-400 mt-1">Eletricista, chaveiro...</p>
-                </a>
-                
-                <!-- Agro e Pet -->
-                <a href="categoria.html?cat=agro" class="category-card bg-gray-50 rounded-2xl p-5 text-center shadow-sm border border-gray-100">
-                    <div class="w-14 h-14 mx-auto mb-3 bg-green-100 rounded-full flex items-center justify-center">
-                        <i class="fas fa-paw text-2xl text-green-600"></i>
-                    </div>
-                    <h3 class="font-semibold text-sm md:text-base">Agro e Pet</h3>
-                    <p class="text-xs text-gray-400 mt-1">Pet shops, agropecuária...</p>
-                </a>
-                
-                <!-- Outros -->
-                <a href="categoria.html?cat=outros" class="category-card bg-gray-50 rounded-2xl p-5 text-center shadow-sm border border-gray-100">
-                    <div class="w-14 h-14 mx-auto mb-3 bg-gray-200 rounded-full flex items-center justify-center">
-                        <i class="fas fa-store text-2xl text-gray-600"></i>
-                    </div>
-                    <h3 class="font-semibold text-sm md:text-base">Outros</h3>
-                    <p class="text-xs text-gray-400 mt-1">Diversos...</p>
-                </a>
-            </div>
-        </div>
-    </section>
-
     <!-- ==================== EMPRESAS EM DESTAQUE ==================== -->
     <section id="destaques" class="py-12 md:py-16 bg-gray-50">
         <div class="container mx-auto px-4">
             <div class="flex items-center justify-between mb-8">
                 <div>
                     <h2 class="text-2xl md:text-3xl font-bold text-primary">Empresas em Destaque</h2>
-                    <p class="text-gray-500 text-sm mt-1">Negócios recomendados em Diamantino</p>
+                    <p class="text-gray-500 text-sm mt-1">As mais votadas · até 5 no topo, com estrelas recebidas</p>
                 </div>
                 <a href="categoria.html" class="text-primary font-semibold text-sm hover:underline hidden sm:block">
                     Ver todas <i class="fas fa-arrow-right ml-1"></i>
@@ -329,6 +262,118 @@
         </div>
     </section>
 
+    <!-- ==================== CATEGORIAS ==================== -->
+    <section id="categorias" class="py-12 md:py-16 bg-white">
+        <div class="container mx-auto px-4">
+            <div class="text-center mb-10">
+                <h2 class="text-2xl md:text-3xl font-bold text-primary mb-2">Categorias</h2>
+                <p class="text-gray-500">Navegue pelo comércio de Diamantino · categorias com empresas e ofertas aparecem destacadas</p>
+            </div>
+            
+            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-6">
+                <!-- Alimentação -->
+                <a href="categoria.html?cat=alimentacao" data-cat="alimentacao" class="category-card relative bg-gray-50 rounded-2xl p-5 text-center shadow-sm border border-gray-100 transition">
+                    <div class="w-14 h-14 mx-auto mb-3 bg-orange-100 rounded-full flex items-center justify-center">
+                        <i class="fas fa-utensils text-2xl text-orange-500"></i>
+                    </div>
+                    <h3 class="font-semibold text-sm md:text-base">Alimentação</h3>
+                    <p class="text-xs text-gray-400 mt-1">Padarias, restaurantes...</p>
+                                    <span class="cat-qtd cat-badge-qtd vazio" data-qtd>—</span>
+                    <span class="cat-badge-oferta hidden">OFERTA</span>
+                </a>
+                
+                <!-- Moda -->
+                <a href="categoria.html?cat=moda" data-cat="moda" class="category-card relative bg-gray-50 rounded-2xl p-5 text-center shadow-sm border border-gray-100 transition">
+                    <div class="w-14 h-14 mx-auto mb-3 bg-pink-100 rounded-full flex items-center justify-center">
+                        <i class="fas fa-shirt text-2xl text-pink-500"></i>
+                    </div>
+                    <h3 class="font-semibold text-sm md:text-base">Moda e Vestuário</h3>
+                    <p class="text-xs text-gray-400 mt-1">Roupas, calçados...</p>
+                                    <span class="cat-qtd cat-badge-qtd vazio" data-qtd>—</span>
+                    <span class="cat-badge-oferta hidden">OFERTA</span>
+                </a>
+                
+                <!-- Casa e Construção -->
+                <a href="categoria.html?cat=casa" data-cat="casa" class="category-card relative bg-gray-50 rounded-2xl p-5 text-center shadow-sm border border-gray-100 transition">
+                    <div class="w-14 h-14 mx-auto mb-3 bg-amber-100 rounded-full flex items-center justify-center">
+                        <i class="fas fa-home text-2xl text-amber-600"></i>
+                    </div>
+                    <h3 class="font-semibold text-sm md:text-base">Casa e Construção</h3>
+                    <p class="text-xs text-gray-400 mt-1">Materiais, móveis...</p>
+                                    <span class="cat-qtd cat-badge-qtd vazio" data-qtd>—</span>
+                    <span class="cat-badge-oferta hidden">OFERTA</span>
+                </a>
+                
+                <!-- Automotivo -->
+                <a href="categoria.html?cat=automotivo" data-cat="automotivo" class="category-card relative bg-gray-50 rounded-2xl p-5 text-center shadow-sm border border-gray-100 transition">
+                    <div class="w-14 h-14 mx-auto mb-3 bg-blue-100 rounded-full flex items-center justify-center">
+                        <i class="fas fa-car text-2xl text-blue-600"></i>
+                    </div>
+                    <h3 class="font-semibold text-sm md:text-base">Automotivo</h3>
+                    <p class="text-xs text-gray-400 mt-1">Oficinas, peças...</p>
+                                    <span class="cat-qtd cat-badge-qtd vazio" data-qtd>—</span>
+                    <span class="cat-badge-oferta hidden">OFERTA</span>
+                </a>
+                
+                <!-- Saúde e Beleza -->
+                <a href="categoria.html?cat=saude" data-cat="saude" class="category-card relative bg-gray-50 rounded-2xl p-5 text-center shadow-sm border border-gray-100 transition">
+                    <div class="w-14 h-14 mx-auto mb-3 bg-rose-100 rounded-full flex items-center justify-center">
+                        <i class="fas fa-heart-pulse text-2xl text-rose-500"></i>
+                    </div>
+                    <h3 class="font-semibold text-sm md:text-base">Saúde e Beleza</h3>
+                    <p class="text-xs text-gray-400 mt-1">Farmácias, clínicas...</p>
+                                    <span class="cat-qtd cat-badge-qtd vazio" data-qtd>—</span>
+                    <span class="cat-badge-oferta hidden">OFERTA</span>
+                </a>
+                
+                <!-- Tecnologia -->
+                <a href="categoria.html?cat=tecnologia" data-cat="tecnologia" class="category-card relative bg-gray-50 rounded-2xl p-5 text-center shadow-sm border border-gray-100 transition">
+                    <div class="w-14 h-14 mx-auto mb-3 bg-cyan-100 rounded-full flex items-center justify-center">
+                        <i class="fas fa-laptop-code text-2xl text-cyan-600"></i>
+                    </div>
+                    <h3 class="font-semibold text-sm md:text-base">Tecnologia</h3>
+                    <p class="text-xs text-gray-400 mt-1">TI, assistência, apps...</p>
+                                    <span class="cat-qtd cat-badge-qtd vazio" data-qtd>—</span>
+                    <span class="cat-badge-oferta hidden">OFERTA</span>
+                </a>
+
+                <!-- Serviços -->
+                <a href="categoria.html?cat=servicos" data-cat="servicos" class="category-card relative bg-gray-50 rounded-2xl p-5 text-center shadow-sm border border-gray-100 transition">
+                    <div class="w-14 h-14 mx-auto mb-3 bg-indigo-100 rounded-full flex items-center justify-center">
+                        <i class="fas fa-screwdriver-wrench text-2xl text-indigo-500"></i>
+                    </div>
+                    <h3 class="font-semibold text-sm md:text-base">Serviços</h3>
+                    <p class="text-xs text-gray-400 mt-1">Eletricista, chaveiro...</p>
+                                    <span class="cat-qtd cat-badge-qtd vazio" data-qtd>—</span>
+                    <span class="cat-badge-oferta hidden">OFERTA</span>
+                </a>
+                
+                <!-- Agro e Pet -->
+                <a href="categoria.html?cat=agro" data-cat="agro" class="category-card relative bg-gray-50 rounded-2xl p-5 text-center shadow-sm border border-gray-100 transition">
+                    <div class="w-14 h-14 mx-auto mb-3 bg-green-100 rounded-full flex items-center justify-center">
+                        <i class="fas fa-paw text-2xl text-green-600"></i>
+                    </div>
+                    <h3 class="font-semibold text-sm md:text-base">Agro e Pet</h3>
+                    <p class="text-xs text-gray-400 mt-1">Pet shops, agropecuária...</p>
+                                    <span class="cat-qtd cat-badge-qtd vazio" data-qtd>—</span>
+                    <span class="cat-badge-oferta hidden">OFERTA</span>
+                </a>
+                
+                <!-- Outros -->
+                <a href="categoria.html?cat=outros" data-cat="outros" class="category-card relative bg-gray-50 rounded-2xl p-5 text-center shadow-sm border border-gray-100 transition">
+                    <div class="w-14 h-14 mx-auto mb-3 bg-gray-200 rounded-full flex items-center justify-center">
+                        <i class="fas fa-store text-2xl text-gray-600"></i>
+                    </div>
+                    <h3 class="font-semibold text-sm md:text-base">Outros</h3>
+                    <p class="text-xs text-gray-400 mt-1">Diversos...</p>
+                                    <span class="cat-qtd cat-badge-qtd vazio" data-qtd>—</span>
+                    <span class="cat-badge-oferta hidden">OFERTA</span>
+                </a>
+            </div>
+        </div>
+    </section>
+
+
     <!-- ==================== OFERTAS DA SEMANA ==================== -->
     <section id="ofertas" class="py-12 md:py-16 bg-white">
         <div class="container mx-auto px-4">
@@ -340,7 +385,7 @@
             </div>
             
             
-            <p class="text-center text-sm text-gray-400 mb-8">Por setor · empresas com mais estrelas no Top 10 de cada categoria</p>
+            <p class="text-center text-sm text-gray-500 mb-8">Promoções postadas pelos anunciantes · clique no setor ou na oferta para ver a empresa</p>
             <div id="ofertasPorSetor" class="max-w-6xl mx-auto">
                 <p class="text-center text-gray-400 text-sm">Carregando ranking…</p>
             </div>
@@ -575,8 +620,64 @@
     <script src="firebase-config.js"></script>
     <script src="lojistas-nuvem.js"></script>
     <script src="empresas-dados.js"></script>
+    <script src="supabase-config.js"></script>
+    <script src="avaliacoes.js"></script>
     <script src="ranking.js"></script>
     <script>
+
+        /** Conta empresas por categoria e destaca as que têm promoção ativa */
+        function atualizarBadgesCategorias(lista) {
+            var contagem = {};
+            var comOferta = {};
+            (lista || []).forEach(function (lj) {
+                if (!lj || !lj.id) return;
+                var st = String(lj.status || '').toLowerCase();
+                var ok = !st || st === 'ativo' || st === 'aprovado' || st === 'publicado' || st === 'pago' || st === 'aviso' || st === 'pendente';
+                if (!ok) return;
+                var c = String(lj.categoria || 'outros').toLowerCase();
+                contagem[c] = (contagem[c] || 0) + 1;
+            });
+            var promos = [];
+            try { promos = JSON.parse(localStorage.getItem('cd_promocoes') || '[]'); } catch (e) {}
+            var agora = Date.now();
+            promos.forEach(function (p) {
+                if (!p || !p.empresaId) return;
+                // se tiver validade, respeita
+                if (p.fim) {
+                    var fim = new Date(p.fim).getTime();
+                    if (!isNaN(fim) && fim < agora) return;
+                }
+                var emp = (lista || []).find(function (l) { return String(l.id) === String(p.empresaId); });
+                var cat = emp ? String(emp.categoria || 'outros').toLowerCase() : null;
+                if (!cat && p.categoria) cat = String(p.categoria).toLowerCase();
+                if (cat) comOferta[cat] = true;
+            });
+            document.querySelectorAll('a.category-card[data-cat]').forEach(function (a) {
+                var cat = a.getAttribute('data-cat');
+                var n = contagem[cat] || 0;
+                var q = a.querySelector('[data-qtd]');
+                if (q) {
+                    if (n > 0) {
+                        q.textContent = n === 1 ? '1 empresa' : (n + ' empresas');
+                        q.classList.remove('vazio');
+                    } else {
+                        q.textContent = 'Em breve';
+                        q.classList.add('vazio');
+                    }
+                }
+                var badge = a.querySelector('.cat-badge-oferta');
+                if (comOferta[cat]) {
+                    a.classList.add('cat-com-oferta');
+                    a.href = 'categoria.html?cat=' + encodeURIComponent(cat) + '&ofertas=1';
+                    if (badge) badge.classList.remove('hidden');
+                } else {
+                    a.classList.remove('cat-com-oferta');
+                    a.href = 'categoria.html?cat=' + encodeURIComponent(cat);
+                    if (badge) badge.classList.add('hidden');
+                }
+            });
+        }
+
         /** Empresas em Destaque na home — busca na nuvem (Firestore) + fallback localStorage */
         function isEmpresaVisivelPublico(lj) {
             if (!lj || !lj.nome) return false;
@@ -611,15 +712,29 @@
             if (!box) return;
 
             var lista = montarListaBase(listaBruta);
+            try { atualizarBadgesCategorias(lista); } catch (e) {}
             var visiveis = lista.filter(isEmpresaVisivelPublico);
 
-            var ordemPlano = { premium: 0, destaque: 1, basico: 2 };
+            // Estrelas públicas (votos) — mais votadas no topo
+            function estrelasDe(id) {
+                try {
+                    if (window.RankingCD && RankingCD.estrelasEmpresa) {
+                        var e = RankingCD.estrelasEmpresa(id);
+                        return (e && (e.total || e.soma)) || 0;
+                    }
+                } catch (err) {}
+                try {
+                    var extra = parseInt(localStorage.getItem('cd_estrelas_empresa_' + id) || '0', 10) || 0;
+                    var av = JSON.parse(localStorage.getItem('cd_avaliacoes') || '{}');
+                    var lista = av[id] || av[String(id)] || [];
+                    var soma = 0;
+                    if (Array.isArray(lista)) lista.forEach(function (a) { soma += parseInt(a.nota, 10) || 0; });
+                    return soma + extra;
+                } catch (err2) { return 0; }
+            }
+            visiveis.forEach(function (lj) { lj._estrelasHome = estrelasDe(lj.id); });
             visiveis.sort(function (a, b) {
-                var pa = ordemPlano[(a.plano || 'basico').toLowerCase()];
-                var pb = ordemPlano[(b.plano || 'basico').toLowerCase()];
-                if (pa == null) pa = 9;
-                if (pb == null) pb = 9;
-                if (pa !== pb) return pa - pb;
+                if ((b._estrelasHome || 0) !== (a._estrelasHome || 0)) return (b._estrelasHome || 0) - (a._estrelasHome || 0);
                 var fa = (a.logo || (a.fotos && a.fotos[0])) ? 0 : 1;
                 var fb = (b.logo || (b.fotos && b.fotos[0])) ? 0 : 1;
                 if (fa !== fb) return fa - fb;
@@ -634,7 +749,7 @@
                 servicos: 'Serviços', agro: 'Agro e Pet', outros: 'Outros'
             };
 
-            box.innerHTML = visiveis.slice(0, 12).map(function (lj) {
+            box.innerHTML = visiveis.slice(0, 5).map(function (lj) {
                 var capa = lj.logo || (lj.fotos && lj.fotos[0]) || '';
                 var inicial = (lj.nome || 'E').charAt(0).toUpperCase();
                 var cat = CAT[lj.categoria] || lj.categoria || '';
@@ -661,7 +776,8 @@
                     '</div>' +
                     '<div class="p-4 flex flex-col flex-1">' +
                     '<h3 class="font-bold text-gray-900 text-base leading-snug mb-1 line-clamp-2">' + (lj.nome || '') + '</h3>' +
-                    (cat ? '<p class="text-xs text-gray-400 mb-3"><i class="fas fa-tag mr-1"></i>' + cat + '</p>' : '<p class="mb-3"></p>') +
+                    (cat ? '<p class="text-xs text-gray-400 mb-1"><i class="fas fa-tag mr-1"></i>' + cat + '</p>' : '') +
+                    '<p class="text-xs font-semibold text-yellow-600 mb-3"><i class="fas fa-star mr-1"></i>' + (lj._estrelasHome || 0) + ' estrelas</p>' +
                     '<div class="mt-auto flex gap-2">' +
                     '<a href="empresa.html?id=' + encodeURIComponent(lj.id) + '" class="flex-1 text-center bg-primary text-white text-sm font-bold py-2 rounded-xl hover:bg-accent transition">Ver empresa</a>' +
                     waBtn +
@@ -695,12 +811,13 @@
             }
         }
 
-        function carregarOfertasHome() {
+        function carregarOfertasHome(listaNuvem) {
+            try { atualizarBadgesCategorias(montarListaBase(listaNuvem)); } catch (e) {}
             var el = document.getElementById('ofertasPorSetor');
             if (!el) return;
             try {
                 if (window.RankingCD) {
-                    RankingCD.renderOfertasNaHome('ofertasPorSetor');
+                    RankingCD.renderOfertasNaHome('ofertasPorSetor', listaNuvem || null);
                     return;
                 }
             } catch (e) { console.error(e); }
@@ -708,7 +825,16 @@
         }
         function bootHome() {
             carregarDestaquesHome();
-            carregarOfertasHome();
+            // Ranking: tenta com lista da nuvem (mesmos IDs dos votos no Supabase)
+            if (window.LojistasNuvem && LojistasNuvem.puxar) {
+                LojistasNuvem.puxar(function (lista) {
+                    carregarOfertasHome(lista || []);
+                }).catch(function () {
+                    carregarOfertasHome(null);
+                });
+            } else {
+                carregarOfertasHome(null);
+            }
         }
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', bootHome);

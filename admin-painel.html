@@ -180,6 +180,27 @@
                 <div id="detFotos" class="flex flex-wrap gap-2"></div>
             </div>
             <div id="detRedes" class="text-sm space-y-1"></div>
+
+            <!-- Avaliação sigilosa — só gestão vê -->
+            <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-2">
+                <p class="text-xs font-bold text-slate-700"><i class="fas fa-user-shield mr-1"></i> Avaliação sigilosa (só gestão)</p>
+                <p class="text-[11px] text-slate-500">Nota interna para qualificar o anunciante. Não aparece no site público nem para o lojista.</p>
+                <div class="flex flex-wrap items-center gap-2">
+                    <label class="text-xs text-slate-600">Nota:</label>
+                    <select id="detNotaSigilosa" class="border border-gray-200 rounded-lg px-2 py-1.5 text-sm bg-white">
+                        <option value="">—</option>
+                        <option value="1">1 ★</option>
+                        <option value="2">2 ★</option>
+                        <option value="3">3 ★</option>
+                        <option value="4">4 ★</option>
+                        <option value="5">5 ★</option>
+                    </select>
+                    <button type="button" id="btnSalvarNotaSigilosa" class="bg-slate-800 text-white text-xs font-bold px-3 py-1.5 rounded-lg hover:bg-slate-700">Salvar nota</button>
+                    <span id="msgNotaSigilosa" class="text-[11px] hidden"></span>
+                </div>
+                <textarea id="detObsSigilosa" rows="2" class="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-xs" placeholder="Observação interna (opcional)"></textarea>
+            </div>
+
             <div class="flex flex-wrap gap-2 pt-2 border-t">
                 <button type="button" id="btnDetAprovar" class="hidden bg-emerald-600 text-white font-bold px-4 py-2 rounded-xl text-sm">
                     <i class="fas fa-check-circle"></i> Aprovar e publicar
@@ -1401,7 +1422,46 @@
             } else {
                 btnWa.classList.add('hidden');
             }
+
+            // Avaliação sigilosa (só gestão)
+            var selNota = document.getElementById('detNotaSigilosa');
+            var obsNota = document.getElementById('detObsSigilosa');
+            var msgNota = document.getElementById('msgNotaSigilosa');
+            if (selNota) selNota.value = (lj.notaSigilosa != null && lj.notaSigilosa !== '') ? String(lj.notaSigilosa) : '';
+            if (obsNota) obsNota.value = lj.obsSigilosa || '';
+            if (msgNota) { msgNota.classList.add('hidden'); msgNota.textContent = ''; }
+            window._detLojistaIdSigiloso = lj.id;
         }
+
+        document.getElementById('btnSalvarNotaSigilosa') && document.getElementById('btnSalvarNotaSigilosa').addEventListener('click', function () {
+            var id = window._detLojistaIdSigiloso;
+            if (!id) return;
+            var selNota = document.getElementById('detNotaSigilosa');
+            var obsNota = document.getElementById('detObsSigilosa');
+            var msgNota = document.getElementById('msgNotaSigilosa');
+            var nota = selNota && selNota.value ? parseInt(selNota.value, 10) : null;
+            var obs = obsNota ? obsNota.value.trim() : '';
+            try {
+                var lista = JSON.parse(localStorage.getItem('cd_lojistas_admin') || '[]');
+                var idx = lista.findIndex(function (l) { return String(l.id) === String(id); });
+                if (idx >= 0) {
+                    lista[idx].notaSigilosa = nota;
+                    lista[idx].obsSigilosa = obs;
+                    lista[idx].notaSigilosaEm = new Date().toISOString();
+                    localStorage.setItem('cd_lojistas_admin', JSON.stringify(lista));
+                    if (window.LojistasNuvem && LojistasNuvem.salvarUm) {
+                        LojistasNuvem.salvarUm(lista[idx]).catch(function () {});
+                    }
+                }
+            } catch (e) {}
+            if (msgNota) {
+                msgNota.classList.remove('hidden');
+                msgNota.className = 'text-[11px] text-green-700';
+                msgNota.textContent = 'Nota sigilosa salva (só gestão).';
+            }
+            try { if (typeof renderTabela === 'function') renderTabela(); } catch (e2) {}
+            try { if (typeof carregarLista === 'function') carregarLista(); } catch (e3) {}
+        });
 
         window.verDetalheLojista = function (id) {
             // Só memória/local — sem get extra no Firestore (economiza cota).
