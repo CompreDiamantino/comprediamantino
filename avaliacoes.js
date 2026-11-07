@@ -405,13 +405,27 @@ function atualizarMediaNaPagina(empresaId) {
         }
         var mediaFmt = (Math.round(m.media * 10) / 10).toFixed(1);
         var soma = (m.soma != null && m.soma > 0) ? m.soma : Math.round(m.media * m.total);
-        // Compatível com votos: no máximo 5★ por avaliação
-        var maxSoma = (m.total || 0) * 5;
-        if (m.total > 0 && soma > maxSoma) soma = maxSoma;
+        var qtd = m.total || 0;
+        // Ajuste sigiloso da gestão (público vê o total; não vê a origem)
+        var sig = 0;
+        try {
+            if (window.RankingCD && RankingCD.lerSigilosas) {
+                sig = RankingCD.lerSigilosas(empresaId) || 0;
+            } else {
+                sig = parseInt(localStorage.getItem('cd_estrelas_empresa_' + empresaId) || '0', 10) || 0;
+            }
+        } catch (eSig) { sig = 0; }
+        soma = (soma || 0) + sig;
+        if (soma < 0) soma = 0;
+        // Estrelas a mais ÷ 5 = avaliadores extras; subtração não reduz avaliadores
+        if (sig > 0) qtd = qtd + Math.floor(sig / 5);
+        var maxSoma = qtd * 5;
+        if (qtd > 0 && soma > maxSoma) soma = maxSoma;
+        mediaFmt = qtd ? (Math.round((soma / qtd) * 10) / 10).toFixed(1) : mediaFmt;
         if (num) num.textContent = soma + '★';
         if (txt) {
             txt.textContent = soma + '★ · média ' + mediaFmt +
-                ' (' + m.total + (m.total === 1 ? ' avaliação)' : ' avaliações)');
+                ' (' + qtd + (qtd === 1 ? ' avaliação)' : ' avaliações)');
         }
         if (stars) stars.innerHTML = renderMediaEstrelas(m.media, m.total);
     }

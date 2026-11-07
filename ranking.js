@@ -19,11 +19,50 @@
         { id: 'outros', nome: 'Outros', icone: 'fa-store' }
     ];
 
+
+    /** Estrelas sigilosas da gestão — campo na nuvem (lojista) + espelho local */
+    function lerSigilosas(empresaId) {
+        var id = String(empresaId || '');
+        if (!id) return 0;
+        try {
+            var fontes = ['cd_lojistas_admin', 'cd_lojistas'];
+            for (var f = 0; f < fontes.length; f++) {
+                var lista = JSON.parse(localStorage.getItem(fontes[f]) || '[]');
+                if (!Array.isArray(lista)) continue;
+                for (var i = 0; i < lista.length; i++) {
+                    var item = lista[i];
+                    if (item && String(item.id) === id && item.estrelasSigilosas != null && item.estrelasSigilosas !== '') {
+                        return parseInt(item.estrelasSigilosas, 10) || 0;
+                    }
+                }
+            }
+        } catch (e) {}
+        try {
+            return parseInt(localStorage.getItem('cd_estrelas_empresa_' + id) || '0', 10) || 0;
+        } catch (e2) { return 0; }
+    }
+
+    /** Espelha estrelasSigilosas da lista (nuvem) no localStorage do visitante */
+    function sincronizarSigilosasDaLista(lista) {
+        if (!Array.isArray(lista)) return;
+        lista.forEach(function (lj) {
+            if (!lj || !lj.id || lj.estrelasSigilosas == null) return;
+            try {
+                localStorage.setItem('cd_estrelas_empresa_' + lj.id, String(parseInt(lj.estrelasSigilosas, 10) || 0));
+            } catch (e) {}
+        });
+    }
+
     /** Cache do resumo vindo do Supabase (empresa_id → { media, total, soma }) */
     var _resumoCache = null;
     var _resumoPromise = null;
 
-    /** Soma de estrelas local (fallback offline) — só votos reais; sigilosas não entram no público */
+    /**
+     * Soma pública = votos reais + ajuste sigiloso da gestão.
+     * Se o ajuste for positivo, avaliações exibidas sobem em floor(ajuste/5)
+     * (ex.: +10★ sigilosas ⇒ +2 avaliações). Se for negativo, só reduz estrelas;
+     * a quantidade de avaliadores não cai.
+     */
     function estrelasEmpresaLocal(empresaId) {
         let total = 0;
         let qtd = 0;
@@ -41,7 +80,6 @@
                 }
             });
         } catch (e) {}
-        // Também lista por empresa, se existir
         try {
             const lista = JSON.parse(localStorage.getItem('cd_avaliacoes_lista_' + empresaId) || '[]');
             if (Array.isArray(lista) && lista.length && qtd === 0) {
@@ -54,10 +92,22 @@
                 });
             }
         } catch (e2) {}
-        // Compatível: nunca mais estrelas do que qtd * 5
+
+        var sig = lerSigilosas(empresaId);
+
+        total = total + sig;
+        if (total < 0) total = 0;
+
+        // Só o que foi ACRESENTADO conta como avaliadores extras (÷5)
+        if (sig > 0) {
+            qtd = qtd + Math.floor(sig / 5);
+        }
+        // Subtração não reduz qtd
+
         var max = qtd * 5;
         if (qtd > 0 && total > max) total = max;
-        return { total: total, qtd: qtd, media: qtd ? total / qtd : 0 };
+
+        return { total: total, qtd: qtd, media: qtd ? total / qtd : 0, sigilosas: sig };
     }
 
     /**
@@ -116,19 +166,34 @@
     /** Retorna { total/soma, qtd, media } — prioriza nuvem, senão local */
     function estrelasEmpresa(empresaId, mapaNuvem) {
         var id = String(empresaId || '');
+        // Sempre aplica ajuste sigiloso local em cima da base (nuvem ou local)
+        var base = { total: 0, qtd: 0, media: 0 };
         if (mapaNuvem && mapaNuvem[id]) {
             var r = mapaNuvem[id];
-            var qtd = r.total || 0;
-            var soma = r.soma || 0;
-            var max = qtd * 5;
-            if (qtd > 0 && soma > max) soma = max;
-            return {
-                total: soma,
-                qtd: qtd,
-                media: r.media || (qtd ? soma / qtd : 0)
-            };
+            base.qtd = r.total || 0;
+            base.total = r.soma || 0;
+            base.media = r.media || 0;
+        } else {
+            // local já aplica sigilosas
+            return estrelasEmpresaLocal(empresaId);
         }
-        return estrelasEmpresaLocal(empresaId);
+
+        var sig = lerSigilosas(id);
+
+        var soma = (base.total || 0) + sig;
+        if (soma < 0) soma = 0;
+        var qtd = base.qtd || 0;
+        if (sig > 0) qtd = qtd + Math.floor(sig / 5);
+
+        var max = qtd * 5;
+        if (qtd > 0 && soma > max) soma = max;
+
+        return {
+            total: soma,
+            qtd: qtd,
+            media: qtd ? soma / qtd : 0,
+            sigilosas: sig
+        };
     }
 
     function statusVisivel(st) {
@@ -173,6 +238,7 @@
      */
     function topPorCategoria(limite, mapaNuvem, listaExtra) {
         limite = limite || 10;
+        sincronizarSigilosasDaLista(listaExtra);
         const empresas = listarEmpresas(listaExtra).map(function (e) {
             const est = estrelasEmpresa(e.id, mapaNuvem);
             return Object.assign({}, e, {
@@ -349,6 +415,8 @@
     global.RankingCD = {
         CATEGORIAS,
         estrelasEmpresa: function (id) { return estrelasEmpresa(id, _resumoCache); },
+        sincronizarSigilosasDaLista: sincronizarSigilosasDaLista,
+        lerSigilosas: lerSigilosas,
         topPorCategoria: function (limite) { return topPorCategoria(limite, _resumoCache); },
         ofertasPorSetor: function (limite) { return ofertasPorSetor(limite, _resumoCache); },
         renderOfertasNaHome,

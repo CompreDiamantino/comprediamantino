@@ -702,6 +702,17 @@
             if (!box) return;
 
             var lista = montarListaBase(listaBruta);
+            try {
+                if (window.RankingCD && RankingCD.sincronizarSigilosasDaLista) {
+                    RankingCD.sincronizarSigilosasDaLista(lista);
+                } else {
+                    (lista || []).forEach(function (lj) {
+                        if (lj && lj.id && lj.estrelasSigilosas != null) {
+                            localStorage.setItem('cd_estrelas_empresa_' + lj.id, String(parseInt(lj.estrelasSigilosas, 10) || 0));
+                        }
+                    });
+                }
+            } catch (eSync) {}
             try { atualizarBadgesCategorias(lista); } catch (e) {}
             var visiveis = lista.filter(isEmpresaVisivelPublico);
 
@@ -723,6 +734,10 @@
                             if (n > 0) { soma += n; qtd++; }
                         });
                     }
+                    var sig = parseInt(localStorage.getItem('cd_estrelas_empresa_' + id) || '0', 10) || 0;
+                    soma += sig;
+                    if (soma < 0) soma = 0;
+                    if (sig > 0) qtd += Math.floor(sig / 5);
                     if (qtd > 0 && soma > qtd * 5) soma = qtd * 5;
                     return soma;
                 } catch (err2) { return 0; }
