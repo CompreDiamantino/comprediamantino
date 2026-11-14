@@ -405,7 +405,9 @@
     <script src="lojistas-nuvem.js"></script>
     <script src="r2-upload.js"></script>
     <script src="auth-utils.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging-compat.js"></script>
     <script src="notificacoes-gestor.js"></script>
+    <script src="push-notify.js"></script>
     <script>
         // ========== PROTEÇÃO DE ACESSO ==========
         let lojista = JSON.parse(localStorage.getItem('cd_lojista') || 'null');
@@ -1500,5 +1502,44 @@
   }).catch(function(){});
 })();
 </script>
+
+<script>
+(function () {
+  if (!window.CDPush) return;
+  var bar = document.createElement('div');
+  bar.id = 'cdPushLojistaBar';
+  bar.className = 'max-w-3xl mx-auto px-4 mt-3';
+  bar.innerHTML = '<div class="bg-blue-50 border border-blue-100 rounded-xl p-3 flex flex-wrap items-center justify-between gap-2 text-sm">' +
+    '<span class="text-gray-700"><i class="fas fa-bell text-primary mr-1"></i> Quer receber avisos no celular? <span id="pushStatusLojista" class="text-gray-500 text-xs block sm:inline sm:ml-1">Ative neste aparelho.</span></span>' +
+    '<button type="button" id="btnAtivarPushLojista" class="bg-primary text-white font-semibold px-3 py-1.5 rounded-lg text-xs">Ativar notificações</button></div>';
+  var mount = document.querySelector('main') || document.body;
+  if (mount.firstChild) mount.insertBefore(bar, mount.firstChild);
+  else mount.appendChild(bar);
+
+  var btn = document.getElementById('btnAtivarPushLojista');
+  var st = document.getElementById('pushStatusLojista');
+  btn && btn.addEventListener('click', function () {
+    var nome = '';
+    var lid = '';
+    try {
+      nome = (window.lojistaAtual && lojistaAtual.nome) || localStorage.getItem('cd_lojista_nome') || '';
+      lid = (window.lojistaAtual && lojistaAtual.id) || localStorage.getItem('cd_lojista_id') || '';
+    } catch (e) {}
+    btn.disabled = true;
+    CDPush.ativar('lojista', { nome: nome, lojistaId: lid }).then(function (r) {
+      btn.disabled = false;
+      if (r && r.ok) {
+        st.textContent = r.modo === 'fcm' ? 'Ativo neste aparelho.' : (r.mensagem || 'Permissão ok.');
+        st.className = 'text-green-600 text-xs block sm:inline sm:ml-1';
+      } else if (r && r.motivo === 'ios_precisa_instalar') {
+        st.textContent = r.mensagem;
+      } else {
+        st.textContent = (r && r.mensagem) || 'Não ativado.';
+      }
+    });
+  });
+})();
+</script>
+
 </body>
 </html>

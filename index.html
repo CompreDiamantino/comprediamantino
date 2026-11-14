@@ -587,7 +587,7 @@
                 // limpa caches antigos (v3 etc.) uma vez
                 if (caches && caches.keys) {
                     caches.keys().then(function(keys) {
-                        keys.filter(function(k) { return k.indexOf('compre-diamantino-v10') === -1; })
+                        keys.filter(function(k) { return k.indexOf('compre-diamantino-v11') === -1; })
                             .forEach(function(k) { caches.delete(k); });
                     });
                 }

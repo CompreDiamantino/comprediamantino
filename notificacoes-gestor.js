@@ -47,6 +47,23 @@
         };
         lista.unshift(item);
         salvar(lista);
+        // Push + badge no ícone (gestor)
+        try {
+            if (window.CDPush) {
+                var nBadge = lista.filter(function (x) { return !x.lida; }).length;
+                CDPush.setBadge(nBadge);
+                CDPush.enfileirar({
+                    destino: 'gestor',
+                    titulo: item.titulo,
+                    body: item.detalhe || (TIPOS[item.tipo] && TIPOS[item.tipo].label) || '',
+                    url: item.tipo === 'novo_membro' ? './admin-painel.html' : './gestor-hub.html',
+                    tipo: item.tipo,
+                    id: item.id,
+                    badge: nBadge,
+                    lojistaId: (meta && meta.lojistaId) || ''
+                });
+            }
+        } catch (e) {}
         return item;
     }
 
@@ -58,6 +75,7 @@
 
     function marcarTodasLidas() {
         salvar([]);
+        try { if (window.CDPush) CDPush.clearBadge(); } catch (e) {}
     }
 
     function apagar(id) {
@@ -82,6 +100,9 @@
                 el.classList.add('hidden');
             }
         });
+        try {
+            if (window.CDPush) CDPush.setBadge(n);
+        } catch (e) {}
     }
 
     function renderLista(containerId) {

@@ -63,6 +63,20 @@
         <div id="firebaseStatus" class="bg-gray-50 border border-gray-200 text-gray-600 rounded-xl p-3 text-sm mb-6 text-left">
             <i class="fas fa-cloud mr-1"></i> Verificando nuvem Firebase…
         </div>
+
+        <div id="cardPushGestor" class="bg-white border border-blue-100 rounded-2xl p-4 mb-6 shadow-sm">
+            <div class="flex flex-wrap items-start justify-between gap-3">
+                <div class="min-w-0">
+                    <p class="text-sm font-bold text-gray-900"><i class="fas fa-bell text-primary mr-1"></i> Notificações no celular</p>
+                    <p class="text-xs text-gray-500 mt-1">Receba avisos na tela bloqueada e o número no ícone do app (Android e iPhone).</p>
+                    <p id="pushStatusGestor" class="text-xs text-gray-400 mt-2">Toque em ativar neste aparelho (no iPhone, abra pelo ícone instalado).</p>
+                </div>
+                <button type="button" id="btnAtivarPushGestor" class="flex-shrink-0 bg-primary text-white text-sm font-bold px-4 py-2.5 rounded-xl hover:bg-accent transition">
+                    <i class="fas fa-mobile-alt mr-1"></i> Ativar neste aparelho
+                </button>
+            </div>
+        </div>
+
         <div class="text-center mb-6">
             <h1 class="text-2xl font-bold text-primary">Painel do Gestor Master</h1>
             <p class="text-gray-500 text-sm mt-1">Acesso total a todas as telas do sistema (como no IBN)</p>
@@ -275,7 +289,9 @@
     <script src="firebase-init.js"></script>
 
     <script src="lojistas-nuvem.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging-compat.js"></script>
     <script src="notificacoes-gestor.js"></script>
+    <script src="push-notify.js"></script>
     <script src="posts-nuvem.js"></script>
     <script>
       document.addEventListener('DOMContentLoaded', function () {
@@ -342,6 +358,48 @@
             }
           });
         }
+        
+        // Push notifications (gestor)
+        (function () {
+          var btn = document.getElementById('btnAtivarPushGestor');
+          var st = document.getElementById('pushStatusGestor');
+          function setSt(msg, ok) {
+            if (!st) return;
+            st.textContent = msg;
+            st.className = 'text-xs mt-2 ' + (ok ? 'text-green-600' : 'text-gray-500');
+          }
+          if (btn && window.CDPush) {
+            btn.addEventListener('click', function () {
+              btn.disabled = true;
+              setSt('Ativando…', false);
+              CDPush.ativar('gestor', { nome: 'Gestor' }).then(function (r) {
+                btn.disabled = false;
+                if (r && r.ok) {
+                  setSt(r.modo === 'fcm'
+                    ? 'Ativo neste aparelho (push remoto). Número no ícone quando houver avisos.'
+                    : (r.mensagem || 'Permissão concedida. Notificações locais ativas.'), true);
+                  if (window.NotifGestor) {
+                    NotifGestor.atualizarBadge();
+                    CDPush.syncBadgeFromNotifGestor();
+                  }
+                } else if (r && r.motivo === 'ios_precisa_instalar') {
+                  setSt(r.mensagem, false);
+                } else if (r && r.motivo === 'permissao_negada') {
+                  setSt('Permissão negada. Ative nas configurações do navegador/app.', false);
+                } else {
+                  setSt((r && r.mensagem) || 'Não foi possível ativar.', false);
+                }
+              });
+            });
+            if (CDPush.isStandalone && CDPush.isStandalone()) {
+              setSt('App instalado — pode ativar as notificações.', false);
+            }
+          }
+          if (window.CDPush && window.NotifGestor) {
+            CDPush.syncBadgeFromNotifGestor();
+          }
+        })();
+
         var btn = document.getElementById('btnMarcarLidas');
         if (btn) btn.addEventListener('click', function () {
           NotifGestor.marcarTodasLidas();
