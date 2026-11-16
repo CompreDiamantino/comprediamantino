@@ -178,18 +178,23 @@
             </a>
         </div>
 
-        <!-- LOGINS -->
-        <h2 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 px-1">Telas de login</h2>
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-8">
-            <a href="gestor-login.html" class="bg-white rounded-xl p-4 text-sm border border-gray-100 hover:border-secondary transition text-center font-medium">
-                Login Gestor
-            </a>
-            <a href="admin-login.html" class="bg-white rounded-xl p-4 text-sm border border-gray-100 hover:border-secondary transition text-center font-medium">
-                Login Admin
-            </a>
-            <a href="lojista-login.html" class="bg-white rounded-xl p-4 text-sm border border-gray-100 hover:border-secondary transition text-center font-medium">
-                Login Lojista
-            </a>
+        <!-- NUVEM (sync manual, estilo IBN) -->
+        <h2 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 px-1">Nuvem</h2>
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 mb-6">
+            <p class="font-bold text-primary mb-1"><i class="fas fa-cloud mr-1"></i> Sincronizar entre celular e PC</p>
+            <p class="text-xs text-gray-500 mb-4">Se uma alteração no celular não aparecer no PC (ou o contrário), use os botões abaixo. A última atualização vale.</p>
+            <div class="flex flex-wrap gap-2 mb-3">
+                <button type="button" id="btnNuvemBaixar" class="inline-flex items-center gap-2 bg-primary text-white text-sm font-bold px-4 py-2.5 rounded-xl hover:bg-accent transition">
+                    <i class="fas fa-cloud-download-alt"></i> Baixar da nuvem
+                </button>
+                <button type="button" id="btnNuvemEnviar" class="inline-flex items-center gap-2 bg-secondary text-primary text-sm font-bold px-4 py-2.5 rounded-xl hover:bg-yellow-400 transition">
+                    <i class="fas fa-cloud-upload-alt"></i> Enviar deste aparelho
+                </button>
+                <button type="button" id="btnNuvemTestar" class="inline-flex items-center gap-2 bg-gray-100 text-gray-700 text-sm font-semibold px-4 py-2.5 rounded-xl hover:bg-gray-200 transition">
+                    <i class="fas fa-plug"></i> Testar nuvem
+                </button>
+            </div>
+            <p id="nuvemSyncStatus" class="text-xs text-gray-400">Pronto.</p>
         </div>
 
         <div class="bg-primary/5 border border-primary/20 rounded-2xl p-5 text-sm text-gray-600">
@@ -398,6 +403,68 @@
           if (window.CDPush && window.NotifGestor) {
             CDPush.syncBadgeFromNotifGestor();
           }
+        })();
+
+        
+        // Nuvem manual (Baixar / Enviar / Testar)
+        (function () {
+          var st = document.getElementById('nuvemSyncStatus');
+          function msg(t, ok) {
+            if (!st) return;
+            st.textContent = t;
+            st.className = 'text-xs ' + (ok === true ? 'text-green-600' : ok === false ? 'text-red-600' : 'text-gray-500');
+          }
+          var btnB = document.getElementById('btnNuvemBaixar');
+          var btnE = document.getElementById('btnNuvemEnviar');
+          var btnT = document.getElementById('btnNuvemTestar');
+          if (btnB) btnB.addEventListener('click', function () {
+            if (!window.LojistasNuvem) { msg('LojistasNuvem não carregou.', false); return; }
+            msg('Baixando da nuvem…');
+            btnB.disabled = true;
+            LojistasNuvem.sincronizarAgora(function (lista) {
+              btnB.disabled = false;
+              var n = (lista && lista.length) || 0;
+              msg('Baixado: ' + n + ' anunciante(s) neste aparelho.', true);
+              try { if (window.NotifGestor) { NotifGestor.syncDeCadastros(); NotifGestor.atualizarBadge(); } } catch (e) {}
+              try { if (typeof atualizarSinalPendentes === 'function') atualizarSinalPendentes(); } catch (e2) {}
+            });
+          });
+          if (btnE) btnE.addEventListener('click', function () {
+            if (!window.LojistasNuvem || !LojistasNuvem.enviarTudoLocal) { msg('Função de envio indisponível.', false); return; }
+            msg('Enviando deste aparelho…');
+            btnE.disabled = true;
+            LojistasNuvem.enviarTudoLocal(function (i, total, nome) {
+              msg('Enviando ' + i + '/' + total + (nome ? ' — ' + nome : '') + '…');
+            }).then(function (r) {
+              btnE.disabled = false;
+              if (r && r.sucesso) {
+                msg('Enviado: ' + (r.quantidade || 0) + ' de ' + (r.total || 0) + (r.erros ? ' · falhas: ' + r.erros : '') + '.', !r.erros);
+              } else {
+                msg((r && r.mensagem) || 'Falha no envio.', false);
+              }
+            }).catch(function (e) {
+              btnE.disabled = false;
+              msg((e && e.message) || String(e), false);
+            });
+          });
+          if (btnT) btnT.addEventListener('click', function () {
+            msg('Testando…');
+            try {
+              if (window.iniciarFirebase) iniciarFirebase();
+              if (!window.cdDb) { msg('Firestore não inicializado.', false); return; }
+              window.cdDb.collection('_sistema').doc('ping').set({
+                ok: true,
+                em: new Date().toISOString(),
+                origem: 'gestor-hub-teste'
+              }, { merge: true }).then(function () {
+                msg('Nuvem OK — gravação funcionando.', true);
+              }).catch(function (err) {
+                msg('Falha: ' + ((err && err.message) || String(err)), false);
+              });
+            } catch (e) {
+              msg((e && e.message) || String(e), false);
+            }
+          });
         })();
 
         var btn = document.getElementById('btnMarcarLidas');

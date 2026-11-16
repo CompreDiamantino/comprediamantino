@@ -399,6 +399,46 @@
   var _salvarUmOrig = salvarUm;
   // already has catch that returns soLocal - ok
 
+  /**
+   * Envia todos os lojistas deste aparelho para a nuvem (botão manual, estilo IBN).
+   * Use se o outro aparelho não recebeu as alterações.
+   */
+  function enviarTudoLocal(onProgress) {
+    var lista = lerLocal().filter(function (l) {
+      return l && l.id && !foiExcluidoTotal(l.id) && l.excluidoTotal !== true;
+    });
+    var i = 0;
+    var ok = 0;
+    var erros = 0;
+    function next() {
+      if (i >= lista.length) {
+        return sinalizar('atualizacao', {
+          lojistaId: null,
+          nome: 'sync_completo',
+          status: 'ok'
+        }).then(function () {
+          return { sucesso: true, quantidade: ok, erros: erros, total: lista.length };
+        });
+      }
+      var lj = lista[i++];
+      if (typeof onProgress === 'function') {
+        try { onProgress(i, lista.length, lj.nome || lj.id); } catch (e) {}
+      }
+      return salvarUm(lj, { silencioso: true }).then(function (r) {
+        if (r && r.sucesso !== false && !r.quota) ok++;
+        else erros++;
+        return next();
+      }).catch(function () {
+        erros++;
+        return next();
+      });
+    }
+    if (!lista.length) {
+      return Promise.resolve({ sucesso: true, quantidade: 0, erros: 0, total: 0, mensagem: 'Nada local para enviar.' });
+    }
+    return next();
+  }
+
   // --- Sync ao voltar para a aba / foco (PC ↔ celular) ---
   var _ultimoPuxarFoco = 0;
   var INTERVALO_FOCO_MS = 12 * 1000; // no máx. 1 puxar a cada 12s ao focar
@@ -444,6 +484,7 @@
     apagar: apagar,
     forcarEnvio: forcarEnvio,
     sincronizarAgora: sincronizarAgora,
+    enviarTudoLocal: enviarTudoLocal,
     isQuotaError: isQuotaError,
     mensagemQuota: mensagemQuota,
     marcarExcluido: marcarExcluido,
