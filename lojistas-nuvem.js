@@ -64,9 +64,27 @@
     return String(lj.id || ('lj-' + Date.now()));
   }
 
+  /** Timestamp de um registro (última atualização vale). */
+  function tsDe(obj) {
+    if (!obj) return 0;
+    return Date.parse(obj.atualizadoEm || obj.criadoEm || obj.removidoEm || 0) || 0;
+  }
+
+  /**
+   * Última atualização vence (estilo IBN, simplificado — 1 gestor).
+   * O mais novo manda; campos que só existem no mais antigo preenchem buracos.
+   */
+  function escolherMaisNovo(a, b) {
+    if (!a) return b;
+    if (!b) return a;
+    var ta = tsDe(a);
+    var tb = tsDe(b);
+    if (ta >= tb) return Object.assign({}, b, a);
+    return Object.assign({}, a, b);
+  }
+
   function mesclarItem(item) {
     if (!item || !item.id) return lerLocal();
-    // Nunca reintroduz item de exclusão total
     if (foiExcluidoTotal(item.id) || item.excluidoTotal === true) {
       marcarExcluido(item.id);
       var listaSem = lerLocal().filter(function (x) { return String(x.id) !== String(item.id); });
@@ -75,7 +93,7 @@
     }
     var lista = lerLocal();
     var ix = lista.findIndex(function (x) { return String(x.id) === String(item.id); });
-    if (ix >= 0) lista[ix] = Object.assign({}, lista[ix], item);
+    if (ix >= 0) lista[ix] = escolherMaisNovo(item, lista[ix]);
     else lista.push(item);
     salvarLocal(lista);
     return lista;
@@ -83,25 +101,40 @@
 
   /** Grava um anunciante na nuvem + mescla no local.
    *  Na nuvem NUNCA grava senha em texto puro — só senhaHash. */
-  function salvarUm(lj) {
+  function salvarUm(lj, opts) {
+    opts = opts || {};
     if (!lj || !lj.id) return Promise.resolve({ sucesso: false });
-    // Não regrava item de exclusão total
     if (foiExcluidoTotal(lj.id) || lj.excluidoTotal === true) {
       marcarExcluido(lj.id);
       var sem = lerLocal().filter(function (x) { return String(x.id) !== String(lj.id); });
       salvarLocal(sem);
       return Promise.resolve({ sucesso: true, excluidoTotal: true });
     }
+    // Horário da alteração = base da regra "última atualização vale"
+    lj.atualizadoEm = new Date().toISOString();
+    if (!lj.criadoEm) lj.criadoEm = lj.atualizadoEm;
     mesclarItem(lj);
 
     var fire = db();
     if (!fire) return Promise.resolve({ sucesso: true, soLocal: true });
 
+    function aposGravar(res) {
+      // Sem sinal, o outro aparelho (PC/celular) não sabe que mudou
+      if (opts.silencioso) return Promise.resolve(res);
+      var tipoSinal = opts.tipoSinal || 'atualizacao';
+      return sinalizar(tipoSinal, {
+        lojistaId: lj.id,
+        nome: lj.nome || null,
+        status: lj.status || null
+      }).then(function () { return res; }).catch(function () { return res; });
+    }
+
     function gravarNuvem(payload) {
-      return fire.collection(COL).doc(docId(lj)).set(Object.assign({}, payload, {
-        atualizadoEm: new Date().toISOString()
-      }), { merge: true }).then(function () {
-        return { sucesso: true, nuvem: true };
+      var body = Object.assign({}, payload, {
+        atualizadoEm: lj.atualizadoEm || new Date().toISOString()
+      });
+      return fire.collection(COL).doc(docId(lj)).set(body, { merge: true }).then(function () {
+        return aposGravar({ sucesso: true, nuvem: true });
       }).catch(function (err) {
         console.warn('lojistas nuvem', err);
         var quota = false;
@@ -148,15 +181,9 @@
     });
   }
 
-  /** Cadastro novo: grava lojista + sinal (gestor reage em segundos com 1–2 leituras). */
+  /** Cadastro novo: grava + sinal novo_cadastro. */
   function salvarNovoCadastro(lj) {
-    return salvarUm(lj).then(function (res) {
-      return sinalizar('novo_cadastro', {
-        lojistaId: lj && lj.id,
-        nome: lj && lj.nome,
-        status: (lj && lj.status) || 'pendente'
-      }).then(function () { return res; });
-    });
+    return salvarUm(lj, { tipoSinal: 'novo_cadastro' });
   }
 
   /** Puxa todos da nuvem e mescla com local (usar ao abrir o painel — 1× por sessão). */
@@ -187,11 +214,7 @@
         }
         var ant = mapa[sid];
         if (!ant) mapa[sid] = d;
-        else {
-          var tN = Date.parse(d.atualizadoEm || d.criadoEm || 0) || 0;
-          var tL = Date.parse(ant.atualizadoEm || ant.criadoEm || 0) || 0;
-          mapa[sid] = tN >= tL ? Object.assign({}, ant, d) : Object.assign({}, d, ant);
-        }
+        else mapa[sid] = escolherMaisNovo(d, ant);
       });
       // Remove do mapa qualquer id que esteja na lista de exclusão total
       excluidos.forEach(function (eid) { delete mapa[String(eid)]; });
@@ -376,12 +399,41 @@
   var _salvarUmOrig = salvarUm;
   // already has catch that returns soLocal - ok
 
+  // --- Sync ao voltar para a aba / foco (PC ↔ celular) ---
+  var _ultimoPuxarFoco = 0;
+  var INTERVALO_FOCO_MS = 12 * 1000; // no máx. 1 puxar a cada 12s ao focar
+
+  function sincronizarAgora(cb) {
+    return puxar(function (lista) {
+      try {
+        window.dispatchEvent(new CustomEvent('cd-lojistas-sincronizado', { detail: { lista: lista || [] } }));
+      } catch (e) {}
+      if (cb) cb(lista);
+    });
+  }
+
+  function aoFocarPuxar() {
+    var agora = Date.now();
+    if (agora - _ultimoPuxarFoco < INTERVALO_FOCO_MS) return;
+    _ultimoPuxarFoco = agora;
+    sincronizarAgora();
+  }
+
+  if (typeof document !== 'undefined') {
+    document.addEventListener('visibilitychange', function () {
+      if (document.visibilityState === 'visible') aoFocarPuxar();
+    });
+    window.addEventListener('focus', function () { aoFocarPuxar(); });
+  }
+
   global.LojistasNuvem = {
     KEY: KEY,
     KEY_EXCLUIDOS: KEY_EXCLUIDOS,
     lerLocal: lerLocal,
     salvarLocal: salvarLocal,
     mesclarItem: mesclarItem,
+    escolherMaisNovo: escolherMaisNovo,
+    tsDe: tsDe,
     salvarUm: salvarUm,
     salvarNovoCadastro: salvarNovoCadastro,
     sinalizar: sinalizar,
@@ -391,6 +443,7 @@
     ouvirSinais: ouvirSinais,
     apagar: apagar,
     forcarEnvio: forcarEnvio,
+    sincronizarAgora: sincronizarAgora,
     isQuotaError: isQuotaError,
     mensagemQuota: mensagemQuota,
     marcarExcluido: marcarExcluido,
