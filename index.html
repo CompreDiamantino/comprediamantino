@@ -241,7 +241,7 @@
             <div class="flex items-center justify-between mb-8">
                 <div>
                     <h2 class="text-2xl md:text-3xl font-bold text-primary">Empresas em Destaque</h2>
-                    <p class="text-gray-500 text-sm mt-1">As mais votadas · até 5 no topo, com estrelas recebidas</p>
+                    <p class="text-gray-500 text-sm mt-1">Top por estrelas (rodízio de 5 entre as 10) · depois empresas indicadas</p>
                 </div>
                 <a href="categoria.html" class="text-primary font-semibold text-sm hover:underline hidden sm:block">
                     Ver todas <i class="fas fa-arrow-right ml-1"></i>
@@ -743,7 +743,15 @@
                 } catch (err2) { return 0; }
             }
             visiveis.forEach(function (lj) { lj._estrelasHome = estrelasDe(lj.id); });
-            visiveis.sort(function (a, b) {
+
+            // Completas (dono preencheu) vs indicadas (gestor colocou do Google, cadastro incompleto)
+            function ehIndicada(lj) {
+                return !!(lj.indicada || lj.cadastroIncompleto || lj.origemGoogle && (!lj.whatsapp || lj.cadastroIncompleto));
+            }
+            var completas = visiveis.filter(function (lj) { return !ehIndicada(lj); });
+            var indicadas = visiveis.filter(ehIndicada);
+
+            completas.sort(function (a, b) {
                 if ((b._estrelasHome || 0) !== (a._estrelasHome || 0)) return (b._estrelasHome || 0) - (a._estrelasHome || 0);
                 var fa = (a.logo || (a.fotos && a.fotos[0])) ? 0 : 1;
                 var fb = (b.logo || (b.fotos && b.fotos[0])) ? 0 : 1;
@@ -751,7 +759,37 @@
                 return String(a.nome || '').localeCompare(String(b.nome || ''), 'pt-BR');
             });
 
-            if (!visiveis.length) return; // mantém empty state do HTML
+            // Top 10 por estrelas → mostra 5 em rodízio (muda a cada dia / sessão)
+            var top10 = completas.slice(0, 10);
+            function rodizioCinco(arr) {
+                if (!arr.length) return [];
+                if (arr.length <= 5) return arr.slice();
+                var seed = 0;
+                try {
+                    // Dia civil (UTC-4 approx) + sessão para variar entre visitas no mesmo dia
+                    var d = new Date();
+                    seed = d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
+                    var sess = sessionStorage.getItem('cd_home_rodizio');
+                    if (sess == null) {
+                        sess = String(Math.floor(Math.random() * arr.length));
+                        sessionStorage.setItem('cd_home_rodizio', sess);
+                    }
+                    seed = seed + (parseInt(sess, 10) || 0);
+                } catch (e) {
+                    seed = Math.floor(Date.now() / 86400000);
+                }
+                var start = seed % arr.length;
+                var out = [];
+                for (var i = 0; i < 5 && i < arr.length; i++) {
+                    out.push(arr[(start + i) % arr.length]);
+                }
+                return out;
+            }
+            var destaqueTop = rodizioCinco(top10);
+            // Indicadas: até 4, também com leve rodízio
+            var indicadasShow = rodizioCinco(indicadas).slice(0, 4);
+
+            if (!destaqueTop.length && !indicadasShow.length) return;
 
             var CAT = {
                 alimentacao: 'Alimentação', moda: 'Moda', casa: 'Casa e Construção',
@@ -759,27 +797,29 @@
                 servicos: 'Serviços', agro: 'Agro e Pet', outros: 'Outros'
             };
 
-            box.innerHTML = visiveis.slice(0, 5).map(function (lj) {
+            function cardEmpresa(lj, isIndicada) {
                 var capa = lj.logo || (lj.fotos && lj.fotos[0]) || '';
                 var inicial = (lj.nome || 'E').charAt(0).toUpperCase();
                 var cat = CAT[lj.categoria] || lj.categoria || '';
                 var plano = (lj.plano || 'basico').toLowerCase();
                 var selo = '';
-                if (plano === 'premium') {
+                if (isIndicada) {
+                    selo = '<span class="absolute top-2 right-2 text-[10px] font-bold bg-slate-600 text-white px-2 py-0.5 rounded-full">Indicada</span>';
+                } else if (plano === 'premium') {
                     selo = '<span class="absolute top-2 right-2 text-[10px] font-bold bg-amber-400 text-primary px-2 py-0.5 rounded-full">Premium</span>';
                 } else if (plano === 'destaque') {
                     selo = '<span class="absolute top-2 right-2 text-[10px] font-bold bg-primary text-white px-2 py-0.5 rounded-full">Destaque</span>';
                 }
-
                 var imgHtml = capa
                     ? '<img src="' + String(capa).replace(/"/g, '') + '" alt="" class="w-full h-full object-cover" loading="lazy" onerror="this.style.display=\'none\';this.parentNode.insertAdjacentHTML(\'beforeend\',\'<span class=\\\'text-3xl font-bold text-primary\\\'>' + inicial + '</span>\')">'
                     : '<span class="text-3xl font-bold text-primary">' + inicial + '</span>';
-
                 var wa = lj.whatsapp ? String(lj.whatsapp).replace(/\D/g, '') : '';
                 var waBtn = wa
                     ? '<a href="https://wa.me/55' + wa + '" target="_blank" rel="noopener" class="bg-green-500 text-white w-10 flex items-center justify-center rounded-xl hover:bg-green-600" title="WhatsApp"><i class="fab fa-whatsapp"></i></a>'
                     : '';
-
+                var estrelasTxt = isIndicada
+                    ? '<p class="text-xs text-gray-400 mb-3"><i class="fas fa-map-marker-alt mr-1"></i>Cadastro incompleto — dono pode completar</p>'
+                    : '<p class="text-xs font-semibold text-yellow-600 mb-3"><i class="fas fa-star mr-1"></i>' + (lj._estrelasHome || 0) + ' estrelas</p>';
                 return '<article class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden hover:shadow-md transition flex flex-col">' +
                     '<div class="relative h-36 bg-gradient-to-br from-blue-50 to-gray-100 flex items-center justify-center overflow-hidden">' +
                     imgHtml + selo +
@@ -787,12 +827,21 @@
                     '<div class="p-4 flex flex-col flex-1">' +
                     '<h3 class="font-bold text-gray-900 text-base leading-snug mb-1 line-clamp-2">' + (lj.nome || '') + '</h3>' +
                     (cat ? '<p class="text-xs text-gray-400 mb-1"><i class="fas fa-tag mr-1"></i>' + cat + '</p>' : '') +
-                    '<p class="text-xs font-semibold text-yellow-600 mb-3"><i class="fas fa-star mr-1"></i>' + (lj._estrelasHome || 0) + ' estrelas</p>' +
+                    estrelasTxt +
                     '<div class="mt-auto flex gap-2">' +
                     '<a href="empresa.html?id=' + encodeURIComponent(lj.id) + '" class="flex-1 text-center bg-primary text-white text-sm font-bold py-2 rounded-xl hover:bg-accent transition">Ver empresa</a>' +
                     waBtn +
                     '</div></div></article>';
-            }).join('');
+            }
+
+            var html = '';
+            if (destaqueTop.length) {
+                html += destaqueTop.map(function (lj) { return cardEmpresa(lj, false); }).join('');
+            }
+            if (indicadasShow.length) {
+                html += indicadasShow.map(function (lj) { return cardEmpresa(lj, true); }).join('');
+            }
+            box.innerHTML = html;
         }
 
         function lerLocalLojistas() {

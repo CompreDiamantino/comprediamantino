@@ -318,12 +318,21 @@
             <h3 class="text-lg font-bold text-primary mb-2" id="tituloModalLojista">Novo lojista</h3>
             <p id="dicaModalGoogle" class="hidden text-xs text-blue-700 bg-blue-50 border border-blue-100 rounded-lg px-3 py-2 mb-4">
                 <i class="fas fa-info-circle mr-1"></i>
-                Cadastro rápido do Google Maps: preencha o <strong>nome</strong>, cole o <strong>link do Maps</strong> e (opcional) o endereço. WhatsApp e senha podem ficar em branco — aparece como “não informado pelo lojista”.
+                Busque o lugar, <strong>clique no resultado</strong> e o nome/endereço preenchem sozinhos.
+                Fica como <strong>empresa indicada</strong> até o dono completar o cadastro (só então entra no ranking de estrelas).
             </p>
+
+            <div id="boxBuscaGoogleMaps" class="hidden mb-4 space-y-2">
+                <label class="block text-sm font-medium">Buscar no Google Maps (Diamantino)</label>
+                <input type="text" id="ljPlacesSearch" class="w-full border border-primary/40 rounded-xl px-4 py-2.5 focus:outline-none focus:border-primary" placeholder="Digite o nome do estabelecimento…">
+                <div id="mapaPlacesAdmin" class="w-full h-52 rounded-xl bg-gray-100 border border-gray-200 overflow-hidden"></div>
+                <p id="placesStatus" class="text-[11px] text-gray-500">Digite para buscar. Se a busca não abrir, ative a Places API na chave do Google (maps-config.js).</p>
+            </div>
             
             <form id="formLojista" class="space-y-4">
                 <input type="hidden" id="editId">
                 <input type="hidden" id="ljOrigemGoogle" value="">
+                <input type="hidden" id="ljPlaceId" value="">
                 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
@@ -1181,18 +1190,140 @@
             document.getElementById('editId').value = '';
             document.getElementById('formLojista').reset();
             document.getElementById('ljOrigemGoogle').value = modoGoogle ? '1' : '';
+            if (document.getElementById('ljPlaceId')) document.getElementById('ljPlaceId').value = '';
             const dica = document.getElementById('dicaModalGoogle');
             if (dica) dica.classList.toggle('hidden', !modoGoogle);
+            const boxBusca = document.getElementById('boxBuscaGoogleMaps');
+            if (boxBusca) boxBusca.classList.toggle('hidden', !modoGoogle);
             const chk = document.getElementById('ljAtivarMapa');
-            if (chk) chk.checked = !!modoGoogle; // no modo Google, já ativa no mapa por padrão
+            if (chk) chk.checked = !!modoGoogle;
             document.getElementById('modalLojista').classList.remove('hidden');
             document.getElementById('modalLojista').classList.add('flex');
             if (modoGoogle) {
                 setTimeout(function () {
-                    var nome = document.getElementById('ljNome');
-                    if (nome) nome.focus();
-                }, 100);
+                    initPlacesAdmin();
+                    var busca = document.getElementById('ljPlacesSearch');
+                    if (busca) busca.focus();
+                }, 200);
             }
+        }
+
+        // ---- Google Places no modal (busca + mapa) ----
+        var _mapaPlaces = null;
+        var _markerPlaces = null;
+        var _placesReady = false;
+        function carregarMapsPlaces(cb) {
+            if (window.google && google.maps && google.maps.places) {
+                if (cb) cb();
+                return;
+            }
+            if (document.getElementById('cd-maps-places-script')) {
+                var t = setInterval(function () {
+                    if (window.google && google.maps && google.maps.places) {
+                        clearInterval(t);
+                        if (cb) cb();
+                    }
+                }, 200);
+                return;
+            }
+            var key = '';
+            try {
+                // maps-config pode já ter sido carregado; senão usa o do site
+                if (window.CD_MAPS_KEY) key = window.CD_MAPS_KEY;
+            } catch (e) {}
+            if (!key) {
+                var st = document.getElementById('placesStatus');
+                if (st) st.textContent = 'Chave do Maps não encontrada. Inclua maps-config.js no painel.';
+                if (cb) cb();
+                return;
+            }
+            var s = document.createElement('script');
+            s.id = 'cd-maps-places-script';
+            s.async = true;
+            s.src = 'https://maps.googleapis.com/maps/api/js?key=' + encodeURIComponent(key) +
+                '&libraries=places&language=pt-BR&region=BR';
+            s.onload = function () { if (cb) cb(); };
+            s.onerror = function () {
+                var st = document.getElementById('placesStatus');
+                if (st) st.textContent = 'Falha ao carregar Google Maps. Verifique a chave e a Places API.';
+            };
+            document.head.appendChild(s);
+        }
+        function initPlacesAdmin() {
+            carregarMapsPlaces(function () {
+                if (!window.google || !google.maps) return;
+                var elMapa = document.getElementById('mapaPlacesAdmin');
+                var inp = document.getElementById('ljPlacesSearch');
+                var st = document.getElementById('placesStatus');
+                if (!elMapa) return;
+                var center = (window.CD_MAPS_CENTER) || { lat: -14.4089, lng: -56.4458 };
+                if (!_mapaPlaces) {
+                    _mapaPlaces = new google.maps.Map(elMapa, {
+                        center: center,
+                        zoom: 14,
+                        mapTypeControl: false,
+                        streetViewControl: false,
+                        fullscreenControl: false
+                    });
+                    _markerPlaces = new google.maps.Marker({ map: _mapaPlaces, draggable: true });
+                    _markerPlaces.addListener('dragend', function () {
+                        var p = _markerPlaces.getPosition();
+                        if (!p) return;
+                        var mapsLink = 'https://www.google.com/maps?q=' + p.lat() + ',' + p.lng();
+                        if (document.getElementById('ljMaps')) document.getElementById('ljMaps').value = mapsLink;
+                    });
+                } else {
+                    google.maps.event.trigger(_mapaPlaces, 'resize');
+                    _mapaPlaces.setCenter(center);
+                }
+                if (!google.maps.places) {
+                    if (st) st.textContent = 'Places API não disponível nesta chave. Cole o link do Maps no campo Localização abaixo.';
+                    return;
+                }
+                if (inp && !_placesReady) {
+                    var ac = new google.maps.places.Autocomplete(inp, {
+                        fields: ['place_id', 'name', 'formatted_address', 'geometry', 'types', 'international_phone_number', 'formatted_phone_number'],
+                        componentRestrictions: { country: 'br' },
+                        bounds: new google.maps.LatLngBounds(
+                            { lat: -14.45, lng: -56.50 },
+                            { lat: -14.36, lng: -56.40 }
+                        ),
+                        strictBounds: false
+                    });
+                    ac.addListener('place_changed', function () {
+                        var place = ac.getPlace();
+                        if (!place || !place.geometry || !place.geometry.location) {
+                            if (st) st.textContent = 'Lugar sem coordenadas. Tente outro resultado.';
+                            return;
+                        }
+                        var loc = place.geometry.location;
+                        _mapaPlaces.setCenter(loc);
+                        _mapaPlaces.setZoom(17);
+                        _markerPlaces.setPosition(loc);
+                        document.getElementById('ljNome').value = place.name || document.getElementById('ljNome').value;
+                        if (document.getElementById('ljEndereco')) {
+                            document.getElementById('ljEndereco').value = place.formatted_address || '';
+                        }
+                        if (document.getElementById('ljPlaceId')) {
+                            document.getElementById('ljPlaceId').value = place.place_id || '';
+                        }
+                        var mapsLink = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(place.name || '') +
+                            '&query_place_id=' + encodeURIComponent(place.place_id || '');
+                        if (!place.place_id) {
+                            mapsLink = 'https://www.google.com/maps?q=' + loc.lat() + ',' + loc.lng();
+                        }
+                        if (document.getElementById('ljMaps')) document.getElementById('ljMaps').value = mapsLink;
+                        // Telefone do Google, se existir
+                        var tel = place.formatted_phone_number || place.international_phone_number || '';
+                        if (tel && document.getElementById('ljWhatsapp') && !document.getElementById('ljWhatsapp').value) {
+                            document.getElementById('ljWhatsapp').value = String(tel).replace(/\D/g, '').replace(/^55/, '');
+                        }
+                        if (st) st.textContent = 'Local selecionado: ' + (place.name || '') + ' — revise e salve.';
+                    });
+                    _placesReady = true;
+                    if (st) st.textContent = 'Digite o nome e escolha na lista do Google.';
+                }
+            });
         }
 
         document.getElementById('btnNovoLojista').addEventListener('click', () => {
@@ -1363,6 +1494,7 @@
 
             let whatsappVal = (document.getElementById('ljWhatsapp').value || '').trim();
             // Mantém vazio → tela pública mostra “Não informado pelo lojista”
+            const placeId = ((document.getElementById('ljPlaceId') || {}).value || '').trim();
             const dados = {
                 nome: document.getElementById('ljNome').value.trim(),
                 whatsapp: whatsappVal,
@@ -1374,9 +1506,19 @@
                 plano: document.getElementById('ljPlano').value,
                 categoria: document.getElementById('ljCategoria').value,
                 mapsLink: mapsLink,
-                origemGoogle: origemGoogle || undefined
+                origemGoogle: origemGoogle || undefined,
+                placeId: placeId || undefined
             };
             if (senhaVal) dados.senha = senhaVal;
+
+            // Cadastro pelo gestor via Google = empresa INDICADA (incompleta)
+            // Só entra no ranking de estrelas (top 10) quando o dono completar o perfil
+            const cadastroIncompleto = !!(origemGoogle || ativarAgora) && !editId &&
+                (!whatsappVal || !senhaVal || !(document.getElementById('ljEmail').value || '').trim());
+            if (cadastroIncompleto) {
+                dados.indicada = true;
+                dados.cadastroIncompleto = true;
+            }
 
             let idFinal = editId;
             if (editId) {
@@ -1384,6 +1526,11 @@
                 if (idx !== -1) {
                     const statusAnterior = lista[idx].status;
                     lista[idx] = { ...lista[idx], ...dados };
+                    // Se o dono (ou gestor) completou dados, tira da lista de "indicada"
+                    if (whatsappVal && (lista[idx].senha || senhaVal) && (lista[idx].email || dados.email)) {
+                        lista[idx].indicada = false;
+                        lista[idx].cadastroIncompleto = false;
+                    }
                     if (ativarAgora && statusAnterior !== 'ativo' && statusAnterior !== 'aviso') {
                         lista[idx].status = 'ativo';
                     }
@@ -1396,7 +1543,9 @@
                     status: ativarAgora ? 'ativo' : 'pendente',
                     vencimento: null,
                     criadoEm: new Date().toISOString(),
-                    criadoPorGestor: true
+                    criadoPorGestor: true,
+                    indicada: !!dados.indicada,
+                    cadastroIncompleto: !!dados.cadastroIncompleto
                 });
             }
             
@@ -1693,6 +1842,7 @@
             }
         })();
     </script>
+    <script src="maps-config.js"></script>
     <script src="empresas-dados.js"></script>
     <script src="supabase-config.js"></script>
     <script src="avaliacoes.js"></script>
