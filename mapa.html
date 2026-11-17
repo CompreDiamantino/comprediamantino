@@ -67,57 +67,120 @@
         let marcadores = [];
         let marcadorUser = null;
         let posicaoUsuario = null;
+        var iconEmpresa = null;
+
+        function garantirIcones() {
+            if (typeof L === 'undefined' || iconEmpresa) return;
+            iconEmpresa = L.icon({
+                iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+                iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+                shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+                iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41]
+            });
+        }
+
+        function listaParaMapa() {
+            var byId = {};
+            try {
+                if (window.EmpresasDados && EmpresasDados.seedSeVazio) EmpresasDados.seedSeVazio();
+                var base = (EmpresasDados && EmpresasDados.empresasNoMapa) ? EmpresasDados.empresasNoMapa() : [];
+                base.forEach(function (e) { if (e && e.id) byId[String(e.id)] = e; });
+            } catch (err) {}
+            try {
+                ['cd_lojistas_admin', 'cd_lojistas'].forEach(function (key) {
+                    var lista = JSON.parse(localStorage.getItem(key) || '[]');
+                    if (!Array.isArray(lista)) return;
+                    lista.forEach(function (lj) {
+                        if (!lj || !lj.id || !lj.nome) return;
+                        var st = String(lj.status || '').toLowerCase();
+                        if (st === 'removido' || st === 'bloqueado') return;
+                        var ok = (st === 'ativo' || st === 'aviso' || st === 'pago' || st === 'aprovado' ||
+                            lj.indicada || lj.cadastroIncompleto || lj.origemGoogle || !st);
+                        if (!ok && st === 'vencido' && (lj.indicada || lj.origemGoogle)) ok = true;
+                        if (!ok) return;
+                        var lat = lj.lat, lng = lj.lng;
+                        if ((lat == null || lng == null) && lj.mapsLink && EmpresasDados.extrairCoords) {
+                            var c = EmpresasDados.extrairCoords(lj.mapsLink);
+                            if (c) { lat = c.lat; lng = c.lng; }
+                        }
+                        if (lat == null || lng == null) {
+                            try {
+                                var salvas = JSON.parse(localStorage.getItem('cd_empresas_coords') || '{}');
+                                if (salvas[lj.id]) { lat = salvas[lj.id].lat; lng = salvas[lj.id].lng; }
+                            } catch (e2) {}
+                        }
+                        if (lat == null || lng == null || isNaN(Number(lat)) || isNaN(Number(lng))) return;
+                        byId[String(lj.id)] = {
+                            id: lj.id,
+                            nome: lj.nome,
+                            endereco: lj.endereco || '',
+                            categoria: lj.categoria || '',
+                            status: 'ativo',
+                            lat: Number(lat),
+                            lng: Number(lng),
+                            publico: false,
+                            indicada: !!(lj.indicada || lj.cadastroIncompleto)
+                        };
+                        try {
+                            if (EmpresasDados.upsertEmpresa) {
+                                EmpresasDados.upsertEmpresa({
+                                    id: lj.id, nome: lj.nome, endereco: lj.endereco || '',
+                                    categoria: lj.categoria || 'outros', status: 'ativo',
+                                    mapsLink: lj.mapsLink || '', lat: Number(lat), lng: Number(lng),
+                                    plano: lj.plano || 'basico'
+                                });
+                            }
+                        } catch (e3) {}
+                    });
+                });
+            } catch (err2) {}
+            return Object.keys(byId).map(function (k) { return byId[k]; });
+        }
 
         function renderLista(empresas) {
-            const box = document.getElementById('listaEmpresas');
+            var box = document.getElementById('listaEmpresas');
             if (!empresas.length) {
-                box.innerHTML = '<p class="text-gray-400 text-sm">Nenhuma empresa ativa no mapa ainda.</p>';
+                box.innerHTML = '<p class="text-gray-400 text-sm">Nenhuma empresa no mapa ainda. Use o Painel → Do Google Maps (Buscar pelo nome).</p>';
                 return;
             }
-            box.innerHTML = empresas.map(e => {
-                const dir = EmpresasDados.linkComoChegar(e.lat, e.lng, posicaoUsuario);
-                const dist = e.distanciaTexto
-                    ? `<span class="text-secondary text-xs font-semibold"><i class="fas fa-location-arrow"></i> ${e.distanciaTexto}</span>`
+            box.innerHTML = empresas.map(function (e) {
+                var dir = EmpresasDados.linkComoChegar(e.lat, e.lng, posicaoUsuario);
+                var dist = e.distanciaTexto
+                    ? '<span class="text-secondary text-xs font-semibold"><i class="fas fa-location-arrow"></i> ' + e.distanciaTexto + '</span>'
                     : '';
-                return `
-                <div class="bg-white border border-gray-100 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <div>
-                        <p class="font-bold text-gray-900">${e.nome || ''}</p>
-                        <p class="text-xs text-gray-500">${e.endereco || ''}</p>
-                        ${dist}
-                    </div>
-                    <div class="flex gap-2">
-                        <a href="empresa.html?id=${encodeURIComponent(e.id)}" class="text-sm font-bold text-primary border border-primary/30 px-3 py-1.5 rounded-lg">Ver</a>
-                        <a href="${dir}" target="_blank" rel="noopener" class="text-sm font-bold bg-primary text-white px-3 py-1.5 rounded-lg">Como chegar</a>
-                    </div>
-                </div>`;
+                var selo = e.publico ? ' · órgão público' : (e.indicada ? ' · indicada' : '');
+                return '<div class="bg-white border border-gray-100 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">' +
+                    '<div><p class="font-bold text-gray-900">' + (e.nome || '') + '</p>' +
+                    '<p class="text-xs text-gray-500">' + (e.endereco || '') + selo + '</p>' + dist + '</div>' +
+                    '<div class="flex gap-2">' +
+                    '<a href="empresa.html?id=' + encodeURIComponent(e.id) + '" class="text-sm font-bold text-primary border border-primary/30 px-3 py-1.5 rounded-lg">Ver</a>' +
+                    '<a href="' + dir + '" target="_blank" rel="noopener" class="text-sm font-bold bg-primary text-white px-3 py-1.5 rounded-lg">Como chegar</a>' +
+                    '</div></div>';
             }).join('');
         }
 
         function montarMarcadores(empresas) {
-            marcadores.forEach(m => { try { mapa.removeLayer(m); } catch (e) {} });
+            garantirIcones();
+            marcadores.forEach(function (m) { try { mapa.removeLayer(m); } catch (e) {} });
             marcadores = [];
             if (!mapa) return;
             var bounds = [];
             empresas.forEach(function (e) {
-                if (e.lat == null || e.lng == null) return;
-                var marker = L.marker([e.lat, e.lng]).addTo(mapa);
-                var dir = EmpresasDados.linkComoChegar(e.lat, e.lng, posicaoUsuario);
+                var lat = Number(e.lat), lng = Number(e.lng);
+                if (isNaN(lat) || isNaN(lng)) return;
+                var marker = L.marker([lat, lng], iconEmpresa ? { icon: iconEmpresa } : {}).addTo(mapa);
+                var dir = EmpresasDados.linkComoChegar(lat, lng, posicaoUsuario);
                 marker.bindPopup(
-                    '<div style="min-width:160px;font-family:sans-serif">' +
-                    '<strong>' + (e.nome || '') + '</strong><br>' +
+                    '<div style="min-width:160px;font-family:sans-serif"><strong>' + (e.nome || '') + '</strong><br>' +
                     '<span style="color:#666;font-size:12px">' + (e.endereco || '') + '</span><br>' +
                     '<a href="empresa.html?id=' + encodeURIComponent(e.id) + '" style="font-size:12px">Ver empresa</a> · ' +
                     '<a href="' + dir + '" target="_blank" style="font-size:12px">Como chegar</a></div>'
                 );
                 marcadores.push(marker);
-                bounds.push([e.lat, e.lng]);
+                bounds.push([lat, lng]);
             });
-            if (bounds.length === 1) {
-                mapa.setView(bounds[0], 16);
-            } else if (bounds.length > 1) {
-                mapa.fitBounds(bounds, { padding: [40, 40] });
-            }
+            if (bounds.length === 1) mapa.setView(bounds[0], 16);
+            else if (bounds.length > 1) mapa.fitBounds(bounds, { padding: [40, 40] });
         }
 
         function aplicarDistancias(empresas) {
@@ -130,31 +193,29 @@
         }
 
         function atualizarTudo() {
-            var empresas = aplicarDistancias(EmpresasDados.empresasNoMapa());
+            var empresas = aplicarDistancias(listaParaMapa());
             montarMarcadores(empresas);
             renderLista(empresas);
         }
 
         function initMapaGeral() {
             var el = document.getElementById('mapaGeral');
-            if (!el || typeof L === 'undefined') return;
-            var center = (window.CD_MAPS_CENTER) || EmpresasDados.CENTER || { lat: -14.4089, lng: -56.4458 };
+            if (!el || typeof L === 'undefined') { console.warn('Leaflet não carregou'); return; }
+            garantirIcones();
+            var center = (window.CD_MAPS_CENTER) || (window.EmpresasDados && EmpresasDados.CENTER) || { lat: -14.4089, lng: -56.4458 };
+            if (mapa) { try { mapa.remove(); } catch (e) {} mapa = null; }
             mapa = L.map(el).setView([center.lat, center.lng], 14);
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                maxZoom: 19,
-                attribution: '&copy; OpenStreetMap'
+                maxZoom: 19, attribution: '&copy; OpenStreetMap'
             }).addTo(mapa);
             atualizarTudo();
-            setTimeout(function () { try { mapa.invalidateSize(); } catch (e) {} }, 200);
+            setTimeout(function () { try { mapa.invalidateSize(); atualizarTudo(); } catch (e) {} }, 300);
         }
 
         document.getElementById('btnLocalizar').addEventListener('click', function () {
             var info = document.getElementById('infoLoc');
             var res = document.getElementById('resultadoProxima');
-            if (!navigator.geolocation) {
-                info.textContent = 'Geolocalização não suportada.';
-                return;
-            }
+            if (!navigator.geolocation) { info.textContent = 'Geolocalização não suportada.'; return; }
             info.textContent = 'Obtendo localização…';
             navigator.geolocation.getCurrentPosition(
                 function (pos) {
@@ -167,7 +228,7 @@
                         }).addTo(mapa).bindPopup('Você está aqui');
                         mapa.setView([posicaoUsuario.lat, posicaoUsuario.lng], 15);
                     }
-                    var empresas = aplicarDistancias(EmpresasDados.empresasNoMapa());
+                    var empresas = aplicarDistancias(listaParaMapa());
                     atualizarTudo();
                     if (empresas.length) {
                         res.classList.remove('hidden');
@@ -179,11 +240,8 @@
             );
         });
 
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', initMapaGeral);
-        } else {
-            initMapaGeral();
-        }
+        if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initMapaGeral);
+        else initMapaGeral();
     </script>
     <script src="auth-utils.js"></script>
     <script src="install-app.js"></script>
