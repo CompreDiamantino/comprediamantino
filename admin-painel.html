@@ -526,6 +526,14 @@
             
             lista.forEach(lj => {
                 if (lj.status === 'bloqueado' || lj.status === 'pendente' || lj.status === 'removido') return;
+                // Empresas indicadas (gestor colocou do Google, dono ainda não completou):
+                // ficam ATIVAS no mapa/home sem data de vencimento — não marcar como vencido
+                if (lj.indicada || lj.cadastroIncompleto || lj.origemGoogle) {
+                    if (!lj.vencimento) {
+                        lj.status = 'ativo';
+                        return;
+                    }
+                }
                 
                 if (!lj.vencimento) {
                     lj.status = 'vencido';
@@ -1378,26 +1386,63 @@
                         // Preenche coords mesmo sem nome
                         if (st) st.textContent = 'Pin movido: ' + p.lat().toFixed(5) + ', ' + p.lng().toFixed(5) + ' — preencha o nome e salve.';
                     });
-                    // Clique no mapa: pega endereço (geocode reverso)
+                    // Clique no mapa: se for estabelecimento (POI), Google manda placeId com o NOME real
                     _mapaPlaces.addListener('click', function (e) {
                         if (!e || !e.latLng) return;
-                        var geocoder = new google.maps.Geocoder();
-                        geocoder.geocode({ location: e.latLng }, function (results, status) {
-                            if (status === 'OK' && results && results[0]) {
-                                var r = results[0];
-                                var nomeDig = (inp && inp.value) ? inp.value.trim() : '';
-                                aplicarLugarNoFormulario({
-                                    name: nomeDig || (r.address_components && r.address_components[0] && r.address_components[0].long_name) || 'Local no mapa',
-                                    formatted_address: r.formatted_address,
-                                    geometry: { location: e.latLng },
-                                    place_id: r.place_id
+                        var stMsg = document.getElementById('placesStatus');
+                        var nomeDig = (inp && inp.value) ? inp.value.trim() : '';
+                        // Clique em empresa/POI do Google Maps
+                        if (e.placeId) {
+                            try { e.stop(); } catch (errStop) {}
+                            if (stMsg) stMsg.textContent = 'Carregando dados do estabelecimento…';
+                            buscarDetalhesPlaceId(e.placeId, nomeDig);
+                            return;
+                        }
+                        // Sem placeId: tenta achar estabelecimento perto do clique
+                        if (google.maps.places && _mapaPlaces) {
+                            var svcNear = new google.maps.places.PlacesService(_mapaPlaces);
+                            svcNear.nearbySearch({
+                                location: e.latLng,
+                                radius: 40,
+                                type: 'establishment'
+                            }, function (results, status) {
+                                if (status === google.maps.places.PlacesServiceStatus.OK && results && results[0]) {
+                                    var p0 = results[0];
+                                    if (p0.place_id) {
+                                        buscarDetalhesPlaceId(p0.place_id, p0.name || nomeDig);
+                                        return;
+                                    }
+                                    aplicarLugarNoFormulario({
+                                        name: p0.name || nomeDig || 'Estabelecimento',
+                                        formatted_address: p0.vicinity || '',
+                                        geometry: p0.geometry,
+                                        place_id: p0.place_id
+                                    });
+                                    return;
+                                }
+                                // Fallback: só rua
+                                var geocoder = new google.maps.Geocoder();
+                                geocoder.geocode({ location: e.latLng }, function (res2, st2) {
+                                    if (st2 === 'OK' && res2 && res2[0]) {
+                                        aplicarLugarNoFormulario({
+                                            name: nomeDig || 'Estabelecimento',
+                                            formatted_address: res2[0].formatted_address,
+                                            geometry: { location: e.latLng },
+                                            place_id: res2[0].place_id
+                                        });
+                                    } else {
+                                        aplicarLugarNoFormulario({
+                                            name: nomeDig || 'Estabelecimento',
+                                            geometry: { location: e.latLng }
+                                        });
+                                    }
                                 });
-                            } else {
-                                aplicarLugarNoFormulario({
-                                    name: (inp && inp.value) || 'Local no mapa',
-                                    geometry: { location: e.latLng }
-                                });
-                            }
+                            });
+                            return;
+                        }
+                        aplicarLugarNoFormulario({
+                            name: nomeDig || 'Estabelecimento',
+                            geometry: { location: e.latLng }
                         });
                     });
                 } else {
@@ -1673,15 +1718,19 @@
                 }
             } else {
                 idFinal = 'lj' + Date.now();
+                // Indicada: ativo no mapa/home sem cobrança até o dono completar
+                var statusNovo = 'pendente';
+                if (ativarAgora || dados.indicada) statusNovo = 'ativo';
                 lista.push({
                     id: idFinal,
                     ...dados,
-                    status: ativarAgora ? 'ativo' : 'pendente',
+                    status: statusNovo,
                     vencimento: null,
                     criadoEm: new Date().toISOString(),
                     criadoPorGestor: true,
                     indicada: !!dados.indicada,
-                    cadastroIncompleto: !!dados.cadastroIncompleto
+                    cadastroIncompleto: !!dados.cadastroIncompleto,
+                    origemGoogle: !!origemGoogle
                 });
             }
             
