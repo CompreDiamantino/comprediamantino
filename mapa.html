@@ -7,7 +7,6 @@
     <title>Mapa do Comércio — Compre Diamantino</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
     <script>
         tailwind.config = {
             theme: {
@@ -45,39 +44,29 @@
         </div>
 
         <div class="flex flex-wrap gap-2 mb-4">
-            <button id="btnLocalizar" class="bg-primary text-white text-sm font-bold px-4 py-2 rounded-xl hover:bg-accent transition">
+            <button type="button" id="btnLocalizar" class="bg-primary text-white text-sm font-bold px-4 py-2 rounded-xl hover:bg-accent transition">
                 <i class="fas fa-location-arrow mr-1"></i> Usar minha localização
             </button>
             <span id="infoLoc" class="text-sm text-gray-500 self-center"></span>
         </div>
 
         <div id="mapaGeral" class="bg-gray-200 shadow-md mb-6"></div>
+        <p id="mapaErro" class="hidden text-sm text-red-600 mb-4"></p>
 
-        <div id="resultadoProxima" class="hidden mb-4 p-4 bg-blue-50 border border-blue-100 rounded-xl text-sm"></div>
+        <div id="resultadoProxima" class="hidden mb-4 text-sm text-primary font-semibold bg-blue-50 border border-blue-100 rounded-xl px-4 py-3"></div>
 
         <h2 class="font-bold text-primary mb-3">Lista rápida</h2>
-        <div id="listaEmpresas" class="space-y-2"></div>
+        <div id="listaEmpresas" class="space-y-3"></div>
     </div>
 
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     <script src="maps-config.js"></script>
     <script src="empresas-dados.js"></script>
     <script>
-        let mapa = null;
-        let marcadores = [];
-        let marcadorUser = null;
-        let posicaoUsuario = null;
-        var iconEmpresa = null;
-
-        function garantirIcones() {
-            if (typeof L === 'undefined' || iconEmpresa) return;
-            iconEmpresa = L.icon({
-                iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-                iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-                shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-                iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41]
-            });
-        }
+        var mapa = null;
+        var marcadores = [];
+        var marcadorUser = null;
+        var posicaoUsuario = null;
+        var infoWindow = null;
 
         function listaParaMapa() {
             var byId = {};
@@ -99,92 +88,97 @@
                         if (!ok && st === 'vencido' && (lj.indicada || lj.origemGoogle)) ok = true;
                         if (!ok) return;
                         var lat = lj.lat, lng = lj.lng;
-                        if ((lat == null || lng == null) && lj.mapsLink && EmpresasDados.extrairCoords) {
+                        if ((lat == null || lng == null) && lj.mapsLink && EmpresasDados && EmpresasDados.extrairCoords) {
                             var c = EmpresasDados.extrairCoords(lj.mapsLink);
                             if (c) { lat = c.lat; lng = c.lng; }
                         }
-                        if (lat == null || lng == null) {
-                            try {
-                                var salvas = JSON.parse(localStorage.getItem('cd_empresas_coords') || '{}');
-                                if (salvas[lj.id]) { lat = salvas[lj.id].lat; lng = salvas[lj.id].lng; }
-                            } catch (e2) {}
-                        }
-                        if (lat == null || lng == null || isNaN(Number(lat)) || isNaN(Number(lng))) return;
-                        byId[String(lj.id)] = {
+                        if (lat == null || lng == null) return;
+                        byId[String(lj.id)] = Object.assign({}, byId[String(lj.id)] || {}, {
                             id: lj.id,
                             nome: lj.nome,
-                            endereco: lj.endereco || '',
                             categoria: lj.categoria || '',
-                            status: 'ativo',
+                            endereco: lj.endereco || '',
+                            whatsapp: lj.whatsapp || '',
                             lat: Number(lat),
                             lng: Number(lng),
-                            publico: false,
-                            indicada: !!(lj.indicada || lj.cadastroIncompleto)
-                        };
-                        try {
-                            if (EmpresasDados.upsertEmpresa) {
-                                EmpresasDados.upsertEmpresa({
-                                    id: lj.id, nome: lj.nome, endereco: lj.endereco || '',
-                                    categoria: lj.categoria || 'outros', status: 'ativo',
-                                    mapsLink: lj.mapsLink || '', lat: Number(lat), lng: Number(lng),
-                                    plano: lj.plano || 'basico'
-                                });
-                            }
-                        } catch (e3) {}
+                            status: lj.status || 'ativo'
+                        });
                     });
                 });
-            } catch (err2) {}
+            } catch (e2) {}
             return Object.keys(byId).map(function (k) { return byId[k]; });
         }
 
         function renderLista(empresas) {
             var box = document.getElementById('listaEmpresas');
+            if (!box) return;
             if (!empresas.length) {
-                box.innerHTML = '<p class="text-gray-400 text-sm">Nenhuma empresa no mapa ainda. Use o Painel → Do Google Maps (Buscar pelo nome).</p>';
+                box.innerHTML = '<p class="text-gray-400 text-sm">Nenhuma empresa ativa no mapa ainda.</p>';
                 return;
             }
             box.innerHTML = empresas.map(function (e) {
-                var dir = EmpresasDados.linkComoChegar(e.lat, e.lng, posicaoUsuario);
+                var dir = (EmpresasDados && EmpresasDados.linkComoChegar)
+                    ? EmpresasDados.linkComoChegar(e.lat, e.lng, posicaoUsuario)
+                    : ('https://www.google.com/maps/dir/?api=1&destination=' + e.lat + ',' + e.lng);
                 var dist = e.distanciaTexto
                     ? '<span class="text-secondary text-xs font-semibold"><i class="fas fa-location-arrow"></i> ' + e.distanciaTexto + '</span>'
                     : '';
-                var selo = e.publico ? ' · órgão público' : (e.indicada ? ' · indicada' : '');
-                return '<div class="bg-white border border-gray-100 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">' +
+                return (
+                    '<div class="bg-white border border-gray-100 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">' +
                     '<div><p class="font-bold text-gray-900">' + (e.nome || '') + '</p>' +
-                    '<p class="text-xs text-gray-500">' + (e.endereco || '') + selo + '</p>' + dist + '</div>' +
-                    '<div class="flex gap-2">' +
-                    '<a href="empresa.html?id=' + encodeURIComponent(e.id) + '" class="text-sm font-bold text-primary border border-primary/30 px-3 py-1.5 rounded-lg">Ver</a>' +
-                    '<a href="' + dir + '" target="_blank" rel="noopener" class="text-sm font-bold bg-primary text-white px-3 py-1.5 rounded-lg">Como chegar</a>' +
-                    '</div></div>';
+                    '<p class="text-xs text-gray-500">' + (e.categoria || '') + ' · ' + (e.endereco || '') + '</p>' + dist + '</div>' +
+                    '<div class="flex flex-wrap gap-2">' +
+                    '<a href="empresa.html?id=' + encodeURIComponent(e.id) + '" class="text-xs bg-primary text-white px-3 py-1.5 rounded-lg font-semibold">Ver empresa</a>' +
+                    '<a href="' + dir + '" target="_blank" rel="noopener" class="text-xs bg-secondary text-primary px-3 py-1.5 rounded-lg font-semibold">Como chegar</a>' +
+                    (e.whatsapp ? '<a href="https://wa.me/55' + String(e.whatsapp).replace(/\\D/g, '') + '" target="_blank" class="text-xs bg-green-500 text-white px-3 py-1.5 rounded-lg font-semibold"><i class="fab fa-whatsapp"></i></a>' : '') +
+                    '</div></div>'
+                );
             }).join('');
         }
 
         function montarMarcadores(empresas) {
-            garantirIcones();
-            marcadores.forEach(function (m) { try { mapa.removeLayer(m); } catch (e) {} });
+            marcadores.forEach(function (m) { try { m.setMap(null); } catch (e) {} });
             marcadores = [];
-            if (!mapa) return;
-            var bounds = [];
+            if (!mapa || typeof google === 'undefined') return;
+            if (!infoWindow) infoWindow = new google.maps.InfoWindow();
+            var bounds = new google.maps.LatLngBounds();
+            var n = 0;
             empresas.forEach(function (e) {
                 var lat = Number(e.lat), lng = Number(e.lng);
                 if (isNaN(lat) || isNaN(lng)) return;
-                var marker = L.marker([lat, lng], iconEmpresa ? { icon: iconEmpresa } : {}).addTo(mapa);
-                var dir = EmpresasDados.linkComoChegar(lat, lng, posicaoUsuario);
-                marker.bindPopup(
-                    '<div style="min-width:160px;font-family:sans-serif"><strong>' + (e.nome || '') + '</strong><br>' +
-                    '<span style="color:#666;font-size:12px">' + (e.endereco || '') + '</span><br>' +
-                    '<a href="empresa.html?id=' + encodeURIComponent(e.id) + '" style="font-size:12px">Ver empresa</a> · ' +
-                    '<a href="' + dir + '" target="_blank" style="font-size:12px">Como chegar</a></div>'
-                );
+                var pos = { lat: lat, lng: lng };
+                var marker = new google.maps.Marker({
+                    position: pos,
+                    map: mapa,
+                    title: e.nome || '',
+                    icon: {
+                        url: 'https://maps.google.com/mapfiles/ms/icons/red-dot.png',
+                        scaledSize: new google.maps.Size(32, 32)
+                    }
+                });
+                var dir = (EmpresasDados && EmpresasDados.linkComoChegar)
+                    ? EmpresasDados.linkComoChegar(lat, lng, posicaoUsuario)
+                    : ('https://www.google.com/maps/dir/?api=1&destination=' + lat + ',' + lng);
+                marker.addListener('click', function () {
+                    infoWindow.setContent(
+                        '<div style="min-width:180px;font-family:sans-serif;padding:2px">' +
+                        '<strong style="color:#0A2A6B">' + (e.nome || '') + '</strong><br>' +
+                        '<span style="color:#555;font-size:12px">' + (e.endereco || '') + '</span><br>' +
+                        '<a href="empresa.html?id=' + encodeURIComponent(e.id) + '" style="font-size:12px;color:#0A2A6B">Ver empresa</a> · ' +
+                        '<a href="' + dir + '" target="_blank" style="font-size:12px;color:#0A2A6B">Como chegar</a></div>'
+                    );
+                    infoWindow.open(mapa, marker);
+                });
                 marcadores.push(marker);
-                bounds.push([lat, lng]);
+                bounds.extend(pos);
+                n++;
             });
-            if (bounds.length === 1) mapa.setView(bounds[0], 16);
-            else if (bounds.length > 1) mapa.fitBounds(bounds, { padding: [40, 40] });
+            if (n === 1) mapa.setCenter(bounds.getCenter()), mapa.setZoom(16);
+            else if (n > 1) mapa.fitBounds(bounds, 48);
         }
 
         function aplicarDistancias(empresas) {
-            if (!posicaoUsuario) return empresas;
+            if (!posicaoUsuario || !EmpresasDados) return empresas;
             return empresas.map(function (e) {
                 var km = EmpresasDados.distanciaKm(posicaoUsuario.lat, posicaoUsuario.lng, e.lat, e.lng);
                 var distanciaTexto = km < 1 ? Math.round(km * 1000) + ' m' : km.toFixed(1) + ' km';
@@ -198,19 +192,36 @@
             renderLista(empresas);
         }
 
+        function mostrarErroMapa(msg) {
+            var el = document.getElementById('mapaErro');
+            if (el) { el.textContent = msg; el.classList.remove('hidden'); }
+            renderLista(listaParaMapa());
+        }
+
         function initMapaGeral() {
             var el = document.getElementById('mapaGeral');
-            if (!el || typeof L === 'undefined') { console.warn('Leaflet não carregou'); return; }
-            garantirIcones();
+            if (!el) return;
+            if (typeof google === 'undefined' || !google.maps) {
+                mostrarErroMapa('Google Maps não carregou. Confira a chave e o faturamento no Google Cloud (projeto Compre Diamantino).');
+                return;
+            }
             var center = (window.CD_MAPS_CENTER) || (window.EmpresasDados && EmpresasDados.CENTER) || { lat: -14.4089, lng: -56.4458 };
-            if (mapa) { try { mapa.remove(); } catch (e) {} mapa = null; }
-            mapa = L.map(el).setView([center.lat, center.lng], 14);
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                maxZoom: 19, attribution: '&copy; OpenStreetMap'
-            }).addTo(mapa);
+            mapa = new google.maps.Map(el, {
+                zoom: 14,
+                center: center,
+                mapTypeControl: true,
+                streetViewControl: false,
+                fullscreenControl: true
+            });
             atualizarTudo();
-            setTimeout(function () { try { mapa.invalidateSize(); atualizarTudo(); } catch (e) {} }, 300);
         }
+
+        window.onGoogleMapsReady = function () {
+            initMapaGeral();
+        };
+        window.gm_authFailure = function () {
+            mostrarErroMapa('Google Maps bloqueado (chave, domínio ou faturamento). No Cloud: Billing + Maps JavaScript API + restrição de HTTP referrer do site.');
+        };
 
         document.getElementById('btnLocalizar').addEventListener('click', function () {
             var info = document.getElementById('infoLoc');
@@ -221,16 +232,23 @@
                 function (pos) {
                     posicaoUsuario = { lat: pos.coords.latitude, lng: pos.coords.longitude };
                     info.textContent = 'Localização ativada';
-                    if (mapa) {
-                        if (marcadorUser) try { mapa.removeLayer(marcadorUser); } catch (e) {}
-                        marcadorUser = L.circleMarker([posicaoUsuario.lat, posicaoUsuario.lng], {
-                            radius: 8, color: '#2563eb', fillColor: '#3b82f6', fillOpacity: 0.9
-                        }).addTo(mapa).bindPopup('Você está aqui');
-                        mapa.setView([posicaoUsuario.lat, posicaoUsuario.lng], 15);
+                    if (mapa && google && google.maps) {
+                        if (marcadorUser) marcadorUser.setMap(null);
+                        marcadorUser = new google.maps.Marker({
+                            position: posicaoUsuario,
+                            map: mapa,
+                            title: 'Você está aqui',
+                            icon: {
+                                url: 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png',
+                                scaledSize: new google.maps.Size(32, 32)
+                            }
+                        });
+                        mapa.setCenter(posicaoUsuario);
+                        mapa.setZoom(15);
                     }
                     var empresas = aplicarDistancias(listaParaMapa());
                     atualizarTudo();
-                    if (empresas.length) {
+                    if (empresas.length && res) {
                         res.classList.remove('hidden');
                         res.innerHTML = '<strong>Mais perto de você:</strong> ' + empresas[0].nome + ' (' + empresas[0].distanciaTexto + ')';
                     }
@@ -239,9 +257,28 @@
                 { enableHighAccuracy: true, timeout: 15000 }
             );
         });
-
-        if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initMapaGeral);
-        else initMapaGeral();
+    </script>
+    <script>
+        (function () {
+            var key = (window.CD_MAPS_KEY || '').trim();
+            if (!key) {
+                document.addEventListener('DOMContentLoaded', function () {
+                    var el = document.getElementById('mapaErro');
+                    if (el) { el.textContent = 'Chave Google Maps não configurada em maps-config.js'; el.classList.remove('hidden'); }
+                });
+                return;
+            }
+            var s = document.createElement('script');
+            s.async = true;
+            s.defer = true;
+            s.src = 'https://maps.googleapis.com/maps/api/js?key=' + encodeURIComponent(key) +
+                '&language=pt-BR&region=BR&callback=onGoogleMapsReady';
+            s.onerror = function () {
+                var el = document.getElementById('mapaErro');
+                if (el) { el.textContent = 'Falha ao carregar script do Google Maps.'; el.classList.remove('hidden'); }
+            };
+            document.head.appendChild(s);
+        })();
     </script>
     <script src="auth-utils.js"></script>
     <script src="install-app.js"></script>

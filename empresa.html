@@ -153,7 +153,7 @@
                         <i class="fas fa-map mr-2"></i> Localização
                     </h2>
                     
-                    <!-- Mapa (OpenStreetMap — sem cobrança Google) -->
+                    <!-- Mapa Google (mesmo do IBN / mapa.html) -->
                     <div id="mapa" class="bg-gray-200 relative overflow-hidden rounded-2xl" style="height:280px;width:100%;z-index:0;"></div>
                     
                     <a href="https://www.google.com/maps/dir/?api=1&destination=-14.4089,-56.4458" target="_blank" class="mt-3 inline-flex items-center gap-2 text-primary font-semibold text-sm hover:underline">
@@ -573,37 +573,54 @@
 
         document.addEventListener('DOMContentLoaded', carregarEmpresa);
 
-        var _mapaEmp = null, _markerEmp = null;
+                var _mapaEmp = null, _markerEmp = null;
         function initMapaEmpresa() {
-            const el = document.getElementById('mapa');
-            if (!el || typeof L === 'undefined') return;
+            var el = document.getElementById('mapa');
+            if (!el) return;
             if (EMPRESA_LAT == null || EMPRESA_LNG == null) return;
+            if (typeof google === 'undefined' || !google.maps) return;
+            var pos = { lat: Number(EMPRESA_LAT), lng: Number(EMPRESA_LNG) };
             if (!_mapaEmp) {
-                _mapaEmp = L.map(el).setView([EMPRESA_LAT, EMPRESA_LNG], 16);
-                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                    maxZoom: 19,
-                    attribution: '&copy; OpenStreetMap'
-                }).addTo(_mapaEmp);
-                _markerEmp = L.marker([EMPRESA_LAT, EMPRESA_LNG]).addTo(_mapaEmp);
+                _mapaEmp = new google.maps.Map(el, {
+                    zoom: 16,
+                    center: pos,
+                    mapTypeControl: false,
+                    streetViewControl: false,
+                    fullscreenControl: true
+                });
+                _markerEmp = new google.maps.Marker({
+                    position: pos,
+                    map: _mapaEmp,
+                    title: EMPRESA_NOME || 'Empresa'
+                });
             } else {
-                _mapaEmp.setView([EMPRESA_LAT, EMPRESA_LNG], 16);
-                if (_markerEmp) _markerEmp.setLatLng([EMPRESA_LAT, EMPRESA_LNG]);
-                else _markerEmp = L.marker([EMPRESA_LAT, EMPRESA_LNG]).addTo(_mapaEmp);
+                _mapaEmp.setCenter(pos);
+                if (_markerEmp) _markerEmp.setPosition(pos);
+                else _markerEmp = new google.maps.Marker({ position: pos, map: _mapaEmp, title: EMPRESA_NOME || 'Empresa' });
             }
-            _markerEmp.bindPopup(EMPRESA_NOME || 'Empresa');
-            setTimeout(function () { try { _mapaEmp.invalidateSize(); } catch (e) {} }, 200);
         }
         window.initMapaEmpresa = initMapaEmpresa;
-        // Garante init depois do Leaflet (e depois de carregar coords)
+        window.onGoogleMapsReadyEmpresa = function () {
+            if (typeof EMPRESA_LAT !== 'undefined' && EMPRESA_LAT != null) initMapaEmpresa();
+        };
         document.addEventListener('DOMContentLoaded', function () {
             setTimeout(function () {
-                if (typeof EMPRESA_LAT !== 'undefined' && EMPRESA_LAT != null) initMapaEmpresa();
-            }, 400);
+                if (typeof google !== 'undefined' && google.maps && EMPRESA_LAT != null) initMapaEmpresa();
+            }, 600);
         });
     </script>
     <script src="maps-config.js"></script>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+    <script>
+        (function () {
+            var key = (window.CD_MAPS_KEY || '').trim();
+            if (!key) return;
+            var s = document.createElement('script');
+            s.async = true; s.defer = true;
+            s.src = 'https://maps.googleapis.com/maps/api/js?key=' + encodeURIComponent(key) +
+                '&language=pt-BR&region=BR&callback=onGoogleMapsReadyEmpresa';
+            document.head.appendChild(s);
+        })();
+    </script>
 
     <script src="auth-utils.js"></script>
     <script>
