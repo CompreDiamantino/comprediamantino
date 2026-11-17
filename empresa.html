@@ -354,6 +354,9 @@
                 var waFmt = wa.length >= 11 ? '(' + wa.slice(0, 2) + ') ' + wa.slice(2, 7) + '-' + wa.slice(7) : wa;
                 html += cardInfo('bg-green-100', 'fab fa-whatsapp text-green-500', 'WhatsApp',
                     '<a href="https://wa.me/55' + wa + '" target="_blank" rel="noopener" class="text-green-600 text-sm font-medium hover:underline">' + esc(waFmt) + '</a>');
+            } else {
+                html += cardInfo('bg-gray-100', 'fab fa-whatsapp text-gray-400', 'WhatsApp',
+                    '<p class="text-gray-500 text-sm">Não informado pelo lojista</p>');
             }
             function linhasCampo(valor) {
                 if (!valor) return [];

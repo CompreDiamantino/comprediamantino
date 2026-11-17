@@ -5,7 +5,7 @@
 (function (global) {
     const STORAGE_KEY = 'cd_empresas_mapa';
     const COORDS_KEY = 'cd_empresas_coords';
-    const SEED_VER = 'cd_seed_v7'; // v6 oficial: só serviços públicos + lojistas reais
+    const SEED_VER = 'cd_seed_v8'; // v8: hospital e públicos com coords mais precisas (OSM/Google)
 
     // Centro urbano Diamantino-MT (referência IBN / área da cidade)
     const CENTER = { lat: -14.4089, lng: -56.4458 };
@@ -54,9 +54,9 @@
 
     /**
      * Serviços públicos oficiais de Diamantino-MT.
-     * Fontes: pm.mt.gov.br, diamantino.mt.gov.br, CNES.
-     * Coordenadas aproximadas no perímetro urbano — o gestor deve ajustar o pin no mapa
-     * com o link do Google Maps real de cada unidade antes de publicar.
+     * Fontes: pm.mt.gov.br, diamantino.mt.gov.br, CNES, OpenStreetMap.
+     * Coordenadas do Hospital alinhadas ao OSM/Google (Av. Mun. Dr. Marzavão de Siqueira / Centro).
+     * Gestor ainda pode ajustar o pin colando o link real do Google Maps no admin.
      * NÃO incluir: Corpo de Bombeiros (unidade em construção, ainda sem sede operacional).
      * NÃO incluir postos de combustível (particulares).
      */
@@ -92,8 +92,9 @@
                 status: 'ativo',
                 publico: true,
                 telefone: '(65) 3336-1221',
-                endereco: 'Avenida Municipal, 1501 — Centro — Diamantino-MT',
-                lat: -14.4095, lng: -56.4450
+                endereco: 'Avenida Municipal Doutor Marzavão de Siqueira / Municipal, 1501 — Centro — Diamantino-MT',
+                // OSM: -14.40635, -56.44794 — alinhado ao pin do Google Maps
+                lat: -14.40635, lng: -56.44794
             },
             {
                 id: 'pub-samu',
@@ -127,19 +128,20 @@
         let lista = lerEmpresas();
 
         // Oficial: serviços públicos + lojistas reais (remove seeds de comércio demo)
-        if (ver !== 'v7') {
+        // v8 força atualização das coords do hospital e limpa coords antigas
+        if (ver !== 'v8') {
             const reais = lista.filter(e => !e.publico && e.id && !String(e.id).startsWith('pub-') && !['lj001','lj002','lj003','lj004','lj005','demo001','pub-bombeiros','pub-posto1','pub-posto2'].includes(String(e.id)));
             lista = seedPublicos().concat(reais);
             salvarEmpresas(lista);
-            localStorage.setItem(SEED_VER, 'v7');
-            localStorage.removeItem(COORDS_KEY); // limpa coords antigas no mato
+            localStorage.setItem(SEED_VER, 'v8');
+            localStorage.removeItem(COORDS_KEY); // limpa coords antigas (hospital deslocado)
             return lista;
         }
 
         if (!lista.length) {
             lista = seedPublicos();
             salvarEmpresas(lista);
-            localStorage.setItem(SEED_VER, 'v7');
+            localStorage.setItem(SEED_VER, 'v8');
         }
         return lista;
     }

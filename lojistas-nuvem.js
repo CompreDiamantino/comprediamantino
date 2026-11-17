@@ -400,6 +400,125 @@
   // already has catch that returns soLocal - ok
 
   /**
+   * VASSOURA — alinha este aparelho com a nuvem (estilo IBN).
+   * 1) Zera o cache local de lojistas neste navegador/aparelho
+   * 2) Baixa de novo só o que está no Firestore
+   * 3) Não apaga nada do banco
+   * 4) Espelha no mapa (EmpresasDados) os ativos baixados
+   *
+   * Use quando celular e PC ficam dessincronizados ou “fantasmas” voltam pelo localStorage.
+   */
+  function alinharComNuvem(onProgress) {
+    var fire = db();
+    if (!fire) {
+      return Promise.resolve({
+        sucesso: false,
+        mensagem: 'Firestore não inicializado. Verifique a internet e o firebase-config.'
+      });
+    }
+    if (typeof onProgress === 'function') {
+      try { onProgress(0, 1, 'Limpando cache local…'); } catch (e) {}
+    }
+    // 1) Zera espelho local (mantém lista de exclusão total — tombstones)
+    try {
+      localStorage.setItem(KEY, '[]');
+    } catch (e0) {
+      try { localStorage.removeItem(KEY); } catch (e1) {}
+      try { localStorage.setItem(KEY, '[]'); } catch (e2) {}
+    }
+    // Limpa coords do mapa para não manter pin de quem sumiu na nuvem
+    try {
+      localStorage.removeItem('cd_empresas_coords');
+    } catch (eC) {}
+
+    if (typeof onProgress === 'function') {
+      try { onProgress(0, 1, 'Baixando da nuvem…'); } catch (e) {}
+    }
+
+    return fire.collection(COL).get().then(function (snap) {
+      var mapa = {};
+      var excluidos = lerExcluidos();
+      var tentativasDelete = [];
+
+      snap.forEach(function (doc) {
+        var d = doc.data() || {};
+        d.id = d.id || doc.id;
+        var sid = String(d.id);
+        if (foiExcluidoTotal(sid) || d.excluidoTotal === true) {
+          marcarExcluido(sid);
+          tentativasDelete.push(sid);
+          return;
+        }
+        mapa[sid] = d;
+      });
+      excluidos.forEach(function (eid) { delete mapa[String(eid)]; });
+
+      var lista = Object.keys(mapa).map(function (k) { return mapa[k]; });
+      salvarLocal(lista);
+
+      // Tenta limpar da nuvem os tombstones
+      tentativasDelete.forEach(function (tid) {
+        try {
+          fire.collection(COL).doc(String(tid)).delete().catch(function () {
+            fire.collection(COL).doc(String(tid)).set({
+              excluidoTotal: true,
+              status: 'removido',
+              removidoEm: new Date().toISOString(),
+              atualizadoEm: new Date().toISOString()
+            }, { merge: true }).catch(function () {});
+          });
+        } catch (e) {}
+      });
+
+      // Espelho no mapa (só ativos/aviso)
+      if (window.EmpresasDados && EmpresasDados.upsertEmpresa) {
+        lista.forEach(function (lj) {
+          if (!lj || !lj.id) return;
+          var st = String(lj.status || '').toLowerCase();
+          if (st !== 'ativo' && st !== 'aviso') return;
+          try {
+            EmpresasDados.upsertEmpresa({
+              id: lj.id,
+              nome: lj.nome,
+              categoria: lj.categoria || 'outros',
+              plano: lj.plano || 'basico',
+              status: lj.status,
+              whatsapp: lj.whatsapp || '',
+              endereco: lj.endereco || '',
+              mapsLink: lj.mapsLink || '',
+              lat: lj.lat,
+              lng: lj.lng
+            });
+          } catch (eU) {}
+        });
+      }
+
+      try {
+        window.dispatchEvent(new CustomEvent('cd-lojistas-sincronizado', {
+          detail: { lista: lista, alinhado: true }
+        }));
+      } catch (eD) {}
+
+      if (typeof onProgress === 'function') {
+        try { onProgress(lista.length, lista.length, 'Concluído'); } catch (e) {}
+      }
+
+      return {
+        sucesso: true,
+        quantidade: lista.length,
+        total: lista.length,
+        mensagem: 'Aparelho alinhado com a nuvem: ' + lista.length + ' lojista(s).'
+      };
+    }).catch(function (err) {
+      console.warn('alinharComNuvem', err);
+      return {
+        sucesso: false,
+        mensagem: (err && err.message) || String(err) || 'Falha ao alinhar com a nuvem.'
+      };
+    });
+  }
+
+  /**
    * Envia todos os lojistas deste aparelho para a nuvem (botão manual, estilo IBN).
    * Use se o outro aparelho não recebeu as alterações.
    */
@@ -485,6 +604,7 @@
     forcarEnvio: forcarEnvio,
     sincronizarAgora: sincronizarAgora,
     enviarTudoLocal: enviarTudoLocal,
+    alinharComNuvem: alinharComNuvem,
     isQuotaError: isQuotaError,
     mensagemQuota: mensagemQuota,
     marcarExcluido: marcarExcluido,

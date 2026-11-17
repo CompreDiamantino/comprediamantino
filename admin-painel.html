@@ -129,6 +129,9 @@
                 <button id="btnNovoLojista" class="bg-secondary text-primary font-bold px-4 py-2 rounded-xl text-sm hover:bg-yellow-400 transition whitespace-nowrap">
                     <i class="fas fa-plus mr-1"></i> Novo lojista
                 </button>
+                <button id="btnAddGoogle" type="button" class="bg-primary text-white font-bold px-4 py-2 rounded-xl text-sm hover:bg-accent transition whitespace-nowrap" title="Cadastrar estabelecimento que já aparece no Google Maps">
+                    <i class="fas fa-map-marker-alt mr-1"></i> Do Google Maps
+                </button>
             </div>
         </div>
 
@@ -300,20 +303,30 @@
     <!-- ========== MODAL: Novo / Editar Lojista ========== -->
     <div id="modalLojista" class="fixed inset-0 modal-bg z-50 hidden items-center justify-center p-4">
         <div class="bg-white rounded-2xl w-full max-w-lg p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
-            <h3 class="text-lg font-bold text-primary mb-5" id="tituloModalLojista">Novo lojista</h3>
+            <h3 class="text-lg font-bold text-primary mb-2" id="tituloModalLojista">Novo lojista</h3>
+            <p id="dicaModalGoogle" class="hidden text-xs text-blue-700 bg-blue-50 border border-blue-100 rounded-lg px-3 py-2 mb-4">
+                <i class="fas fa-info-circle mr-1"></i>
+                Cadastro rápido do Google Maps: preencha o <strong>nome</strong>, cole o <strong>link do Maps</strong> e (opcional) o endereço. WhatsApp e senha podem ficar em branco — aparece como “não informado pelo lojista”.
+            </p>
             
             <form id="formLojista" class="space-y-4">
                 <input type="hidden" id="editId">
+                <input type="hidden" id="ljOrigemGoogle" value="">
                 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                         <label class="block text-sm font-medium mb-1">Nome fantasia *</label>
-                        <input type="text" id="ljNome" required class="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-primary">
+                        <input type="text" id="ljNome" required class="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-primary" placeholder="Ex: Supermercado Polo Centro">
                     </div>
                     <div>
-                        <label class="block text-sm font-medium mb-1">WhatsApp *</label>
-                        <input type="tel" id="ljWhatsapp" required class="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-primary" placeholder="65999667725">
+                        <label class="block text-sm font-medium mb-1">WhatsApp <span class="text-gray-400 font-normal">(opcional)</span></label>
+                        <input type="tel" id="ljWhatsapp" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-primary" placeholder="65999667725 ou deixe em branco">
+                        <p class="text-xs text-gray-400 mt-1">Se vazio → “Não informado pelo lojista”</p>
                     </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">Endereço</label>
+                    <input type="text" id="ljEndereco" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-primary" placeholder="Rua, número, bairro — Diamantino-MT">
                 </div>
                 <div>
                     <label class="block text-sm font-medium mb-1">O que vende / oferece</label>
@@ -358,11 +371,11 @@
                     </select>
                 </div>
                 
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4" id="blocoSenhaLojista">
                     <div>
-                        <label class="block text-sm font-medium mb-1">Senha de login *</label>
+                        <label class="block text-sm font-medium mb-1">Senha de login <span class="text-gray-400 font-normal">(opcional no modo Google)</span></label>
                         <input type="text" id="ljSenha" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-primary" placeholder="Defina a senha do lojista" autocomplete="new-password">
-                        <p class="text-xs text-gray-400 mt-1">Login: e-mail ou WhatsApp + esta senha</p>
+                        <p class="text-xs text-gray-400 mt-1">Login: e-mail ou WhatsApp + esta senha. Pode deixar em branco se for só pin no mapa.</p>
                     </div>
                     <div>
                         <label class="block text-sm font-medium mb-1">Confirmar senha</label>
@@ -371,9 +384,19 @@
                 </div>
 
                 <div>
-                    <label class="block text-sm font-medium mb-1">Localização (link do Maps ou lat, lng)</label>
-                    <input type="text" id="ljMaps" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-primary" placeholder="Cole link do Google Maps ou -14.4085, -56.4900">
-                    <p class="text-xs text-gray-400 mt-1">Ao salvar/ativar, o pin já aparece no mapa geral</p>
+                    <label class="block text-sm font-medium mb-1">Localização (link do Google Maps ou lat, lng) *</label>
+                    <input type="text" id="ljMaps" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-primary" placeholder="Cole o link do Google Maps aqui">
+                    <p class="text-xs text-gray-400 mt-1">Abra o Maps → clique no estabelecimento → Compartilhar → Copiar link. O pin usa as coordenadas do link.</p>
+                </div>
+
+                <div class="bg-green-50 border border-green-100 rounded-xl p-3">
+                    <label class="flex items-start gap-2 cursor-pointer">
+                        <input type="checkbox" id="ljAtivarMapa" class="mt-1 rounded border-gray-300 text-primary focus:ring-primary">
+                        <span class="text-sm text-gray-800">
+                            <strong>Ativar no mapa agora</strong>
+                            <span class="block text-xs text-gray-500 mt-0.5">O pin aparece imediatamente no Mapa do Comércio. Se o dono não quiser, basta mudar o status para “Removido” depois.</span>
+                        </span>
+                    </label>
                 </div>
                 
                 <div class="flex gap-3 pt-2">
@@ -1139,13 +1162,37 @@
         };
         
         // ========== NOVO / EDITAR LOJISTA ==========
-        document.getElementById('btnNovoLojista').addEventListener('click', () => {
-            document.getElementById('tituloModalLojista').textContent = 'Novo lojista';
+        function abrirModalNovo(modoGoogle) {
+            document.getElementById('tituloModalLojista').textContent = modoGoogle
+                ? 'Adicionar do Google Maps'
+                : 'Novo lojista';
             document.getElementById('editId').value = '';
             document.getElementById('formLojista').reset();
+            document.getElementById('ljOrigemGoogle').value = modoGoogle ? '1' : '';
+            const dica = document.getElementById('dicaModalGoogle');
+            if (dica) dica.classList.toggle('hidden', !modoGoogle);
+            const chk = document.getElementById('ljAtivarMapa');
+            if (chk) chk.checked = !!modoGoogle; // no modo Google, já ativa no mapa por padrão
             document.getElementById('modalLojista').classList.remove('hidden');
             document.getElementById('modalLojista').classList.add('flex');
+            if (modoGoogle) {
+                setTimeout(function () {
+                    var nome = document.getElementById('ljNome');
+                    if (nome) nome.focus();
+                }, 100);
+            }
+        }
+
+        document.getElementById('btnNovoLojista').addEventListener('click', () => {
+            abrirModalNovo(false);
         });
+
+        var btnAddGoogle = document.getElementById('btnAddGoogle');
+        if (btnAddGoogle) {
+            btnAddGoogle.addEventListener('click', function () {
+                abrirModalNovo(true);
+            });
+        }
 
         // Remove cadastros de teste + votos órfãos no Supabase
         document.getElementById('btnLimparTestes').addEventListener('click', () => {
@@ -1267,6 +1314,11 @@
             if (document.getElementById('ljSenha')) document.getElementById('ljSenha').value = lj.senha || '';
             if (document.getElementById('ljSenha2')) document.getElementById('ljSenha2').value = lj.senha || '';
             if (document.getElementById('ljMaps')) document.getElementById('ljMaps').value = lj.mapsLink || '';
+            if (document.getElementById('ljEndereco')) document.getElementById('ljEndereco').value = lj.endereco || '';
+            if (document.getElementById('ljOrigemGoogle')) document.getElementById('ljOrigemGoogle').value = lj.origemGoogle ? '1' : '';
+            if (document.getElementById('ljAtivarMapa')) document.getElementById('ljAtivarMapa').checked = (lj.status === 'ativo' || lj.status === 'aviso');
+            const dica = document.getElementById('dicaModalGoogle');
+            if (dica) dica.classList.add('hidden');
             
             document.getElementById('modalLojista').classList.remove('hidden');
             document.getElementById('modalLojista').classList.add('flex');
@@ -1276,6 +1328,8 @@
             e.preventDefault();
             const lista = getLojistas();
             const editId = document.getElementById('editId').value;
+            const origemGoogle = (document.getElementById('ljOrigemGoogle') || {}).value === '1';
+            const ativarAgora = !!(document.getElementById('ljAtivarMapa') || {}).checked;
             
             const senhaVal = (document.getElementById('ljSenha') || {}).value || '';
             const senha2 = (document.getElementById('ljSenha2') || {}).value || '';
@@ -1283,39 +1337,54 @@
                 alert('As senhas não conferem.');
                 return;
             }
-            if (!editId && !senhaVal) {
-                alert('Defina uma senha de login para o lojista.');
+            // Senha obrigatória só no cadastro completo (não no modo Google / pin no mapa)
+            if (!editId && !senhaVal && !origemGoogle && !ativarAgora) {
+                alert('Defina uma senha de login para o lojista, ou marque “Ativar no mapa agora” / use “Do Google Maps”.');
                 return;
             }
+
+            const mapsLink = ((document.getElementById('ljMaps') || {}).value || '').trim();
+            if (!mapsLink && (origemGoogle || ativarAgora)) {
+                alert('Cole o link do Google Maps (ou lat,lng) para posicionar o pin.');
+                return;
+            }
+
+            let whatsappVal = (document.getElementById('ljWhatsapp').value || '').trim();
+            // Mantém vazio → tela pública mostra “Não informado pelo lojista”
             const dados = {
                 nome: document.getElementById('ljNome').value.trim(),
-                whatsapp: document.getElementById('ljWhatsapp').value.trim(),
+                whatsapp: whatsappVal,
+                endereco: ((document.getElementById('ljEndereco') || {}).value || '').trim(),
                 oQueVende: (document.getElementById('ljOQueVende') || {}).value || '',
                 instagram: (document.getElementById('ljInstagram') || {}).value || '',
                 facebook: (document.getElementById('ljFacebook') || {}).value || '',
                 email: document.getElementById('ljEmail').value.trim(),
                 plano: document.getElementById('ljPlano').value,
-                categoria: document.getElementById('ljCategoria').value
+                categoria: document.getElementById('ljCategoria').value,
+                mapsLink: mapsLink,
+                origemGoogle: origemGoogle || undefined
             };
             if (senhaVal) dados.senha = senhaVal;
-            
-            const mapsLink = (document.getElementById('ljMaps') || {}).value || '';
-            dados.mapsLink = mapsLink.trim();
 
             let idFinal = editId;
             if (editId) {
                 const idx = lista.findIndex(l => l.id === editId);
                 if (idx !== -1) {
+                    const statusAnterior = lista[idx].status;
                     lista[idx] = { ...lista[idx], ...dados };
+                    if (ativarAgora && statusAnterior !== 'ativo' && statusAnterior !== 'aviso') {
+                        lista[idx].status = 'ativo';
+                    }
                 }
             } else {
                 idFinal = 'lj' + Date.now();
                 lista.push({
                     id: idFinal,
                     ...dados,
-                    status: 'pendente',
+                    status: ativarAgora ? 'ativo' : 'pendente',
                     vencimento: null,
-                    criadoEm: new Date().toISOString()
+                    criadoEm: new Date().toISOString(),
+                    criadoPorGestor: true
                 });
             }
             
@@ -1332,7 +1401,7 @@
                     categoria: row.categoria,
                     plano: row.plano,
                     status: row.status || 'pendente',
-                    whatsapp: row.whatsapp,
+                    whatsapp: row.whatsapp || '',
                     endereco: row.endereco || '',
                     mapsLink: mapsLink
                 });
@@ -1340,6 +1409,16 @@
             document.getElementById('modalLojista').classList.add('hidden');
             document.getElementById('modalLojista').classList.remove('flex');
             renderTabela();
+            if (ativarAgora) {
+                // feedback rápido
+                try {
+                    var toast = document.createElement('div');
+                    toast.className = 'fixed bottom-4 right-4 bg-green-600 text-white text-sm font-semibold px-4 py-3 rounded-xl shadow-lg z-[100]';
+                    toast.textContent = 'Pin adicionado ao mapa do comércio.';
+                    document.body.appendChild(toast);
+                    setTimeout(function () { toast.remove(); }, 2800);
+                } catch (err) {}
+            }
         });
         
 

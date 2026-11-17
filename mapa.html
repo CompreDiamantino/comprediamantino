@@ -86,7 +86,7 @@
                     <div class="flex flex-wrap gap-2">
                         <a href="empresa.html?id=${e.id}" class="text-xs bg-primary text-white px-3 py-1.5 rounded-lg font-semibold">Ver empresa</a>
                         <a href="${dir}" target="_blank" class="text-xs bg-secondary text-primary px-3 py-1.5 rounded-lg font-semibold">Como chegar</a>
-                        ${e.whatsapp ? `<a href="https://wa.me/55${String(e.whatsapp).replace(/\D/g,'')}" target="_blank" class="text-xs bg-green-500 text-white px-3 py-1.5 rounded-lg font-semibold"><i class="fab fa-whatsapp"></i></a>` : ''}
+                        ${e.whatsapp ? `<a href="https://wa.me/55${String(e.whatsapp).replace(/\D/g,'')}" target="_blank" class="text-xs bg-green-500 text-white px-3 py-1.5 rounded-lg font-semibold"><i class="fab fa-whatsapp"></i></a>` : `<span class="text-xs text-gray-400 self-center">WhatsApp não informado</span>`}
                     </div>
                 </div>`;
             }).join('');

@@ -190,11 +190,18 @@
                 <button type="button" id="btnNuvemEnviar" class="inline-flex items-center gap-2 bg-secondary text-primary text-sm font-bold px-4 py-2.5 rounded-xl hover:bg-yellow-400 transition">
                     <i class="fas fa-cloud-upload-alt"></i> Enviar deste aparelho
                 </button>
+                <button type="button" id="btnNuvemVassoura" class="inline-flex items-center gap-2 bg-rose-600 text-white text-sm font-bold px-4 py-2.5 rounded-xl hover:bg-rose-700 transition" title="Limpa o cache deste aparelho e deixa a lista igual à nuvem. Não apaga nada do banco.">
+                    <i class="fas fa-broom"></i> Vassoura (alinhar com nuvem)
+                </button>
                 <button type="button" id="btnNuvemTestar" class="inline-flex items-center gap-2 bg-gray-100 text-gray-700 text-sm font-semibold px-4 py-2.5 rounded-xl hover:bg-gray-200 transition">
                     <i class="fas fa-plug"></i> Testar nuvem
                 </button>
             </div>
             <p id="nuvemSyncStatus" class="text-xs text-gray-400">Pronto.</p>
+            <p class="text-[11px] text-gray-400 mt-2 leading-relaxed">
+                <strong>Baixar</strong> = mescla nuvem + local · <strong>Enviar</strong> = sobe o que está neste aparelho ·
+                <strong>Vassoura</strong> = zera o cache local e deixa exatamente igual à nuvem (como no IBN).
+            </p>
         </div>
 
         <div class="bg-primary/5 border border-primary/20 rounded-2xl p-5 text-sm text-gray-600">
@@ -444,6 +451,29 @@
               }
             }).catch(function (e) {
               btnE.disabled = false;
+              msg((e && e.message) || String(e), false);
+            });
+          });
+          var btnV = document.getElementById('btnNuvemVassoura');
+          if (btnV) btnV.addEventListener('click', function () {
+            if (!window.LojistasNuvem || !LojistasNuvem.alinharComNuvem) {
+              msg('Função Vassoura indisponível. Atualize lojistas-nuvem.js.', false);
+              return;
+            }
+            if (!confirm('VASSOURA — Alinhar este aparelho com a nuvem\n\n• Limpa o cache local de lojistas deste navegador/aparelho\n• Baixa de novo só o que está no Firestore\n• Não apaga nenhum registro do banco\n• Atualiza o mapa com os ativos da nuvem\n\nUse quando celular e PC ficam diferentes.\n\nContinuar?')) return;
+            msg('Limpando local e baixando da nuvem…');
+            btnV.disabled = true;
+            LojistasNuvem.alinharComNuvem(function (i, total, fase) {
+              msg((fase || 'Alinhando…') + (total ? ' (' + i + '/' + total + ')' : ''));
+            }).then(function (r) {
+              btnV.disabled = false;
+              if (r && r.sucesso) {
+                msg('Vassoura OK — ' + (r.quantidade || 0) + ' lojista(s) alinhados com a nuvem.', true);
+              } else {
+                msg((r && r.mensagem) || 'Falha na vassoura.', false);
+              }
+            }).catch(function (e) {
+              btnV.disabled = false;
               msg((e && e.message) || String(e), false);
             });
           });
