@@ -1599,6 +1599,11 @@
             let whatsappVal = (document.getElementById('ljWhatsapp').value || '').trim();
             // Mantém vazio → tela pública mostra “Não informado pelo lojista”
             const placeId = ((document.getElementById('ljPlaceId') || {}).value || '').trim();
+            var _coordsMapsSave = null;
+            if (mapsLink && window.EmpresasDados && EmpresasDados.extrairCoords) {
+                _coordsMapsSave = EmpresasDados.extrairCoords(mapsLink);
+            }
+
             const nomeSalvar = document.getElementById('ljNome').value.trim();
             const nomeRuim = !nomeSalvar || /^(local no mapa|estabelecimento|empresa|sem nome)$/i.test(nomeSalvar);
             if (nomeRuim) {
@@ -1620,7 +1625,9 @@
                 categoria: document.getElementById('ljCategoria').value,
                 mapsLink: mapsLink,
                 origemGoogle: origemGoogle || undefined,
-                placeId: placeId || undefined
+                placeId: placeId || undefined,
+                lat: _coordsMapsSave ? _coordsMapsSave.lat : undefined,
+                lng: _coordsMapsSave ? _coordsMapsSave.lng : undefined
             };
             if (senhaVal) dados.senha = senhaVal;
 

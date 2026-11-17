@@ -473,8 +473,18 @@
                 return;
             }
             EMPRESA_NOME = emp.nome || emp.nomeFantasia || 'Empresa';
-            EMPRESA_LAT = typeof emp.lat === 'number' ? emp.lat : EMPRESA_LAT;
-            EMPRESA_LNG = typeof emp.lng === 'number' ? emp.lng : EMPRESA_LNG;
+            // Prioridade: link Maps da EMPRESA (não posição de quem indicou / GPS do celular)
+            var latOk = null, lngOk = null;
+            if (emp.mapsLink && window.EmpresasDados && EmpresasDados.extrairCoords) {
+                var cc = EmpresasDados.extrairCoords(emp.mapsLink);
+                if (cc && typeof cc.lat === 'number' && typeof cc.lng === 'number') {
+                    latOk = cc.lat; lngOk = cc.lng;
+                }
+            }
+            if (latOk == null && typeof emp.lat === 'number') latOk = emp.lat;
+            if (lngOk == null && typeof emp.lng === 'number') lngOk = emp.lng;
+            if (latOk != null) EMPRESA_LAT = latOk;
+            if (lngOk != null) EMPRESA_LNG = lngOk;
 
             document.getElementById('empNome').textContent = EMPRESA_NOME;
             document.title = EMPRESA_NOME + ' — Compre Diamantino';
@@ -563,17 +573,25 @@
 
         document.addEventListener('DOMContentLoaded', carregarEmpresa);
 
+        var _mapaEmp = null, _markerEmp = null;
         function initMapaEmpresa() {
             const el = document.getElementById('mapa');
             if (!el || typeof L === 'undefined') return;
             if (EMPRESA_LAT == null || EMPRESA_LNG == null) return;
-            const map = L.map(el).setView([EMPRESA_LAT, EMPRESA_LNG], 16);
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                maxZoom: 19,
-                attribution: '&copy; OpenStreetMap'
-            }).addTo(map);
-            L.marker([EMPRESA_LAT, EMPRESA_LNG]).addTo(map).bindPopup(EMPRESA_NOME || 'Empresa');
-            setTimeout(function () { try { map.invalidateSize(); } catch (e) {} }, 200);
+            if (!_mapaEmp) {
+                _mapaEmp = L.map(el).setView([EMPRESA_LAT, EMPRESA_LNG], 16);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    maxZoom: 19,
+                    attribution: '&copy; OpenStreetMap'
+                }).addTo(_mapaEmp);
+                _markerEmp = L.marker([EMPRESA_LAT, EMPRESA_LNG]).addTo(_mapaEmp);
+            } else {
+                _mapaEmp.setView([EMPRESA_LAT, EMPRESA_LNG], 16);
+                if (_markerEmp) _markerEmp.setLatLng([EMPRESA_LAT, EMPRESA_LNG]);
+                else _markerEmp = L.marker([EMPRESA_LAT, EMPRESA_LNG]).addTo(_mapaEmp);
+            }
+            _markerEmp.bindPopup(EMPRESA_NOME || 'Empresa');
+            setTimeout(function () { try { _mapaEmp.invalidateSize(); } catch (e) {} }, 200);
         }
         window.initMapaEmpresa = initMapaEmpresa;
         // Garante init depois do Leaflet (e depois de carregar coords)
