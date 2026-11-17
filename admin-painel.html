@@ -1272,8 +1272,8 @@
                 if (st) st.textContent = 'Não deu para ler o lugar.';
                 return false;
             }
-            var loc = place.geometry && place.geometry.location ? place.geometry.location : null;
             var lat = place.lat, lng = place.lng;
+            var loc = place.geometry && place.geometry.location ? place.geometry.location : null;
             if (loc) {
                 lat = typeof loc.lat === 'function' ? loc.lat() : loc.lat;
                 lng = typeof loc.lng === 'function' ? loc.lng() : loc.lng;
@@ -1281,8 +1281,7 @@
             var nome = place.name || place.nome || place.displayName || '';
             if (typeof nome === 'object' && nome) nome = nome.text || nome.name || '';
             nome = String(nome || '').trim();
-            if (nomeGenerico(nome) && place.formatted_address) {
-                // não sobrescreve com genérico se já tem nome bom no form
+            if (nomeGenerico(nome)) {
                 var atual = (document.getElementById('ljNome') || {}).value || '';
                 if (!nomeGenerico(atual)) nome = atual;
             }
@@ -1295,85 +1294,33 @@
             if (document.getElementById('ljPlaceId') && place.place_id) {
                 document.getElementById('ljPlaceId').value = place.place_id;
             }
-            if (lat != null && lng != null && !isNaN(lat) && !isNaN(lng)) {
-                if (_mapaPlaces) {
-                    var pos = { lat: Number(lat), lng: Number(lng) };
-                    _mapaPlaces.setCenter(pos);
-                    _mapaPlaces.setZoom(17);
-                    if (_markerPlaces) _markerPlaces.setPosition(pos);
+            if (lat != null && lng != null && !isNaN(Number(lat)) && !isNaN(Number(lng))) {
+                lat = Number(lat); lng = Number(lng);
+                if (_mapaPlaces && typeof L !== 'undefined') {
+                    try {
+                        _mapaPlaces.setView([lat, lng], 17);
+                        if (_markerPlaces) _markerPlaces.setLatLng([lat, lng]);
+                        else _markerPlaces = L.marker([lat, lng], { draggable: true }).addTo(_mapaPlaces);
+                    } catch (e) {}
                 }
-                var mapsLink = place.place_id
-                    ? ('https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(nome || '') +
-                        '&query_place_id=' + encodeURIComponent(place.place_id))
-                    : ('https://www.google.com/maps?q=' + lat + ',' + lng);
+                var mapsLink = 'https://www.google.com/maps?q=' + lat + ',' + lng;
                 if (document.getElementById('ljMaps')) document.getElementById('ljMaps').value = mapsLink;
-            }
-            var tel = place.formatted_phone_number || place.international_phone_number || place.nationalPhoneNumber || '';
-            var waEl = document.getElementById('ljWhatsapp');
-            if (tel && waEl && !waEl.value) {
-                waEl.value = String(tel).replace(/\D/g, '').replace(/^55/, '');
             }
             if (st) {
                 st.textContent = nome
                     ? ('Selecionado: ' + nome + ' — confira e salve.')
-                    : 'Local no mapa marcado. Digite o NOME da empresa no campo Nome fantasia.';
+                    : 'Local marcado. Digite o NOME da empresa no campo Nome fantasia.';
             }
             return true;
         }
 
-        /** Places API (New) — detalhes pelo placeId do clique no mapa (o balão que o Google mostra) */
-        async function buscarDetalhesPlaceNew(placeId) {
-            var key = (window.CD_MAPS_KEY || '').trim();
-            var st = document.getElementById('placesStatus');
-            if (!key || !placeId) {
-                if (st) st.textContent = 'Sem placeId ou chave.';
-                return;
-            }
-            // API New usa resource name places/XXXX
-            var id = String(placeId).replace(/^places\//, '');
-            if (st) st.textContent = 'Lendo o estabelecimento do Google…';
-            try {
-                var resp = await fetch('https://places.googleapis.com/v1/places/' + encodeURIComponent(id) + '?languageCode=pt-BR', {
-                    method: 'GET',
-                    headers: {
-                        'X-Goog-Api-Key': key,
-                        'X-Goog-FieldMask': 'id,displayName,formattedAddress,location,nationalPhoneNumber,internationalPhoneNumber'
-                    }
-                });
-                var p = await resp.json().catch(function () { return {}; });
-                if (!resp.ok) {
-                    console.warn('Place Details New', resp.status, p);
-                    if (st) st.textContent = 'Não leu o nome do pin (' + resp.status + '). Use Buscar pelo nome.';
-                    return;
-                }
-                var nome = (p.displayName && (p.displayName.text || p.displayName)) || '';
-                aplicarLugarNoFormulario({
-                    name: nome,
-                    formatted_address: p.formattedAddress || '',
-                    place_id: id,
-                    lat: p.location && p.location.latitude,
-                    lng: p.location && p.location.longitude,
-                    nationalPhoneNumber: p.nationalPhoneNumber,
-                    international_phone_number: p.internationalPhoneNumber
-                });
-            } catch (err) {
-                console.error(err);
-                if (st) st.textContent = 'Erro ao ler o pin. Use Buscar pelo nome.';
-            }
-        }
-
-        /** Places API (New) — Text Search: devolve NOME real do estabelecimento */
+        /** Busca gratuita via OpenStreetMap (Nominatim) — sem cartão Google */
         async function buscarPlacesTexto(query) {
-            var key = (window.CD_MAPS_KEY || '').trim();
             var st = document.getElementById('placesStatus');
             var box = document.getElementById('listaPlacesResultados');
-            if (!key) {
-                if (st) st.textContent = 'Sem chave Maps.';
-                return;
-            }
             var q = String(query || '').trim();
             if (q.length < 2) {
-                if (st) st.textContent = 'Digite pelo menos 2 letras do nome (ex.: Bar do Juca).';
+                if (st) st.textContent = 'Digite o nome (ex.: Bar do Juca, Padaria da Nona).';
                 return;
             }
             if (st) st.textContent = 'Buscando “' + q + '” em Diamantino…';
@@ -1382,70 +1329,40 @@
                 box.innerHTML = '<p class="text-sm text-gray-500 p-3">Buscando…</p>';
             }
             try {
-                var body = {
-                    textQuery: q + ' Diamantino MT',
-                    languageCode: 'pt-BR',
-                    regionCode: 'BR',
-                    maxResultCount: 8,
-                    locationBias: {
-                        circle: {
-                            center: { latitude: -14.4089, longitude: -56.4458 },
-                            radius: 8000.0
-                        }
-                    }
-                };
-                var resp = await fetch('https://places.googleapis.com/v1/places:searchText', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-Goog-Api-Key': key,
-                        'X-Goog-FieldMask': 'places.id,places.displayName,places.formattedAddress,places.location,places.nationalPhoneNumber,places.internationalPhoneNumber'
-                    },
-                    body: JSON.stringify(body)
+                var url = 'https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=8&countrycodes=br&q=' +
+                    encodeURIComponent(q + ' Diamantino Mato Grosso');
+                var resp = await fetch(url, {
+                    headers: { 'Accept': 'application/json' }
                 });
-                var data = await resp.json().catch(function () { return {}; });
-                if (!resp.ok) {
-                    console.warn('Places New error', resp.status, data);
-                    if (st) st.textContent = 'Busca Google falhou (' + resp.status + '). Digite o nome manualmente e cole o link do Maps.';
-                    if (box) box.innerHTML = '<p class="text-sm text-red-600 p-3">Não foi possível buscar. Preencha o nome e o link do Maps abaixo.</p>';
+                var data = await resp.json().catch(function () { return []; });
+                if (!Array.isArray(data) || !data.length) {
+                    if (st) st.textContent = 'Nada encontrado. Digite o nome completo ou cole o link do Google Maps.';
+                    if (box) box.innerHTML = '<p class="text-sm text-gray-500 p-3">Sem resultados. Tente outro nome ou cole o link do Maps.</p>';
                     return;
                 }
-                var places = data.places || [];
-                if (!places.length) {
-                    if (st) st.textContent = 'Nenhum resultado. Tente outro nome ou cole o link do Maps.';
-                    if (box) box.innerHTML = '<p class="text-sm text-gray-500 p-3">Nada encontrado para “' + q.replace(/</g,'') + '”.</p>';
-                    return;
-                }
-                if (st) st.textContent = places.length + ' resultado(s). Clique no nome certo.';
+                if (st) st.textContent = data.length + ' resultado(s). Clique no nome certo.';
                 if (box) {
-                    box.innerHTML = places.map(function (p, idx) {
-                        var nome = (p.displayName && (p.displayName.text || p.displayName)) || 'Sem nome';
-                        var end = p.formattedAddress || '';
-                        var id = p.id || '';
-                        var lat = p.location && p.location.latitude;
-                        var lng = p.location && p.location.longitude;
+                    box._placesData = data;
+                    box.innerHTML = data.map(function (p, idx) {
+                        var nome = p.name || (p.display_name || '').split(',')[0] || 'Local';
+                        var end = p.display_name || '';
                         return '<button type="button" class="place-result w-full text-left px-3 py-2.5 border-b border-gray-100 hover:bg-blue-50 transition" data-idx="' + idx + '">' +
                             '<span class="font-bold text-gray-900 text-sm block">' + String(nome).replace(/</g,'') + '</span>' +
                             '<span class="text-xs text-gray-500">' + String(end).replace(/</g,'') + '</span></button>';
                     }).join('');
-                    // guarda resultados no box
-                    box._placesData = places;
                     box.querySelectorAll('.place-result').forEach(function (btn) {
                         btn.addEventListener('click', function () {
                             var i = parseInt(btn.getAttribute('data-idx'), 10);
                             var p = (box._placesData || [])[i];
                             if (!p) return;
-                            var nome = (p.displayName && (p.displayName.text || p.displayName)) || '';
-                            var place = {
+                            var nome = p.name || (p.display_name || '').split(',')[0] || '';
+                            aplicarLugarNoFormulario({
                                 name: nome,
-                                formatted_address: p.formattedAddress || '',
-                                place_id: (p.id || '').replace(/^places\//, ''),
-                                lat: p.location && p.location.latitude,
-                                lng: p.location && p.location.longitude,
-                                nationalPhoneNumber: p.nationalPhoneNumber,
-                                international_phone_number: p.internationalPhoneNumber
-                            };
-                            aplicarLugarNoFormulario(place);
+                                formatted_address: p.display_name || '',
+                                place_id: p.osm_id ? String(p.osm_id) : '',
+                                lat: parseFloat(p.lat),
+                                lng: parseFloat(p.lon)
+                            });
                             box.classList.add('hidden');
                         });
                     });
@@ -1453,72 +1370,64 @@
             } catch (err) {
                 console.error(err);
                 if (st) st.textContent = 'Erro na busca. Digite o nome e cole o link do Maps.';
-                if (box) box.innerHTML = '<p class="text-sm text-red-600 p-3">Erro de rede na busca.</p>';
+                if (box) box.innerHTML = '<p class="text-sm text-red-600 p-3">Erro de rede. Use nome + link do Maps.</p>';
             }
         }
 
         function initPlacesAdmin() {
-            carregarMapsPlaces(function () {
-                var elMapa = document.getElementById('mapaPlacesAdmin');
-                var inp = document.getElementById('ljPlacesSearch');
-                var st = document.getElementById('placesStatus');
-                var btnBusca = document.getElementById('btnBuscarPlaces');
-                var center = (window.CD_MAPS_CENTER) || { lat: -14.4089, lng: -56.4458 };
+            var elMapa = document.getElementById('mapaPlacesAdmin');
+            var inp = document.getElementById('ljPlacesSearch');
+            var st = document.getElementById('placesStatus');
+            var btnBusca = document.getElementById('btnBuscarPlaces');
+            var center = (window.CD_MAPS_CENTER) || { lat: -14.4089, lng: -56.4458 };
 
-                if (elMapa && window.google && google.maps) {
-                    if (!_mapaPlaces) {
-                        _mapaPlaces = new google.maps.Map(elMapa, {
-                            center: center,
-                            zoom: 14,
-                            mapTypeControl: false,
-                            streetViewControl: false,
-                            fullscreenControl: false
-                        });
-                        _markerPlaces = new google.maps.Marker({ map: _mapaPlaces, draggable: true });
-                        _markerPlaces.addListener('dragend', function () {
-                            var p = _markerPlaces.getPosition();
-                            if (!p) return;
-                            if (document.getElementById('ljMaps')) {
-                                document.getElementById('ljMaps').value = 'https://www.google.com/maps?q=' + p.lat() + ',' + p.lng();
-                            }
-                        });
-                        // Clique no estabelecimento: o Google manda placeId (o mesmo do balão com o nome)
-                        _mapaPlaces.addListener('click', function (e) {
-                            if (!e || !e.latLng) return;
-                            if (_markerPlaces) _markerPlaces.setPosition(e.latLng);
-                            if (document.getElementById('ljMaps')) {
-                                document.getElementById('ljMaps').value = 'https://www.google.com/maps?q=' + e.latLng.lat() + ',' + e.latLng.lng();
-                            }
-                            if (e.placeId) {
-                                try { e.stop(); } catch (err) {}
-                                // Busca o NOME real que aparece no aviso/balão do Google
-                                buscarDetalhesPlaceNew(e.placeId);
-                                return;
-                            }
-                            if (st) st.textContent = 'Clique em cima do nome/empresa no mapa (não só na rua), ou use Buscar.';
-                        });
-                    } else {
-                        try { google.maps.event.trigger(_mapaPlaces, 'resize'); } catch (e) {}
-                        _mapaPlaces.setCenter(center);
-                    }
-                }
-
-                if (btnBusca && !_placesReady) {
-                    btnBusca.addEventListener('click', function () {
-                        buscarPlacesTexto((inp && inp.value) || '');
-                    });
-                }
-                if (inp && !_placesReady) {
-                    inp.addEventListener('keydown', function (ev) {
-                        if (ev.key === 'Enter') {
-                            ev.preventDefault();
-                            buscarPlacesTexto(inp.value || '');
+            if (elMapa && typeof L !== 'undefined') {
+                if (!_mapaPlaces) {
+                    _mapaPlaces = L.map(elMapa).setView([center.lat, center.lng], 14);
+                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                        maxZoom: 19,
+                        attribution: '&copy; OpenStreetMap'
+                    }).addTo(_mapaPlaces);
+                    _markerPlaces = L.marker([center.lat, center.lng], { draggable: true }).addTo(_mapaPlaces);
+                    _markerPlaces.on('dragend', function () {
+                        var p = _markerPlaces.getLatLng();
+                        if (document.getElementById('ljMaps')) {
+                            document.getElementById('ljMaps').value = 'https://www.google.com/maps?q=' + p.lat + ',' + p.lng;
                         }
                     });
+                    _mapaPlaces.on('click', function (e) {
+                        if (!e || !e.latlng) return;
+                        _markerPlaces.setLatLng(e.latlng);
+                        if (document.getElementById('ljMaps')) {
+                            document.getElementById('ljMaps').value = 'https://www.google.com/maps?q=' + e.latlng.lat + ',' + e.latlng.lng;
+                        }
+                        if (st) st.textContent = 'Pin marcado. Use Buscar com o NOME da empresa para preencher o nome.';
+                    });
+                    setTimeout(function () { try { _mapaPlaces.invalidateSize(); } catch (e) {} }, 300);
+                } else {
+                    setTimeout(function () { try { _mapaPlaces.invalidateSize(); } catch (e) {} }, 200);
                 }
-                _placesReady = true;
-                if (st) st.textContent = 'Digite o nome (Bar do Juca, Da Nona…) e clique em Buscar.';
-            });
+            }
+
+            // Patch aplicarLugarNoFormulario para Leaflet marker
+            var _aplicarOrig = aplicarLugarNoFormulario;
+            // reassign marker move for leaflet inside aplicar - done by checking L
+
+            if (btnBusca && !_placesReady) {
+                btnBusca.addEventListener('click', function () {
+                    buscarPlacesTexto((inp && inp.value) || '');
+                });
+            }
+            if (inp && !_placesReady) {
+                inp.addEventListener('keydown', function (ev) {
+                    if (ev.key === 'Enter') {
+                        ev.preventDefault();
+                        buscarPlacesTexto(inp.value || '');
+                    }
+                });
+            }
+            _placesReady = true;
+            if (st) st.textContent = 'Digite o nome (Bar do Juca…) e clique em Buscar — grátis, sem cartão Google.';
         }
 
         document.getElementById('btnNovoLojista').addEventListener('click', () => {
@@ -2050,6 +1959,8 @@
             }
         })();
     </script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
     <script src="maps-config.js"></script>
     <script src="empresas-dados.js"></script>
     <script src="supabase-config.js"></script>

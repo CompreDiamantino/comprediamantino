@@ -7,6 +7,7 @@
     <title>Mapa do Comércio — Compre Diamantino</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
     <script>
         tailwind.config = {
             theme: {
@@ -21,7 +22,7 @@
         }
     </script>
     <style>
-        #mapaGeral { height: 420px; border-radius: 16px; width: 100%; }
+        #mapaGeral { height: 420px; border-radius: 16px; width: 100%; z-index: 0; }
         @media (max-width: 768px) { #mapaGeral { height: 340px; } }
     </style>
 </head>
@@ -58,11 +59,13 @@
         <div id="listaEmpresas" class="space-y-2"></div>
     </div>
 
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     <script src="maps-config.js"></script>
     <script src="empresas-dados.js"></script>
     <script>
         let mapa = null;
         let marcadores = [];
+        let marcadorUser = null;
         let posicaoUsuario = null;
 
         function renderLista(empresas) {
@@ -79,142 +82,110 @@
                 return `
                 <div class="bg-white border border-gray-100 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div>
-                        <p class="font-bold text-gray-900">${e.nome}</p>
-                        <p class="text-xs text-gray-500">${e.categoria || ''} · ${e.endereco || ''}</p>
+                        <p class="font-bold text-gray-900">${e.nome || ''}</p>
+                        <p class="text-xs text-gray-500">${e.endereco || ''}</p>
                         ${dist}
                     </div>
-                    <div class="flex flex-wrap gap-2">
-                        <a href="empresa.html?id=${e.id}" class="text-xs bg-primary text-white px-3 py-1.5 rounded-lg font-semibold">Ver empresa</a>
-                        <a href="${dir}" target="_blank" class="text-xs bg-secondary text-primary px-3 py-1.5 rounded-lg font-semibold">Como chegar</a>
-                        ${e.whatsapp ? `<a href="https://wa.me/55${String(e.whatsapp).replace(/\D/g,'')}" target="_blank" class="text-xs bg-green-500 text-white px-3 py-1.5 rounded-lg font-semibold"><i class="fab fa-whatsapp"></i></a>` : `<span class="text-xs text-gray-400 self-center">WhatsApp não informado</span>`}
+                    <div class="flex gap-2">
+                        <a href="empresa.html?id=${encodeURIComponent(e.id)}" class="text-sm font-bold text-primary border border-primary/30 px-3 py-1.5 rounded-lg">Ver</a>
+                        <a href="${dir}" target="_blank" rel="noopener" class="text-sm font-bold bg-primary text-white px-3 py-1.5 rounded-lg">Como chegar</a>
                     </div>
                 </div>`;
             }).join('');
         }
 
         function montarMarcadores(empresas) {
-            marcadores.forEach(m => m.setMap(null));
+            marcadores.forEach(m => { try { mapa.removeLayer(m); } catch (e) {} });
             marcadores = [];
-            const bounds = new google.maps.LatLngBounds();
-
-            empresas.forEach(e => {
-                const pos = { lat: e.lat, lng: e.lng };
-                bounds.extend(pos);
-                const marker = new google.maps.Marker({
-                    position: pos,
-                    map: mapa,
-                    title: e.nome
-                });
-                const dir = EmpresasDados.linkComoChegar(e.lat, e.lng, posicaoUsuario);
-                const info = new google.maps.InfoWindow({
-                    content: `
-                        <div style="min-width:180px;font-family:sans-serif">
-                            <strong>${e.nome}</strong><br>
-                            <span style="color:#666;font-size:12px">${e.endereco || ''}</span><br>
-                            <a href="empresa.html?id=${e.id}" style="font-size:12px">Ver empresa</a> ·
-                            <a href="${dir}" target="_blank" style="font-size:12px">Como chegar</a>
-                        </div>`
-                });
-                marker.addListener('click', () => info.open(mapa, marker));
+            if (!mapa) return;
+            var bounds = [];
+            empresas.forEach(function (e) {
+                if (e.lat == null || e.lng == null) return;
+                var marker = L.marker([e.lat, e.lng]).addTo(mapa);
+                var dir = EmpresasDados.linkComoChegar(e.lat, e.lng, posicaoUsuario);
+                marker.bindPopup(
+                    '<div style="min-width:160px;font-family:sans-serif">' +
+                    '<strong>' + (e.nome || '') + '</strong><br>' +
+                    '<span style="color:#666;font-size:12px">' + (e.endereco || '') + '</span><br>' +
+                    '<a href="empresa.html?id=' + encodeURIComponent(e.id) + '" style="font-size:12px">Ver empresa</a> · ' +
+                    '<a href="' + dir + '" target="_blank" style="font-size:12px">Como chegar</a></div>'
+                );
                 marcadores.push(marker);
+                bounds.push([e.lat, e.lng]);
             });
-
-            if (empresas.length === 1) {
-                mapa.setCenter({ lat: empresas[0].lat, lng: empresas[0].lng });
-                mapa.setZoom(16);
-            } else if (empresas.length > 1) {
-                mapa.fitBounds(bounds, 48);
+            if (bounds.length === 1) {
+                mapa.setView(bounds[0], 16);
+            } else if (bounds.length > 1) {
+                mapa.fitBounds(bounds, { padding: [40, 40] });
             }
         }
 
         function aplicarDistancias(empresas) {
             if (!posicaoUsuario) return empresas;
-            return empresas.map(e => {
-                const km = EmpresasDados.distanciaKm(posicaoUsuario.lat, posicaoUsuario.lng, e.lat, e.lng);
-                const distanciaTexto = km < 1 ? Math.round(km * 1000) + ' m' : km.toFixed(1) + ' km';
-                return { ...e, distanciaTexto, _km: km };
-            }).sort((a, b) => a._km - b._km);
+            return empresas.map(function (e) {
+                var km = EmpresasDados.distanciaKm(posicaoUsuario.lat, posicaoUsuario.lng, e.lat, e.lng);
+                var distanciaTexto = km < 1 ? Math.round(km * 1000) + ' m' : km.toFixed(1) + ' km';
+                return Object.assign({}, e, { distanciaTexto: distanciaTexto, _km: km });
+            }).sort(function (a, b) { return a._km - b._km; });
         }
 
         function atualizarTudo() {
-            let empresas = EmpresasDados.empresasNoMapa();
-            empresas = aplicarDistancias(empresas);
-            if (mapa) montarMarcadores(empresas);
+            var empresas = aplicarDistancias(EmpresasDados.empresasNoMapa());
+            montarMarcadores(empresas);
             renderLista(empresas);
         }
 
         function initMapaGeral() {
-            const el = document.getElementById('mapaGeral');
-            if (!el || typeof google === 'undefined') return;
-            const center = (window.CD_MAPS_CENTER) || EmpresasDados.CENTER;
-            mapa = new google.maps.Map(el, {
-                zoom: 14,
-                center: center,
-                mapTypeControl: true,
-                streetViewControl: false
-            });
+            var el = document.getElementById('mapaGeral');
+            if (!el || typeof L === 'undefined') return;
+            var center = (window.CD_MAPS_CENTER) || EmpresasDados.CENTER || { lat: -14.4089, lng: -56.4458 };
+            mapa = L.map(el).setView([center.lat, center.lng], 14);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                attribution: '&copy; OpenStreetMap'
+            }).addTo(mapa);
             atualizarTudo();
+            setTimeout(function () { try { mapa.invalidateSize(); } catch (e) {} }, 200);
         }
 
-        document.getElementById('btnLocalizar').addEventListener('click', () => {
-            const info = document.getElementById('infoLoc');
-            const res = document.getElementById('resultadoProxima');
+        document.getElementById('btnLocalizar').addEventListener('click', function () {
+            var info = document.getElementById('infoLoc');
+            var res = document.getElementById('resultadoProxima');
             if (!navigator.geolocation) {
                 info.textContent = 'Geolocalização não suportada.';
                 return;
             }
             info.textContent = 'Obtendo localização…';
             navigator.geolocation.getCurrentPosition(
-                (pos) => {
+                function (pos) {
                     posicaoUsuario = { lat: pos.coords.latitude, lng: pos.coords.longitude };
                     info.textContent = 'Localização ativada';
                     if (mapa) {
-                        new google.maps.Marker({
-                            position: posicaoUsuario,
-                            map: mapa,
-                            title: 'Você está aqui',
-                            icon: { url: 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png' }
-                        });
+                        if (marcadorUser) try { mapa.removeLayer(marcadorUser); } catch (e) {}
+                        marcadorUser = L.circleMarker([posicaoUsuario.lat, posicaoUsuario.lng], {
+                            radius: 8, color: '#2563eb', fillColor: '#3b82f6', fillOpacity: 0.9
+                        }).addTo(mapa).bindPopup('Você está aqui');
+                        mapa.setView([posicaoUsuario.lat, posicaoUsuario.lng], 15);
                     }
-                    let empresas = aplicarDistancias(EmpresasDados.empresasNoMapa());
+                    var empresas = aplicarDistancias(EmpresasDados.empresasNoMapa());
                     atualizarTudo();
                     if (empresas.length) {
                         res.classList.remove('hidden');
-                        res.innerHTML = `<strong>Mais perto de você:</strong> ${empresas[0].nome} (${empresas[0].distanciaTexto})`;
+                        res.innerHTML = '<strong>Mais perto de você:</strong> ' + empresas[0].nome + ' (' + empresas[0].distanciaTexto + ')';
                     }
                 },
-                () => { info.textContent = 'Não foi possível obter o GPS.'; },
+                function () { info.textContent = 'Não foi possível obter o GPS.'; },
                 { enableHighAccuracy: true, timeout: 15000 }
             );
         });
 
-        // Expõe callback global para a API do Google
-        window.initMapaGeral = initMapaGeral;
-    </script>
-    <script>
-      (function () {
-        var key = (window.CD_MAPS_KEY || '').trim();
-        if (!key) {
-          console.warn('CD_MAPS_KEY ausente em maps-config.js');
-          return;
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initMapaGeral);
+        } else {
+            initMapaGeral();
         }
-        var s = document.createElement('script');
-        s.async = true;
-        s.defer = true;
-        s.src = 'https://maps.googleapis.com/maps/api/js?key=' + encodeURIComponent(key) +
-          '&callback=initMapaGeral&language=pt-BR';
-        s.onerror = function () {
-          console.error('Falha ao carregar Google Maps JS API');
-        };
-        document.head.appendChild(s);
-      })();
     </script>
     <script src="auth-utils.js"></script>
-    <script>
-      document.addEventListener('DOMContentLoaded', function () {
-        if (window.AuthUtils && AuthUtils.renderBarraSessao) AuthUtils.renderBarraSessao();
-      });
-    </script>
-<script src="install-app.js"></script>
+    <script src="install-app.js"></script>
 </body>
 </html>
