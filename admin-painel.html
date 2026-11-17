@@ -163,6 +163,18 @@
                 Nenhum lojista encontrado.
             </div>
         </div>
+
+        <!-- ÓRGÃOS PÚBLICOS / PINS DO MAPA -->
+        <div class="mt-10 mb-4">
+            <h2 class="text-lg font-bold text-primary mb-1"><i class="fas fa-landmark mr-2"></i>Órgãos públicos no mapa</h2>
+            <p class="text-sm text-gray-500 mb-4">
+                Prefeitura, Hospital, SAMU, Câmara e PM. Se o pin estiver no lugar errado, cole o <strong>link do Google Maps</strong> real e salve.
+                Isso só corrige a localização neste site — não mexe no Google.
+            </p>
+            <div id="listaPublicosMapa" class="space-y-3">
+                <p class="text-sm text-gray-400">Carregando…</p>
+            </div>
+        </div>
     </div>
 
     <!-- ========== MODAL: Ver cadastro / fotos ========== -->
@@ -1700,6 +1712,95 @@
     <script>
       document.addEventListener('DOMContentLoaded', function(){
         if(window.NotifGestor){ NotifGestor.syncDeCadastros(); NotifGestor.atualizarBadge(); }
+
+        // ---- Órgãos públicos: corrigir pin no mapa ----
+        (function initPublicosMapa() {
+          var box = document.getElementById('listaPublicosMapa');
+          if (!box || !window.EmpresasDados) {
+            if (box) box.innerHTML = '<p class="text-sm text-red-500">EmpresasDados não carregou. Verifique empresas-dados.js.</p>';
+            return;
+          }
+          function listaPublicos() {
+            try {
+              // Garante seed e pega só os públicos
+              if (EmpresasDados.seedSeVazio) EmpresasDados.seedSeVazio();
+              var todos = EmpresasDados.empresasNoMapa ? EmpresasDados.empresasNoMapa() : (EmpresasDados.lerEmpresas() || []);
+              return (todos || []).filter(function (e) {
+                return e && (e.publico === true || String(e.id || '').indexOf('pub-') === 0);
+              });
+            } catch (e) { return []; }
+          }
+          function renderPublicos() {
+            var lista = listaPublicos();
+            if (!lista.length) {
+              box.innerHTML = '<p class="text-sm text-gray-400">Nenhum órgão público no mapa ainda.</p>';
+              return;
+            }
+            box.innerHTML = lista.map(function (e) {
+              var id = String(e.id || '');
+              var lat = (typeof e.lat === 'number') ? e.lat.toFixed(5) : '—';
+              var lng = (typeof e.lng === 'number') ? e.lng.toFixed(5) : '—';
+              return (
+                '<div class="bg-white border border-gray-100 rounded-xl p-4 shadow-sm" data-pub-id="' + id.replace(/"/g, '') + '">' +
+                  '<div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">' +
+                    '<div class="min-w-0">' +
+                      '<p class="font-bold text-gray-900">' + (e.nome || id) + '</p>' +
+                      '<p class="text-xs text-gray-500 mt-0.5">' + (e.endereco || '') + '</p>' +
+                      '<p class="text-[11px] text-gray-400 mt-1">Pin atual: ' + lat + ', ' + lng + '</p>' +
+                    '</div>' +
+                    '<div class="flex-1 w-full sm:max-w-md space-y-2">' +
+                      '<input type="text" class="pub-maps w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" placeholder="Cole o link do Google Maps correto" value="' + String(e.mapsLink || '').replace(/"/g, '&quot;') + '">' +
+                      '<div class="flex flex-wrap gap-2">' +
+                        '<button type="button" class="btn-salvar-pub bg-primary text-white text-xs font-bold px-3 py-2 rounded-lg hover:bg-accent">Salvar localização</button>' +
+                        '<a href="https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent((e.nome || '') + ' Diamantino MT') + '" target="_blank" class="text-xs font-semibold text-primary border border-primary/30 px-3 py-2 rounded-lg hover:bg-blue-50">Abrir no Google</a>' +
+                      '</div>' +
+                    '</div>' +
+                  '</div>' +
+                '</div>'
+              );
+            }).join('');
+
+            box.querySelectorAll('.btn-salvar-pub').forEach(function (btn) {
+              btn.addEventListener('click', function () {
+                var card = btn.closest('[data-pub-id]');
+                if (!card) return;
+                var id = card.getAttribute('data-pub-id');
+                var inp = card.querySelector('.pub-maps');
+                var link = (inp && inp.value || '').trim();
+                if (!link) {
+                  alert('Cole o link do Google Maps (ou lat,lng) do local correto.');
+                  return;
+                }
+                var coords = EmpresasDados.extrairCoords ? EmpresasDados.extrairCoords(link) : null;
+                if (!coords && /^-?\d+\.?\d*\s*[,;]\s*-?\d+\.?\d*$/.test(link)) {
+                  var p = link.split(/[,;]/);
+                  coords = { lat: parseFloat(p[0]), lng: parseFloat(p[1]) };
+                }
+                if (!coords || isNaN(coords.lat) || isNaN(coords.lng)) {
+                  alert('Não consegui ler latitude/longitude desse link.\n\nNo Google Maps: Compartilhar → Copiar link (precisa ter as coordenadas no endereço).');
+                  return;
+                }
+                // Atualiza seed + coords salvas
+                EmpresasDados.upsertEmpresa({
+                  id: id,
+                  nome: (listaPublicos().find(function (x) { return String(x.id) === id; }) || {}).nome,
+                  categoria: (listaPublicos().find(function (x) { return String(x.id) === id; }) || {}).categoria || 'servicos-publicos',
+                  plano: 'publico',
+                  status: 'ativo',
+                  publico: true,
+                  mapsLink: link,
+                  lat: coords.lat,
+                  lng: coords.lng,
+                  endereco: (listaPublicos().find(function (x) { return String(x.id) === id; }) || {}).endereco || ''
+                });
+                if (EmpresasDados.salvarCoord) EmpresasDados.salvarCoord(id, coords.lat, coords.lng);
+                alert('Localização atualizada!\n\n' + coords.lat.toFixed(5) + ', ' + coords.lng.toFixed(5) + '\n\nAbra o Mapa do Comércio para conferir o pin.');
+                renderPublicos();
+              });
+            });
+          }
+          renderPublicos();
+        })();
       });
     </script>
 </body>
