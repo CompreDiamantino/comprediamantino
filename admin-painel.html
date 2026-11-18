@@ -529,26 +529,53 @@
         }
 
         /** Grava 1 lojista no local + nuvem (quando realmente mudou) */
-        function copiarConviteIndicada(id, nome) {
-            var link = location.origin + location.pathname.replace(/admin-painel\.html.*/i, '') + 'completar-loja.html?id=' + encodeURIComponent(id);
-            if (!/admin-painel/i.test(location.pathname)) {
-                link = (location.origin + '/completar-loja.html?id=' + encodeURIComponent(id));
-            }
-            // GitHub pages / domain root
+        window.copiarConviteIndicada = function copiarConviteIndicada(id, nome) {
+            var link;
             try {
                 var base = location.href.split('/').slice(0, -1).join('/') + '/';
                 link = base + 'completar-loja.html?id=' + encodeURIComponent(id);
-            } catch (e) {}
-            var texto = 'Olá! Seu comércio *' + (nome || '') + '* já aparece no Compre Diamantino.\n\nPara colocar WhatsApp e uma senha de acesso (leva 1 minuto):\n' + link + '\n\nQualquer dúvida, chame a gente.';
-            if (navigator.clipboard && navigator.clipboard.writeText) {
-                navigator.clipboard.writeText(texto).then(function () {
-                    alert('Convite copiado! Cole no WhatsApp do responsável.');
-                }).catch(function () {
-                    prompt('Copie o convite:', texto);
-                });
-            } else {
-                prompt('Copie o convite:', texto);
+            } catch (e) {
+                link = location.origin + '/completar-loja.html?id=' + encodeURIComponent(id);
             }
+            var texto = 'Olá! Seu comércio *' + (nome || '') + '* já aparece no Compre Diamantino.\n\n'
+                + 'Para colocar WhatsApp e uma senha de acesso (leva 1 minuto):\n'
+                + link + '\n\n'
+                + 'Se não for o momento, sem problema.';
+
+            var wa = '';
+            try {
+                var lista = JSON.parse(localStorage.getItem('cd_lojistas_admin') || '[]');
+                var lj = lista.find(function (x) { return String(x.id) === String(id); });
+                if (lj && lj.whatsapp) wa = String(lj.whatsapp).replace(/\D/g, '');
+            } catch (e) {}
+
+            if (wa.length >= 10) {
+                if (wa.length <= 11) wa = '55' + wa;
+                window.open('https://wa.me/' + wa + '?text=' + encodeURIComponent(texto), '_blank');
+                try {
+                    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(texto);
+                } catch (e) {}
+                return;
+            }
+
+            var digitado = prompt(
+                'Esta loja ainda não tem WhatsApp no cadastro.\n\nDigite o número do responsável (DDD + número):\nEx.: 65999887766',
+                ''
+            );
+            if (digitado === null) return;
+            wa = String(digitado || '').replace(/\D/g, '');
+            if (wa.length < 10) {
+                alert('Número inválido.');
+                try {
+                    if (navigator.clipboard && navigator.clipboard.writeText) {
+                        navigator.clipboard.writeText(texto);
+                        alert('Texto copiado — cole no WhatsApp.');
+                    } else prompt('Copie o convite:', texto);
+                } catch (e) { prompt('Copie o convite:', texto); }
+                return;
+            }
+            if (wa.length <= 11) wa = '55' + wa;
+            window.open('https://wa.me/' + wa + '?text=' + encodeURIComponent(texto), '_blank');
         }
 
         function salvarLojistaNuvem(lj) {
@@ -718,6 +745,9 @@
                             <button onclick="verDetalheLojista('${lj.id}')" class="text-xs bg-indigo-50 text-indigo-700 font-medium px-2.5 py-1 rounded-lg hover:bg-indigo-100" title="Ver fotos, redes e dados">
                                 <i class="fas fa-eye"></i> Ver
                             </button>
+                            ${ehInd ? `<button type="button" onclick="copiarConviteIndicada('${lj.id}', '${String(lj.nome||'').replace(/'/g, "\'")}')" class="text-xs bg-orange-100 text-orange-800 font-bold px-2.5 py-1 rounded-lg hover:bg-orange-200" title="Abrir WhatsApp com a mensagem pronta — confira e envie">
+                                <i class="fab fa-whatsapp"></i> Chamar no Zap
+                            </button>` : ''}
                             ${lj.status === 'pendente' ? `
                                 <button onclick="aprovarLojista('${lj.id}')" class="text-xs bg-emerald-100 text-emerald-800 font-medium px-2.5 py-1 rounded-lg hover:bg-emerald-200" title="Aprovar e publicar">
                                     <i class="fas fa-check-circle"></i> Aprovar
