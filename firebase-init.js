@@ -4,6 +4,18 @@
         return document.getElementById('firebaseStatus');
     }
 
+    function nomeProjeto() {
+        try {
+            if (window.CD_FIREBASE_CONFIG && CD_FIREBASE_CONFIG.projectId) {
+                return String(CD_FIREBASE_CONFIG.projectId);
+            }
+            if (typeof firebase !== 'undefined' && firebase.apps && firebase.apps.length) {
+                return firebase.app().options.projectId || 'desconhecido';
+            }
+        } catch (e) {}
+        return 'desconhecido';
+    }
+
     function setStatus(ok, msg) {
         const el = statusEl();
         if (!el) return;
@@ -25,19 +37,21 @@
                 setStatus(false, 'Firestore não inicializado.');
                 return;
             }
+            var proj = nomeProjeto();
             db.collection('_sistema').doc('ping').set({
                 ok: true,
                 em: new Date().toISOString(),
-                origem: 'gestor'
+                origem: 'gestor',
+                projectId: proj
             }, { merge: true }).then(function () {
-                setStatus(true, '<i class="fas fa-check-circle"></i> <strong>Nuvem conectada</strong> — projeto <code>compre-diamantino-8faaa</code>. Banco pronto para o gestor.');
+                setStatus(true, '<i class="fas fa-check-circle"></i> <strong>Nuvem conectada</strong> — projeto <code>' + proj + '</code>. Banco pronto para o gestor.');
             }).catch(function (err) {
                 var msg = (err && err.message) || String(err);
                 var quota = /resource-exhausted|quota|Quota exceeded/i.test(msg + ' ' + ((err && err.code) || ''));
                 if (quota) {
                     setStatus(false, '<i class="fas fa-exclamation-triangle"></i> <strong>Cota do Firebase esgotada hoje.</strong> Dados e leituras excedidos. Tente mais tarde ou amanhã (renova à meia-noite).');
                 } else {
-                    setStatus(false, '<i class="fas fa-exclamation-triangle"></i> Config ok, mas Firestore ainda não liberou gravação. Crie o banco no console (modo teste) e regras abertas. <br><small>' + msg + '</small>');
+                    setStatus(false, '<i class="fas fa-exclamation-triangle"></i> Config ok, mas Firestore ainda não liberou gravação. Crie o banco no console (modo teste) e regras abertas. Projeto: <code>' + proj + '</code><br><small>' + msg + '</small>');
                 }
             });
         } catch (e) {
