@@ -24,6 +24,15 @@
         .status-ativo { background: #DCFCE7; color: #166534; }
         .status-aviso { background: #FEF9C3; color: #854D0E; }
         .status-vencido { background: #FEE2E2; color: #991B1B; }
+        .bolinha-status { display:inline-block;width:10px;height:10px;border-radius:9999px;flex-shrink:0;border:1px solid rgba(0,0,0,.08); }
+        .bolinha-verde { background:#22c55e; }
+        .bolinha-amarelo { background:#eab308; }
+        .bolinha-laranja { background:#f97316; }
+        .bolinha-vermelho { background:#ef4444; }
+        .bolinha-azul { background:#3b82f6; }
+        .bolinha-cinza { background:#9ca3af; }
+        .bolinha-roxo { background:#a855f7; }
+
         .status-bloqueado { background: #F3F4F6; color: #4B5563; }
         .status-pendente { background: #DBEAFE; color: #1E40AF; }
         @keyframes notif-pulse {
@@ -119,6 +128,7 @@
                 <button data-filtro="aviso" class="filtro-btn bg-white text-gray-600 px-3 py-1.5 rounded-lg text-sm font-medium border">Vencendo</button>
                 <button data-filtro="vencido" class="filtro-btn bg-white text-gray-600 px-3 py-1.5 rounded-lg text-sm font-medium border">Vencidos</button>
                 <button data-filtro="bloqueado" class="filtro-btn bg-white text-gray-600 px-3 py-1.5 rounded-lg text-sm font-medium border">Bloqueados</button>
+                <button data-filtro="indicada" class="filtro-btn bg-white text-gray-600 px-3 py-1.5 rounded-lg text-sm font-medium border">Indicadas</button>
                 <button data-filtro="pendente" id="btnFiltroPendente" class="filtro-btn relative bg-white text-gray-600 px-3 py-1.5 rounded-lg text-sm font-medium border">Pendentes <span id="badgeFiltroPendente" class="hidden ml-1 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold" style="animation:notif-pulse 1.4s ease-in-out infinite">0</span></button>
                 <button data-filtro="removido" class="filtro-btn bg-white text-gray-600 px-3 py-1.5 rounded-lg text-sm font-medium border">Removidos</button>
             </div>
@@ -144,7 +154,8 @@
         <!-- Tabela de lojistas -->
         <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
             <div class="overflow-x-auto">
-                <table class="w-full text-sm">
+                <div id="legendaBolinha" class="flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-gray-500 px-1 mb-2 items-center"><span class="font-semibold text-gray-600 mr-1">Indicadores:</span><span class="inline-flex items-center gap-1"><span class="bolinha-status bolinha-verde"></span> Em dia</span><span class="inline-flex items-center gap-1"><span class="bolinha-status bolinha-laranja"></span> Indicada</span><span class="inline-flex items-center gap-1"><span class="bolinha-status bolinha-amarelo"></span> Vencendo</span><span class="inline-flex items-center gap-1"><span class="bolinha-status bolinha-vermelho"></span> Vencido</span><span class="inline-flex items-center gap-1"><span class="bolinha-status bolinha-azul"></span> Pendente</span><span class="inline-flex items-center gap-1"><span class="bolinha-status bolinha-cinza"></span> Bloqueado/removido</span><span class="inline-flex items-center gap-1"><span class="bolinha-status bolinha-roxo"></span> Sem WhatsApp</span></div>
+            <table class="w-full text-sm">
                     <thead class="bg-gray-50 text-gray-500 text-left">
                         <tr>
                             <th class="px-4 py-3 font-medium">Empresa</th>
@@ -616,7 +627,9 @@
             }
             
             // Filtro
-            if (filtroAtual !== 'todos') {
+            if (filtroAtual === 'indicada') {
+                lista = lista.filter(l => !!(l.indicada || l.cadastroIncompleto));
+            } else if (filtroAtual !== 'todos') {
                 lista = lista.filter(l => l.status === filtroAtual);
             }
             
@@ -651,6 +664,29 @@
                     removido: 'Removido'
                 };
                 
+                const ehInd = !!(lj.indicada || lj.cadastroIncompleto);
+                const semWa = !(lj.whatsapp && String(lj.whatsapp).replace(/\D/g, '').length >= 10);
+                let bolinha = 'bolinha-verde';
+                let bolinhaTitulo = 'Em dia';
+                if (lj.status === 'removido' || lj.status === 'bloqueado') {
+                    bolinha = 'bolinha-cinza';
+                    bolinhaTitulo = lj.status === 'bloqueado' ? 'Bloqueado' : 'Removido';
+                } else if (lj.status === 'vencido') {
+                    bolinha = 'bolinha-vermelho';
+                    bolinhaTitulo = 'Vencido';
+                } else if (lj.status === 'aviso') {
+                    bolinha = 'bolinha-amarelo';
+                    bolinhaTitulo = 'Vencendo';
+                } else if (lj.status === 'pendente') {
+                    bolinha = 'bolinha-azul';
+                    bolinhaTitulo = 'Pendente de aprovação';
+                } else if (ehInd) {
+                    bolinha = 'bolinha-laranja';
+                    bolinhaTitulo = 'Indicada — falta o responsável completar';
+                } else if (semWa) {
+                    bolinha = 'bolinha-roxo';
+                    bolinhaTitulo = 'Sem WhatsApp';
+                }
                 const vencTxt = lj.vencimento 
                     ? new Date(lj.vencimento).toLocaleDateString('pt-BR')
                     : '—';
@@ -658,11 +694,14 @@
                 return `
                 <tr class="border-t border-gray-100 hover:bg-gray-50">
                     <td class="px-4 py-3">
-                        <p class="font-semibold text-gray-900">${lj.nome}</p>
+                        <div class="flex items-start gap-2"><span class="bolinha-status ${bolinha} mt-1.5" title="${bolinhaTitulo}"></span><div class="min-w-0 flex-1"><p class="font-semibold text-gray-900">${lj.nome}</p>
                         <p class="text-xs text-gray-400">${lj.whatsapp || ''} · ${lj.plano}${lj.categoria ? ' · ' + lj.categoria : ''}</p>
                         ${lj.oQueVende ? '<p class="text-xs text-gray-500 mt-0.5 line-clamp-2">' + String(lj.oQueVende).replace(/</g,'') + '</p>' : (lj.descricao ? '<p class="text-xs text-gray-500 mt-0.5 line-clamp-2">' + String(lj.descricao).replace(/</g,'') + '</p>' : '')}
                         ${lj.instagram || lj.facebook ? '<p class="text-[11px] text-blue-600 mt-0.5">' + [lj.instagram, lj.facebook].filter(Boolean).join(' · ') + '</p>' : ''}
                         ${((lj.fotos && lj.fotos.length) || lj.logo) ? '<p class="text-[11px] text-indigo-600 mt-0.5"><i class="fas fa-camera"></i> ' + ((lj.fotos && lj.fotos.length) || 0) + ' foto(s)' + (lj.logo ? ' · logo' : '') + '</p>' : ''}
+                        ${ehInd ? '<p class="text-[11px] text-orange-600 mt-0.5">Indicada — dono pode completar</p>' : ''}
+                        ${!ehInd && semWa ? '<p class="text-[11px] text-purple-600 mt-0.5">Sem WhatsApp</p>' : ''}
+                            </div></div>
                     </td>
                     <td class="px-4 py-3">
                         <span class="font-medium">${(String(lj.plano||'basico').toLowerCase()==='plus'||String(lj.plano||'').toLowerCase()==='destaque')?'Plus':'Básico'}</span>
