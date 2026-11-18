@@ -1320,22 +1320,155 @@
             return true;
         }
 
+        function mostrarListaPlaces(results, st, box) {
+            if (!results || !results.length) {
+                if (st) st.textContent = 'A loja aparece no mapa, mas a busca Places falhou. CLIQUE no nome/pin laranja no mapa.';
+                if (box) {
+                    box.classList.remove('hidden');
+                    box.innerHTML = '<div class="p-3 text-sm text-amber-800 bg-amber-50 space-y-1">' +
+                        '<p><strong>O Google mostra o lugar no mapa</strong>, mas a API de busca não devolveu lista.</p>' +
+                        '<p>→ <strong>Clique em cima do nome/ícone da loja no mapa</strong> (ex.: Dw salgados).</p>' +
+                        '<p>→ Ou cole o link do Google Maps no campo Localização abaixo.</p>' +
+                        '<p class="text-xs text-gray-500">Se o clique no mapa também falhar: ative <em>Places API</em> na chave do Cloud.</p>' +
+                        '</div>';
+                }
+                return;
+            }
+            if (st) st.textContent = results.length + ' resultado(s). Clique no nome certo.';
+            if (box) {
+                box.classList.remove('hidden');
+                box._placesData = results;
+                box.innerHTML = results.slice(0, 8).map(function (p, idx) {
+                    return '<button type="button" class="place-result w-full text-left px-3 py-2.5 border-b border-gray-100 hover:bg-blue-50 transition" data-idx="' + idx + '">' +
+                        '<span class="font-bold text-gray-900 text-sm block">' + String(p.name || '').replace(/</g, '') + '</span>' +
+                        '<span class="text-xs text-gray-500">' + String(p.formatted_address || p.vicinity || '').replace(/</g, '') + '</span></button>';
+                }).join('');
+                box.querySelectorAll('.place-result').forEach(function (btn) {
+                    btn.addEventListener('click', function () {
+                        var i = parseInt(btn.getAttribute('data-idx'), 10);
+                        var p = (box._placesData || [])[i];
+                        if (!p) return;
+                        if (p.place_id && (!p.geometry || !p.geometry.location)) {
+                            buscarDetalhesPlaceId(p.place_id, p.name);
+                        } else {
+                            aplicarLugarNoFormulario(p);
+                        }
+                        box.classList.add('hidden');
+                    });
+                });
+            }
+        }
+
         function buscarDetalhesPlaceId(placeId, nomeFallback) {
             var st = document.getElementById('placesStatus');
-            if (!placeId || !window.google || !google.maps || !google.maps.places) return;
-            if (st) st.textContent = 'Carregando dados do Google…';
-            var svc = new google.maps.places.PlacesService(_mapaPlaces || document.createElement('div'));
-            svc.getDetails({
-                placeId: placeId,
-                fields: ['place_id', 'name', 'formatted_address', 'geometry', 'formatted_phone_number', 'international_phone_number', 'vicinity']
-            }, function (place, status) {
-                if (status === google.maps.places.PlacesServiceStatus.OK && place) {
-                    if (!place.name && nomeFallback) place.name = nomeFallback;
-                    aplicarLugarNoFormulario(place);
-                } else if (st) {
-                    st.textContent = 'Não leu detalhes. Tente outro resultado ou cole o link do Maps.';
+            if (!placeId) return;
+            if (st) st.textContent = 'Lendo estabelecimento do mapa…';
+            var id = String(placeId).replace(/^places\//, '');
+
+            // 1) Places legado
+            if (window.google && google.maps && google.maps.places) {
+                var svc = new google.maps.places.PlacesService(_mapaPlaces || document.createElement('div'));
+                svc.getDetails({
+                    placeId: id,
+                    fields: ['place_id', 'name', 'formatted_address', 'geometry', 'formatted_phone_number', 'international_phone_number', 'vicinity']
+                }, function (place, status) {
+                    if (status === google.maps.places.PlacesServiceStatus.OK && place) {
+                        if (!place.name && nomeFallback) place.name = nomeFallback;
+                        aplicarLugarNoFormulario(place);
+                        return;
+                    }
+                    // 2) Places API (New)
+                    buscarDetalhesPlaceNew(id, nomeFallback);
+                });
+            } else {
+                buscarDetalhesPlaceNew(id, nomeFallback);
+            }
+        }
+
+        async function buscarDetalhesPlaceNew(placeId, nomeFallback) {
+            var st = document.getElementById('placesStatus');
+            var key = (window.CD_MAPS_KEY || '').trim();
+            if (!key || !placeId) {
+                if (st) st.textContent = 'Clique no pin falhou. Cole o link do Google Maps.';
+                return;
+            }
+            try {
+                var resp = await fetch('https://places.googleapis.com/v1/places/' + encodeURIComponent(placeId) + '?languageCode=pt-BR', {
+                    headers: {
+                        'X-Goog-Api-Key': key,
+                        'X-Goog-FieldMask': 'id,displayName,formattedAddress,location,nationalPhoneNumber,internationalPhoneNumber'
+                    }
+                });
+                var p = await resp.json().catch(function () { return {}; });
+                if (!resp.ok) {
+                    console.warn('Place Details New', resp.status, p);
+                    if (st) st.textContent = 'API Places bloqueada (' + resp.status + '). Clique no pin ou ative Places API na chave.';
+                    return;
                 }
-            });
+                var nome = (p.displayName && (p.displayName.text || p.displayName)) || nomeFallback || '';
+                aplicarLugarNoFormulario({
+                    name: nome,
+                    formatted_address: p.formattedAddress || '',
+                    place_id: placeId,
+                    lat: p.location && p.location.latitude,
+                    lng: p.location && p.location.longitude,
+                    nationalPhoneNumber: p.nationalPhoneNumber,
+                    international_phone_number: p.internationalPhoneNumber
+                });
+            } catch (err) {
+                console.error(err);
+                if (st) st.textContent = 'Erro ao ler o pin. Cole o link do Google Maps.';
+            }
+        }
+
+        async function buscarPlacesNewAPI(query) {
+            var key = (window.CD_MAPS_KEY || '').trim();
+            if (!key) return [];
+            try {
+                var resp = await fetch('https://places.googleapis.com/v1/places:searchText', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Goog-Api-Key': key,
+                        'X-Goog-FieldMask': 'places.id,places.displayName,places.formattedAddress,places.location,places.nationalPhoneNumber'
+                    },
+                    body: JSON.stringify({
+                        textQuery: query + ' Diamantino MT',
+                        languageCode: 'pt-BR',
+                        regionCode: 'BR',
+                        maxResultCount: 8,
+                        locationBias: {
+                            circle: {
+                                center: { latitude: -14.4089, longitude: -56.4458 },
+                                radius: 12000.0
+                            }
+                        }
+                    })
+                });
+                var data = await resp.json().catch(function () { return {}; });
+                if (!resp.ok) {
+                    console.warn('searchText New', resp.status, data);
+                    return [];
+                }
+                return (data.places || []).map(function (p) {
+                    return {
+                        name: (p.displayName && (p.displayName.text || p.displayName)) || '',
+                        formatted_address: p.formattedAddress || '',
+                        place_id: (p.id || '').replace(/^places\//, ''),
+                        geometry: p.location ? {
+                            location: {
+                                lat: function () { return p.location.latitude; },
+                                lng: function () { return p.location.longitude; }
+                            }
+                        } : null,
+                        lat: p.location && p.location.latitude,
+                        lng: p.location && p.location.longitude
+                    };
+                });
+            } catch (e) {
+                console.warn(e);
+                return [];
+            }
         }
 
         function buscarPlacesTexto(query) {
@@ -1346,7 +1479,6 @@
                 if (st) st.textContent = 'Digite o nome do estabelecimento.';
                 return;
             }
-            // Link do Google colado
             if (/google\.com\/maps|maps\.app\.goo\.gl|goo\.gl\/maps/i.test(q)) {
                 var coords = (window.EmpresasDados && EmpresasDados.extrairCoords) ? EmpresasDados.extrairCoords(q) : null;
                 if (coords) {
@@ -1360,7 +1492,7 @@
                     return;
                 }
             }
-            if (!window.google || !google.maps || !google.maps.places || !_mapaPlaces) {
+            if (!window.google || !google.maps || !_mapaPlaces) {
                 if (st) st.textContent = 'Google Maps ainda carregando… tente de novo em 2s.';
                 carregarMapsPlaces(function () { initPlacesAdmin(); setTimeout(function () { buscarPlacesTexto(q); }, 500); });
                 return;
@@ -1370,40 +1502,73 @@
                 box.classList.remove('hidden');
                 box.innerHTML = '<p class="text-sm text-gray-500 p-3">Buscando no Google…</p>';
             }
-            var svc = new google.maps.places.PlacesService(_mapaPlaces);
-            svc.textSearch({
-                query: q + ' Diamantino MT',
-                location: _mapaPlaces.getCenter(),
-                radius: 12000
-            }, function (results, status) {
-                if (status !== google.maps.places.PlacesServiceStatus.OK || !results || !results.length) {
-                    if (st) st.textContent = 'Nada no Google. Tente outro nome ou cole o link do Maps.';
-                    if (box) box.innerHTML = '<p class="text-sm text-gray-500 p-3">Sem resultados. Cole o link do Google Maps no campo Localização.</p>';
+
+            function tentarLegacyENew() {
+                if (!google.maps.places) {
+                    buscarPlacesNewAPI(q).then(function (list) { mostrarListaPlaces(list, st, box); });
                     return;
                 }
-                if (st) st.textContent = results.length + ' resultado(s). Clique no nome certo.';
-                if (box) {
-                    box._placesData = results;
-                    box.innerHTML = results.slice(0, 8).map(function (p, idx) {
-                        return '<button type="button" class="place-result w-full text-left px-3 py-2.5 border-b border-gray-100 hover:bg-blue-50 transition" data-idx="' + idx + '">' +
-                            '<span class="font-bold text-gray-900 text-sm block">' + String(p.name || '').replace(/</g, '') + '</span>' +
-                            '<span class="text-xs text-gray-500">' + String(p.formatted_address || p.vicinity || '').replace(/</g, '') + '</span></button>';
-                    }).join('');
-                    box.querySelectorAll('.place-result').forEach(function (btn) {
-                        btn.addEventListener('click', function () {
-                            var i = parseInt(btn.getAttribute('data-idx'), 10);
-                            var p = (box._placesData || [])[i];
-                            if (!p) return;
-                            if (p.place_id && (!p.geometry || !p.geometry.location)) {
-                                buscarDetalhesPlaceId(p.place_id, p.name);
+                var svc = new google.maps.places.PlacesService(_mapaPlaces);
+                // 1) findPlaceFromQuery
+                svc.findPlaceFromQuery({
+                    query: q + ' Diamantino MT',
+                    fields: ['place_id', 'name', 'formatted_address', 'geometry', 'formatted_phone_number']
+                }, function (results, status) {
+                    if (status === google.maps.places.PlacesServiceStatus.OK && results && results.length) {
+                        mostrarListaPlaces(results, st, box);
+                        return;
+                    }
+                    // 2) textSearch
+                    svc.textSearch({
+                        query: q + ' Diamantino MT',
+                        location: _mapaPlaces.getCenter(),
+                        radius: 15000
+                    }, function (results2, status2) {
+                        if (status2 === google.maps.places.PlacesServiceStatus.OK && results2 && results2.length) {
+                            mostrarListaPlaces(results2, st, box);
+                            return;
+                        }
+                        // 3) Places API (New)
+                        buscarPlacesNewAPI(q).then(function (list) {
+                            if (list && list.length) {
+                                mostrarListaPlaces(list, st, box);
                             } else {
-                                aplicarLugarNoFormulario(p);
+                                // 4) AutocompleteService
+                                if (google.maps.places.AutocompleteService) {
+                                    var acs = new google.maps.places.AutocompleteService();
+                                    acs.getPlacePredictions({
+                                        input: q + ' Diamantino',
+                                        componentRestrictions: { country: 'br' },
+                                        location: _mapaPlaces.getCenter(),
+                                        radius: 15000
+                                    }, function (preds, stPred) {
+                                        if (stPred === google.maps.places.PlacesServiceStatus.OK && preds && preds.length) {
+                                            // resolve first few with getDetails
+                                            var out = [];
+                                            var left = Math.min(5, preds.length);
+                                            preds.slice(0, 5).forEach(function (pred) {
+                                                svc.getDetails({
+                                                    placeId: pred.place_id,
+                                                    fields: ['place_id', 'name', 'formatted_address', 'geometry', 'formatted_phone_number']
+                                                }, function (pl, stD) {
+                                                    left--;
+                                                    if (stD === google.maps.places.PlacesServiceStatus.OK && pl) out.push(pl);
+                                                    if (left <= 0) mostrarListaPlaces(out, st, box);
+                                                });
+                                            });
+                                        } else {
+                                            mostrarListaPlaces([], st, box);
+                                        }
+                                    });
+                                } else {
+                                    mostrarListaPlaces([], st, box);
+                                }
                             }
-                            box.classList.add('hidden');
                         });
                     });
-                }
-            });
+                });
+            }
+            tentarLegacyENew();
         }
 
         function initPlacesAdmin() {
@@ -1446,7 +1611,7 @@
                                 buscarDetalhesPlaceId(e.placeId, (inp && inp.value) || '');
                                 return;
                             }
-                            if (st) st.textContent = 'Pin marcado. Use Buscar ou clique em um estabelecimento no mapa.';
+                            if (st) st.textContent = 'Clique DIRETO no nome/ícone da loja no mapa (não só na rua), ou use Buscar.';
                         });
                     } else {
                         try { google.maps.event.trigger(_mapaPlaces, 'resize'); } catch (e) {}
