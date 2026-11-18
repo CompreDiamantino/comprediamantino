@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Atualizar meu comércio — Compre Diamantino</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = { theme: { extend: { colors: { primary: '#0A2A6B', secondary: '#F5C518', accent: '#0D3B8C' } } } }
+    </script>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <header class="bg-primary text-white">
+        <div class="container mx-auto px-4 h-14 flex items-center justify-between">
+            <a href="index.html" class="font-bold text-sm">Compre Diamantino</a>
+            <a href="index.html" class="text-sm opacity-90">Voltar ao site</a>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-4 py-8 max-w-md">
+        <h1 class="text-xl font-bold text-primary mb-1">Atualizar dados do comércio</h1>
+        <p class="text-sm text-gray-500 mb-6">Só o essencial: WhatsApp e uma senha para você entrar depois. Leva menos de 1 minuto.</p>
+
+        <div id="boxErro" class="hidden bg-red-50 border border-red-100 text-red-800 text-sm rounded-xl p-3 mb-4"></div>
+        <div id="boxOk" class="hidden bg-green-50 border border-green-100 text-green-800 text-sm rounded-xl p-3 mb-4"></div>
+
+        <form id="form" class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-4">
+            <div>
+                <label class="text-xs font-semibold text-gray-500">Comércio</label>
+                <p id="nomeLoja" class="font-bold text-gray-900 text-lg">…</p>
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1">WhatsApp <span class="text-red-500">*</span></label>
+                <input id="wa" type="tel" inputmode="numeric" class="w-full border border-gray-200 rounded-xl px-4 py-2.5" placeholder="65999999999" required>
+                <p class="text-[11px] text-gray-400 mt-1">Com DDD, só números.</p>
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1">O que você vende / oferece</label>
+                <textarea id="desc" rows="2" class="w-full border border-gray-200 rounded-xl px-4 py-2.5" placeholder="Ex.: salgados, doces e assados"></textarea>
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1">Senha para entrar depois <span class="text-red-500">*</span></label>
+                <input id="senha" type="password" minlength="4" class="w-full border border-gray-200 rounded-xl px-4 py-2.5" placeholder="Mínimo 4 caracteres" required>
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1">Confirmar senha</label>
+                <input id="senha2" type="password" class="w-full border border-gray-200 rounded-xl px-4 py-2.5" required>
+            </div>
+            <button type="submit" class="w-full bg-primary text-white font-bold py-3 rounded-xl hover:bg-accent">
+                Salvar e liberar meu acesso
+            </button>
+            <p class="text-[11px] text-gray-400 text-center">Depois use o WhatsApp + senha em <strong>Área do anunciante</strong>.</p>
+        </form>
+    </main>
+
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+    <script src="firebase-config.js"></script>
+    <script src="lojistas-nuvem.js"></script>
+    <script src="auth-utils.js"></script>
+    <script>
+    (function () {
+        var params = new URLSearchParams(location.search);
+        var id = params.get('id') || '';
+        var loja = null;
+
+        function erro(msg) {
+            var el = document.getElementById('boxErro');
+            el.textContent = msg;
+            el.classList.remove('hidden');
+        }
+
+        function acharLocal(id) {
+            try {
+                var lista = JSON.parse(localStorage.getItem('cd_lojistas_admin') || '[]');
+                return lista.find(function (x) { return String(x.id) === String(id); }) || null;
+            } catch (e) { return null; }
+        }
+
+        function carregar() {
+            if (!id) { erro('Link incompleto. Peça o link de novo à gestão do Compre Diamantino.'); return; }
+            loja = acharLocal(id);
+            if (window.iniciarFirebase) try { iniciarFirebase(); } catch (e) {}
+            if (window.LojistasNuvem && LojistasNuvem.puxarUm) {
+                LojistasNuvem.puxarUm(id).then(function (lj) {
+                    if (lj) loja = lj;
+                    if (!loja) loja = acharLocal(id);
+                    if (!loja) { erro('Não achamos este comércio. Confirme o link com a gestão.'); return; }
+                    document.getElementById('nomeLoja').textContent = loja.nome || 'Comércio';
+                    if (loja.whatsapp) document.getElementById('wa').value = String(loja.whatsapp).replace(/\D/g, '');
+                    if (loja.descricao) document.getElementById('desc').value = loja.descricao;
+                }).catch(function () {
+                    if (!loja) loja = acharLocal(id);
+                    if (loja) document.getElementById('nomeLoja').textContent = loja.nome || 'Comércio';
+                    else erro('Não foi possível carregar. Tente de novo com internet.');
+                });
+            } else if (loja) {
+                document.getElementById('nomeLoja').textContent = loja.nome || 'Comércio';
+            } else {
+                erro('Abra este link com internet para carregar o comércio.');
+            }
+        }
+
+        document.getElementById('form').addEventListener('submit', function (ev) {
+            ev.preventDefault();
+            document.getElementById('boxErro').classList.add('hidden');
+            if (!loja || !loja.id) { erro('Comércio não carregado.'); return; }
+            var wa = (document.getElementById('wa').value || '').replace(/\D/g, '');
+            var senha = document.getElementById('senha').value || '';
+            var senha2 = document.getElementById('senha2').value || '';
+            var desc = (document.getElementById('desc').value || '').trim();
+            if (wa.length < 10) { erro('Informe um WhatsApp válido com DDD.'); return; }
+            if (senha.length < 4) { erro('Senha com pelo menos 4 caracteres.'); return; }
+            if (senha !== senha2) { erro('As senhas não coincidem.'); return; }
+
+            var atual = Object.assign({}, loja, {
+                whatsapp: wa,
+                descricao: desc || loja.descricao || '',
+                senha: senha,
+                indicada: false,
+                cadastroIncompleto: false,
+                origemGoogle: loja.origemGoogle || true,
+                status: loja.status === 'removido' ? loja.status : 'ativo',
+                atualizadoEm: new Date().toISOString()
+            });
+
+            var btn = ev.target.querySelector('button[type=submit]');
+            if (btn) { btn.disabled = true; btn.textContent = 'Salvando…'; }
+
+            function ok() {
+                document.getElementById('boxOk').textContent = 'Pronto! Seus dados foram salvos. Entre na Área do anunciante com este WhatsApp e a senha.';
+                document.getElementById('boxOk').classList.remove('hidden');
+                if (btn) { btn.disabled = false; btn.textContent = 'Salvo'; }
+                setTimeout(function () {
+                    location.href = 'lojista-login.html';
+                }, 1800);
+            }
+            function fail(m) {
+                erro(m || 'Não salvou. Tente de novo.');
+                if (btn) { btn.disabled = false; btn.textContent = 'Salvar e liberar meu acesso'; }
+            }
+
+            if (window.LojistasNuvem && LojistasNuvem.salvarUm) {
+                if (window.iniciarFirebase) try { iniciarFirebase(); } catch (e) {}
+                LojistasNuvem.salvarUm(atual).then(function (res) {
+                    if (res && res.sucesso === false && res.quota) return fail(res.erro);
+                    ok();
+                }).catch(function (e) { fail(e && e.message); });
+            } else {
+                try {
+                    var lista = JSON.parse(localStorage.getItem('cd_lojistas_admin') || '[]');
+                    var i = lista.findIndex(function (x) { return String(x.id) === String(atual.id); });
+                    if (i >= 0) lista[i] = Object.assign({}, lista[i], atual);
+                    else lista.push(atual);
+                    localStorage.setItem('cd_lojistas_admin', JSON.stringify(lista));
+                    ok();
+                } catch (e) { fail('Erro local ao salvar.'); }
+            }
+        });
+
+        carregar();
+    })();
+    </script>
+</body>
+</html>
