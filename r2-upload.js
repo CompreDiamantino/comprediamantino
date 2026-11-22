@@ -140,14 +140,9 @@
             return '';
         }
         if (!r2Ativo()) {
-            // Fallback: mantém data URL (local / sem bucket ainda)
-            if (typeof dataOuBlob === 'string' && dataOuBlob.indexOf('data:') === 0) return dataOuBlob;
-            return new Promise(function (resolve) {
-                var fr = new FileReader();
-                fr.onload = function () { resolve(String(fr.result || '')); };
-                fr.onerror = function () { resolve(''); };
-                fr.readAsDataURL(blob);
-            });
+            // Sem R2: NÃO devolve data:URL (estoura localStorage). Sinaliza falha.
+            console.warn('CDR2: R2 inativo — configure o bucket para enviar fotos.');
+            return '';
         }
         var ext = (ct.indexOf('png') >= 0) ? 'png' : 'jpg';
         var key = keyPrefix + '/' + Date.now() + '-' + Math.random().toString(36).slice(2, 8) + '.' + ext;
@@ -161,10 +156,12 @@
         for (var i = 0; i < arr.length; i++) {
             if (!arr[i]) continue;
             try {
-                out.push(await uploadImagemFlex(arr[i], keyPrefix));
+                var url = await uploadImagemFlex(arr[i], keyPrefix);
+                // Só URLs públicas — nunca devolve data:URL (cota do navegador)
+                if (url && /^https?:\/\//i.test(String(url))) out.push(url);
+                else console.warn('R2 item sem URL pública', url);
             } catch (e) {
-                console.warn('R2 item falhou, mantém local', e);
-                out.push(arr[i]);
+                console.warn('R2 item falhou', e);
             }
         }
         return out;

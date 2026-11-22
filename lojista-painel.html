@@ -266,7 +266,7 @@
                         <!-- Previews das fotos ainda não salvas -->
                     </div>
                     <input type="file" id="inputFotos" accept="image/png,image/jpeg" multiple class="text-sm">
-                    <p class="text-xs text-gray-400 mt-1">Pode enviar uma por uma (Foto 1, Foto 2…) ou várias de uma vez. Elas só vão para o site depois de clicar em <strong>Salvar fotos</strong>.</p>
+                    <p class="text-xs text-gray-400 mt-1">Máximo <strong>3 MB</strong> por foto (PNG ou JPG). Envie uma ou várias; só entram no site após <strong>Salvar fotos</strong> (upload na nuvem).</p>
                     <p id="avisoLimiteFotos" class="text-xs text-amber-700 mt-1 hidden"></p>
                 </div>
                 
@@ -1020,10 +1020,97 @@
             return p;
         }
 
+        var MAX_FOTO_BYTES = 3 * 1024 * 1024; // 3 MB
+
+        /** Só URLs http(s) — nunca base64 no localStorage (estoura cota) */
+        function soUrlsPublicas(lista) {
+            if (!Array.isArray(lista)) return [];
+            return lista.filter(function (u) {
+                return typeof u === 'string' && /^https?:\/\//i.test(u.trim());
+            });
+        }
+        function urlPublicaOuVazio(u) {
+            return (typeof u === 'string' && /^https?:\/\//i.test(u.trim())) ? u.trim() : '';
+        }
+        function limparBase64DoStorage() {
+            try {
+                var lista = JSON.parse(localStorage.getItem('cd_lojistas_admin') || '[]');
+                if (Array.isArray(lista)) {
+                    lista.forEach(function (lj) {
+                        if (!lj) return;
+                        lj.fotos = soUrlsPublicas(lj.fotos);
+                        lj.logo = urlPublicaOuVazio(lj.logo);
+                    });
+                    localStorage.setItem('cd_lojistas_admin', JSON.stringify(lista));
+                }
+            } catch (e) {
+                try { localStorage.removeItem('cd_lojistas_admin'); } catch (e2) {}
+            }
+            try {
+                Object.keys(localStorage).forEach(function (k) {
+                    if (k.indexOf('cd_perfil_') !== 0) return;
+                    try {
+                        var p = JSON.parse(localStorage.getItem(k) || '{}');
+                        p.fotos = soUrlsPublicas(p.fotos);
+                        p.logo = urlPublicaOuVazio(p.logo);
+                        localStorage.setItem(k, JSON.stringify(p));
+                    } catch (e3) {
+                        try { localStorage.removeItem(k); } catch (e4) {}
+                    }
+                });
+            } catch (e5) {}
+        }
+        function setItemSeguro(chave, valorStr) {
+            try {
+                localStorage.setItem(chave, valorStr);
+                return true;
+            } catch (err) {
+                limparBase64DoStorage();
+                try {
+                    localStorage.setItem(chave, valorStr);
+                    return true;
+                } catch (err2) {
+                    // Última tentativa: gravar só metadados sem imagens pesadas
+                    try {
+                        var obj = JSON.parse(valorStr);
+                        if (obj && typeof obj === 'object') {
+                            if (Array.isArray(obj.fotos)) obj.fotos = soUrlsPublicas(obj.fotos);
+                            if (obj.logo) obj.logo = urlPublicaOuVazio(obj.logo);
+                            // se for a lista inteira
+                            if (Array.isArray(obj)) {
+                                obj.forEach(function (lj) {
+                                    if (!lj) return;
+                                    lj.fotos = soUrlsPublicas(lj.fotos);
+                                    lj.logo = urlPublicaOuVazio(lj.logo);
+                                });
+                            }
+                            localStorage.setItem(chave, JSON.stringify(obj));
+                            return true;
+                        }
+                    } catch (err3) {}
+                    console.warn('quota localStorage', err2);
+                    return false;
+                }
+            }
+        }
+        function validarTamanhoArquivo(file) {
+            if (!file) return { ok: false, msg: 'Arquivo inválido.' };
+            if (file.size > MAX_FOTO_BYTES) {
+                return {
+                    ok: false,
+                    msg: 'A imagem "' + (file.name || '') + '" tem ' + (file.size / (1024 * 1024)).toFixed(1) +
+                        ' MB. O máximo é 3 MB. Reduza a foto e tente de novo.'
+                };
+            }
+            return { ok: true };
+        }
+
         function persistirPerfilFotos(p) {
             var id = lojista.empresaId || lojista.id || 'x';
             p.atualizadoEm = new Date().toISOString();
-            localStorage.setItem('cd_perfil_' + id, JSON.stringify(p));
+            p.fotos = soUrlsPublicas(p.fotos);
+            p.logo = urlPublicaOuVazio(p.logo);
+            setItemSeguro('cd_perfil_' + id, JSON.stringify(p));
             try {
                 var lista = JSON.parse(localStorage.getItem('cd_lojistas_admin') || '[]');
                 var ix = lista.findIndex(function (x) { return String(x.id) === String(id); });
@@ -1031,8 +1118,16 @@
                     lista[ix].fotos = p.fotos || [];
                     lista[ix].logo = p.logo || '';
                     lista[ix].atualizadoEm = p.atualizadoEm;
-                    localStorage.setItem('cd_lojistas_admin', JSON.stringify(lista));
                 }
+                // limpa base64 de todos os registros antes de gravar
+                if (Array.isArray(lista)) {
+                    lista.forEach(function (lj) {
+                        if (!lj) return;
+                        lj.fotos = soUrlsPublicas(lj.fotos);
+                        lj.logo = urlPublicaOuVazio(lj.logo);
+                    });
+                }
+                setItemSeguro('cd_lojistas_admin', JSON.stringify(lista));
             } catch (e2) {}
             if (window.LojistasNuvem && LojistasNuvem.salvarUm) {
                 var reg = Object.assign({}, lojista, {
@@ -1045,7 +1140,7 @@
             }
         }
 
-        function renderLogo() {
+                function renderLogo() {
             var box = document.getElementById('previewLogo');
             var btnRm = document.getElementById('btnRemoverLogo');
             if (!box) return;
@@ -1159,6 +1254,15 @@
         setTimeout(function () { renderGaleriaSalva(); renderPendentes(); if (typeof atualizarTextoLimiteFotos === "function") atualizarTextoLimiteFotos(); }, 300);
 
         document.getElementById('inputLogo').addEventListener('change', function (e) {
+            var f0 = (e.target.files && e.target.files[0]) || null;
+            if (f0) {
+                var vv = validarTamanhoArquivo(f0);
+                if (!vv.ok) {
+                    alert(vv.msg);
+                    e.target.value = '';
+                    return;
+                }
+            }
             var file = e.target.files[0];
             if (!file) return;
             logoSelecionado = file;
@@ -1231,7 +1335,13 @@
                 return;
             }
             files = files.slice(0, espaço || files.length);
+            var rejeitados = [];
             files.forEach(function (file) {
+                var v = validarTamanhoArquivo(file);
+                if (!v.ok) {
+                    rejeitados.push(v.msg);
+                    return;
+                }
                 fotosSelecionadas.push(file);
                 var reader = new FileReader();
                 reader.onload = function (ev) {
@@ -1241,6 +1351,7 @@
                 };
                 reader.readAsDataURL(file);
             });
+            if (rejeitados.length) alert(rejeitados.join('\n'));
             e.target.value = '';
             atualizarTextoLimiteFotos();
         });
@@ -1266,45 +1377,46 @@
             msg.className = 'text-sm text-gray-600 font-medium';
             msg.textContent = 'Salvando...';
             try {
+                limparBase64DoStorage();
                 var id = lojista.empresaId || lojista.id || 'x';
                 var prefix = 'lojistas/' + id;
                 var perfil = lerPerfilFotos();
+                perfil.fotos = soUrlsPublicas(perfil.fotos);
+                perfil.logo = urlPublicaOuVazio(perfil.logo);
                 var urls = [];
 
                 if (logoSelecionado) {
-                    var logoData = await new Promise(function (res) {
-                        var fr = new FileReader();
-                        fr.onload = function () { res(fr.result); };
-                        fr.onerror = function () { res(''); };
-                        fr.readAsDataURL(logoSelecionado);
-                    });
-                    if (logoData && window.CDR2 && CDR2.uploadImagemFlex) {
-                        perfil.logo = await CDR2.uploadImagemFlex(logoData, prefix + '/logo');
-                    } else if (logoData) {
-                        perfil.logo = logoData;
+                    var vLogo = validarTamanhoArquivo(logoSelecionado);
+                    if (!vLogo.ok) throw new Error(vLogo.msg);
+                    if (window.CDR2 && CDR2.uploadImagemFlex) {
+                        perfil.logo = await CDR2.uploadImagemFlex(logoSelecionado, prefix + '/logo');
+                    } else {
+                        throw new Error('Upload na nuvem indisponível. Não é possível salvar logo só neste aparelho (evita estourar o armazenamento).');
+                    }
+                    if (!urlPublicaOuVazio(perfil.logo)) {
+                        throw new Error('Falha ao enviar a logo para a nuvem. Tente de novo.');
                     }
                 }
 
                 var files = fotosSelecionadas || [];
-                var dataUrls = [];
                 for (var i = 0; i < files.length; i++) {
-                    dataUrls.push(await new Promise(function (res) {
-                        var fr = new FileReader();
-                        fr.onload = function () { res(fr.result); };
-                        fr.onerror = function () { res(''); };
-                        fr.readAsDataURL(files[i]);
-                    }));
+                    var vf = validarTamanhoArquivo(files[i]);
+                    if (!vf.ok) throw new Error(vf.msg);
                 }
-                dataUrls = dataUrls.filter(Boolean).slice(0, 12);
-                urls = dataUrls;
-                if (window.CDR2 && dataUrls.length && CDR2.uploadListaImagens) {
-                    urls = await CDR2.uploadListaImagens(dataUrls, prefix + '/vitrine');
+                if (files.length) {
+                    if (!(window.CDR2 && CDR2.uploadListaImagens)) {
+                        throw new Error('Upload na nuvem indisponível. Configure o armazenamento de imagens (R2).');
+                    }
+                    urls = await CDR2.uploadListaImagens(files, prefix + '/vitrine');
+                    urls = soUrlsPublicas(urls);
+                    if (!urls.length) {
+                        throw new Error('Nenhuma foto foi enviada à nuvem. Verifique a conexão e tente de novo.');
+                    }
+                    perfil.fotos = soUrlsPublicas((perfil.fotos || []).concat(urls)).slice(0, 12);
                 }
-                if (urls.length) {
-                    perfil.fotos = (perfil.fotos || []).concat(urls).slice(0, 12);
-                }
+
                 perfil.atualizadoEm = new Date().toISOString();
-                localStorage.setItem('cd_perfil_' + id, JSON.stringify(perfil));
+                setItemSeguro('cd_perfil_' + id, JSON.stringify(perfil));
 
                 try {
                     var lista = JSON.parse(localStorage.getItem('cd_lojistas_admin') || '[]');
@@ -1313,8 +1425,15 @@
                         lista[ix].fotos = perfil.fotos || [];
                         lista[ix].logo = perfil.logo || '';
                         lista[ix].atualizadoEm = perfil.atualizadoEm;
-                        localStorage.setItem('cd_lojistas_admin', JSON.stringify(lista));
                     }
+                    if (Array.isArray(lista)) {
+                        lista.forEach(function (lj) {
+                            if (!lj) return;
+                            lj.fotos = soUrlsPublicas(lj.fotos);
+                            lj.logo = urlPublicaOuVazio(lj.logo);
+                        });
+                    }
+                    setItemSeguro('cd_lojistas_admin', JSON.stringify(lista));
                 } catch (e2) {}
 
                 if (window.LojistasNuvem && LojistasNuvem.salvarUm) {
@@ -1333,9 +1452,13 @@
                         descricao: perfil.descricao || '',
                         atualizadoEm: perfil.atualizadoEm
                     };
-                    await LojistasNuvem.salvarUm(reg);
+                    var resNuvem = await LojistasNuvem.salvarUm(reg);
                     if (LojistasNuvem.sinalizar) {
                         LojistasNuvem.sinalizar('atualizacao', { lojistaId: id, nome: reg.nome, status: reg.status });
+                    }
+                    if (resNuvem && resNuvem.quota) {
+                        msg.className = 'text-sm text-amber-700 font-medium';
+                        msg.textContent = 'Fotos na nuvem de imagens OK, mas a cota do Firebase de dados estourou. As URLs ficaram salvas; tente sincronizar mais tarde.';
                     }
                 }
 
@@ -1350,19 +1473,28 @@
                 logoPendentePreview = null;
                 document.getElementById('inputFotos').value = '';
                 document.getElementById('inputLogo').value = '';
-                renderGaleriaSalva();
                 renderPendentes();
+                renderLogo();
+                renderGaleria();
+                if (typeof atualizarTextoLimiteFotos === 'function') atualizarTextoLimiteFotos();
 
-                msg.textContent = (window.CDR2 && CDR2.ativo && CDR2.ativo())
-                    ? '✓ Fotos atualizadas e enviadas. Já aparecem para o cliente.'
-                    : '✓ Fotos salvas neste aparelho.';
                 msg.className = 'text-sm text-green-600 font-medium';
+                msg.textContent = urls.length
+                    ? ('✓ ' + urls.length + ' foto(s) enviada(s) para o site (máx. 3 MB cada).')
+                    : '✓ Logo atualizada no site.';
             } catch (err) {
-                msg.textContent = 'Erro ao enviar: ' + (err.message || err);
+                console.warn(err);
+                limparBase64DoStorage();
                 msg.className = 'text-sm text-red-600 font-medium';
+                var em = (err && err.message) ? String(err.message) : String(err || 'Erro ao enviar');
+                if (/quota|exceeded/i.test(em)) {
+                    msg.textContent = 'Armazenamento local cheio (fotos antigas em base64). Limpamos o cache; envie de novo — as fotos vão só para a nuvem (até 3 MB cada).';
+                } else {
+                    msg.textContent = 'Erro ao enviar: ' + em;
+                }
             }
-            setTimeout(function () { msg.classList.add('hidden'); }, 6000);
         });
+
         
         // ========== PROMOÇÕES ==========
         let promocoes = JSON.parse(localStorage.getItem('cd_promos_' + lojista.empresaId) || '[]');

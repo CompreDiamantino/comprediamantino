@@ -19,8 +19,40 @@
   function lerLocal() {
     try { return JSON.parse(localStorage.getItem(KEY) || '[]'); } catch (e) { return []; }
   }
+  function soUrlsPublicasNuvem(arr) {
+    if (!Array.isArray(arr)) return [];
+    return arr.filter(function (u) {
+      return typeof u === 'string' && /^https?:\/\//i.test(u.trim());
+    });
+  }
+  function limparImagensPesadas(lista) {
+    return (lista || []).map(function (lj) {
+      if (!lj || typeof lj !== 'object') return lj;
+      var c = Object.assign({}, lj);
+      c.fotos = soUrlsPublicasNuvem(c.fotos);
+      if (c.logo && !/^https?:\/\//i.test(String(c.logo))) c.logo = '';
+      return c;
+    });
+  }
   function salvarLocal(lista) {
-    localStorage.setItem(KEY, JSON.stringify(lista || []));
+    var limpa = limparImagensPesadas(lista);
+    try {
+      localStorage.setItem(KEY, JSON.stringify(limpa));
+    } catch (err) {
+      // cota: grava sem campos pesados extras
+      try {
+        var mini = limpa.map(function (lj) {
+          if (!lj) return lj;
+          var m = Object.assign({}, lj);
+          m.fotos = soUrlsPublicasNuvem(m.fotos).slice(0, 12);
+          if (m.logo && !/^https?:\/\//i.test(String(m.logo))) m.logo = '';
+          return m;
+        });
+        localStorage.setItem(KEY, JSON.stringify(mini));
+      } catch (err2) {
+        console.warn('salvarLocal quota', err2);
+      }
+    }
   }
 
   /** IDs de exclusão total (não reaparecem ao puxar da nuvem). */
